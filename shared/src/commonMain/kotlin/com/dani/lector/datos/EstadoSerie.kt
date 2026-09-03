@@ -48,7 +48,10 @@ object EstadoSerie {
         // Solo los que tienen numero entendible. Un "1.MU" o un "Annual 2" no
         // se puede cruzar con el numero de un fichero tuyo, y contarlo como
         // que falta seria decirte que te falta algo que no sabemos ni que es.
-        val esperados = remotos.mapNotNull { it.numero }.toSortedSet()
+        // distinct().sorted() y no toSortedSet(), que es de la JVM. Se usa
+        // para contar, filtrar y saber el tamaño: una lista ordenada sin
+        // repetidos vale igual.
+        val esperados = remotos.mapNotNull { it.numero }.distinct().sorted()
         val tuyos = mios.toSet()
 
         val ultima = remotos.mapNotNull { it.fecha }.maxOrNull()

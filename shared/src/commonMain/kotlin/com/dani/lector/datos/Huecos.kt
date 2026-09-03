@@ -45,7 +45,10 @@ object Huecos {
      * numero. Un numero repetido no tapa ningun hueco, asi que cuenta una vez.
      */
     fun de(numeros: List<Int>): Estado {
-        val n = numeros.toSortedSet().toList()
+        // distinct().sorted() y no toSortedSet(): aquel devuelve un
+        // java.util.SortedSet y NO existe en Kotlin/Native. Hace lo mismo —quita
+        // repetidos y ordena— y da una lista, que es lo que se recorre debajo.
+        val n = numeros.distinct().sorted()
         if (n.isEmpty()) return Estado(0, null, null, emptyList())
 
         val faltan = mutableListOf<IntRange>()

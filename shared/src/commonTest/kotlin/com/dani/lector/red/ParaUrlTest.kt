@@ -41,4 +41,43 @@ class ParaUrlTest {
     @Test fun `el vacio da vacio`() {
         assertEquals("", paraUrl(""))
     }
+
+    // ─────────────────────── Y LA VUELTA ───────────────────────
+
+    /**
+     * `desdeUrl` sustituye a `android.net.Uri.decode`, que no existe fuera de
+     * Android. La usa `Progreso.clave`, o sea la clave con la que la copia de
+     * seguridad reencuentra los comics: si decodifica mal, **restaurar no da
+     * error, simplemente no encuentra nada**.
+     */
+    @Test fun `decodifica lo que codifica`() {
+        for (x in listOf(
+            "Green Lantern",
+            "DC Comics/Green lantern/Absolute green lantern",
+            "Batman Vol 3/Batman 01.cbz",
+            "España",
+            "name:Absolute Batman",
+            "a,b",
+            "-_.~",
+            ""
+        )) assertEquals(x, desdeUrl(paraUrl(x)), "ida y vuelta de: $x")
+    }
+
+    @Test fun `decodifica lo que ya venia codificado`() {
+        assertEquals("Green Lantern 01.cbz", desdeUrl("Green%20Lantern%2001.cbz"))
+        assertEquals("España", desdeUrl("Espa%C3%B1a"))
+    }
+
+    // Uri.decode NO convierte el mas en espacio, y esto tampoco: un "+" en el
+    // nombre de un fichero es un "+".
+    @Test fun `el mas se queda como mas`() {
+        assertEquals("a+b", desdeUrl("a+b"))
+    }
+
+    // Un nombre raro no puede tirar la restauracion entera.
+    @Test fun `un porcentaje mal formado no revienta`() {
+        assertEquals("100%", desdeUrl("100%"))
+        assertEquals("%zz", desdeUrl("%zz"))
+        assertEquals("a%4", desdeUrl("a%4"))
+    }
 }

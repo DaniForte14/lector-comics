@@ -1,5 +1,6 @@
 package com.dani.lector.datos
 
+import com.dani.lector.red.desdeUrl
 import com.dani.lector.red.getJSONObject
 import com.dani.lector.red.jsonLaxo
 import com.dani.lector.red.length
@@ -212,7 +213,7 @@ class Progreso(private val disco: Disco) {
 
         /** La clave estable de un comic: su carpeta y su nombre. */
         fun clave(uri: String): String =
-            android.net.Uri.decode(uri).split('/')
+            desdeUrl(uri).split('/')
                 .filter { it.isNotBlank() }
                 .takeLast(2)
                 .joinToString("/")

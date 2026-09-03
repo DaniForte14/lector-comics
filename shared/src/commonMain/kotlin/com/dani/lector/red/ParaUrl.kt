@@ -27,3 +27,38 @@ fun paraUrl(s: String): String = buildString {
         else append('%').append(n.toString(16).uppercase().padStart(2, '0'))
     }
 }
+
+/**
+ * Lo contrario de [paraUrl]: %XX vuelve a ser el caracter que era.
+ *
+ * SUSTITUYE A `android.net.Uri.decode`, que es de Android. Lo usa
+ * `Progreso.clave`, o sea **la clave con la que la copia de seguridad
+ * reencuentra tus comics al restaurar**: las uris de SAF llegan codificadas y
+ * "Green%20Lantern%2001.cbz" tiene que volver a ser "Green Lantern 01.cbz" o la
+ * copia no casa con nada y se restaura en silencio... nada.
+ *
+ * NO CONVIERTE `+` EN ESPACIO, igual que `Uri.decode` y al reves que
+ * `URLDecoder`. Un `+` en el nombre de un fichero es un `+`.
+ *
+ * Un %XX mal formado —"%4" al final, o "%zz"— se deja tal cual en vez de
+ * lanzar: un nombre raro no puede tirar la restauracion entera.
+ */
+fun desdeUrl(s: String): String {
+    val bytes = ArrayList<Byte>(s.length)
+    var i = 0
+    while (i < s.length) {
+        val c = s[i]
+        val hex = if (c == '%' && i + 2 < s.length)
+            s.substring(i + 1, i + 3).toIntOrNull(16) else null
+        if (hex != null) {
+            bytes.add(hex.toByte())
+            i += 3
+        } else {
+            // El resto va con sus propios bytes UTF-8: puede ser un acento que
+            // nunca estuvo codificado.
+            c.toString().encodeToByteArray().forEach { bytes.add(it) }
+            i++
+        }
+    }
+    return bytes.toByteArray().decodeToString()
+}

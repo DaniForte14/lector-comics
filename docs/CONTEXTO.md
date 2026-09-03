@@ -2828,6 +2828,48 @@ La marca `(empieza a leer la carpeta)` se quita: ya dijo lo que tenia que decir.
 **nunca llego a saltar** —leer siempre estuvo por debajo de sus 200 ms— y por eso
 mismo vale la pena dejarla: solo habla cuando algo va mal de verdad.
 
+### El CI encontro lo que la JVM se tragaba (04/09/2026)
+
+**El trabajo de Android salio VERDE**: compila y pasan todas las pruebas en una
+maquina limpia. Eso ya es verificacion de verdad y no "en mi ordenador va".
+
+**El de iOS saco tres fallos reales**, y los tres son de la misma familia:
+**codigo que la JVM acepta y Kotlin/Native no**. Ninguno lo podia coger nada de
+lo que hay aqui —ni compilar, ni `comprobar.py`, ni las pruebas— porque en la JVM
+son correctos.
+
+- **`toSortedSet()` no existe en Kotlin/Native.** Devuelve un
+  `java.util.SortedSet`. Estaba en `Huecos.de` y en `EstadoSerie.resumen`, o sea
+  en **dos de las funciones mas probadas del proyecto**. Cambiado por
+  `distinct().sorted()`, que hace lo mismo —quita repetidos y ordena— y devuelve
+  una lista.
+- **`android.net.Uri.decode` en `Progreso.clave`.** Se colo en la mudanza de la
+  tanda 4: el fichero se movio a `commonMain` y esa linea siguio ahi, compilando
+  tan feliz contra el SDK de Android.
+
+**Y esa tercera importa mas de lo que parece.** `clave()` es **la clave estable
+con la que la copia de seguridad reencuentra tus comics al restaurar**: las uris
+de SAF llegan codificadas, y "Green%20Lantern%2001.cbz" tiene que volver a ser
+"Green Lantern 01.cbz" o la copia no casa con nada. Se escribio `desdeUrl()` al
+lado de `paraUrl()` en `red/ParaUrl.kt`, **con pruebas de ida y vuelta**
+—`desdeUrl(paraUrl(x)) == x` sobre ocho cadenas reales— mas los bordes: el `+`
+que NO es espacio (igual que `Uri.decode` y al reves que `URLDecoder`) y el %XX
+mal formado, que se deja tal cual en vez de lanzar: **un nombre raro no puede
+tirar la restauracion entera**.
+
+**LA LECCION, y es la que justifica el CI entero:**
+
+> Un modulo `commonMain` compilado SOLO para Android **no es codigo comun**: es
+> codigo de Android en una carpeta con otro nombre. El compilador de la JVM
+> acepta `toSortedSet`, `java.time`, `String.format`, `org.json` y
+> `android.net.Uri` sin rechistar. **Lo unico que dice la verdad es compilar para
+> Kotlin/Native**, y eso solo pasa en el runner de macOS.
+
+Dicho de otra forma: durante cinco tandas se movio codigo a `:shared` **creyendo**
+que era portable, y tres cosas no lo eran. Se descubrieron en la primera
+ejecucion que llego a compilar. Cada tanda que se mueva codigo nuevo, el CI es el
+que dice si de verdad se movio.
+
 ### Pendiente
 
 - **Confirmar que la pantalla en negro se ha ido.** La causa está encontrada y
