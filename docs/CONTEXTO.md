@@ -3054,6 +3054,33 @@ que partir, como si la hubo en `Componentes`.
 **5. `Pantallas.kt` (2.151 lineas).** La mas grande y la menos acoplada de las
 dos. Va despues porque depende de `Portada`.
 
+**EL APARATO ES UN IPAD AIR DE 4a GENERACION, CHIP A14**, y no da igual:
+
+- **arm64.** El CI ya compila `iosArm64` y prueba en `iosSimulatorArm64`, asi que
+  esa parte esta cubierta. No hace falta x86.
+- **CUATRO GIGAS DE RAM, Y ESTO ES LO QUE MAS VA A DOLER.** Un lector de comics
+  descomprime imagenes grandes, y **iOS mata la app sin avisar** cuando se pasa
+  de su cuota (jetsam); no hay `OutOfMemoryError` que atrapar como en Android.
+  Ademas el techo de la cache de miniaturas se calcula hoy con
+  `Runtime.getRuntime().maxMemory() / 8`, que **no existe fuera de la JVM**: en
+  iOS habra que poner un numero fijo y prudente. Es un `expect/actual` que ya se
+  sabe que hara falta.
+- **La pantalla es de tableta, no de movil grande.** 10,9 pulgadas, unos
+  1180 × 820 puntos.
+  `Pantallas.kt` esta pensada para una columna de movil: en 11 pulgadas la
+  rejilla de portadas tiene que dar mas columnas o las cartas salen enormes.
+  **No es un `expect/actual`, es diseño**: se resuelve con `BoxWithConstraints` y
+  midiendo el ancho, que ademas arregla de paso el movil apaisado.
+- **La doble pagina deja de ser la excepcion y pasa a ser lo normal.** Hoy se
+  activa al girar el movil; en un iPad apaisado, dos paginas lado a lado es como
+  se lee de verdad un comic. La logica ya existe, lo que cambia es cuando entra.
+- **Las teclas de volumen no tienen sentido aqui.** En un movil pasan pagina; en
+  un iPad ni se usan asi. No es que "no se puedan portar": es que **no hay que
+  portarlas**, y su hueco lo cubren las zonas tactiles que ya estan.
+- **Sin barra de navegacion por gestos que estorbe**, pero si con la barra de
+  estado: ocultarla en el visor es lo mismo que se hace en Android, con
+  `idleTimerDisabled` para que no se apague la pantalla leyendo.
+
 **6. `iosApp/` de verdad**: proyecto de Xcode, `binaries.framework` en
 `:shared`, unas veinte lineas de Swift para el `@main`, y el workflow que genera
 el `.ipa`. Y ahi si haran falta el secret de Comic Vine y la firma.
@@ -3109,6 +3136,32 @@ suelto.
 
 Reparto: **15 ficheros en `app`, 30 en `shared`**. `Portada.kt` en comun deja
 `Pantallas.kt` sin su ultima atadura de imagen.
+
+### `Pantallas.kt` NO se puede mover tal cual (04/09/2026)
+
+Analisis hecho, sin tocar codigo. Es distinto de lo que paso con `Componentes`:
+alli habia **una** costura (`Portada`) y el resto era Compose puro. Aqui hay
+cuatro ataduras, y no son de esquina:
+
+| Linea | Que | Salida |
+|---|---|---|
+| 174, 197 | `LocalContext` para `Rastro` y `ColorPortada` | Facil: pasarles el `Disco` que ya existe |
+| 1087-1115 | Permiso de notificaciones: `Manifest`, `Build.VERSION`, `ContextCompat`, launcher | Puro Android; iOS pide permisos de otra forma |
+| 1350 | `BackHandler` | **En iOS no hay boton atras.** No hay equivalente comun |
+| 1796-1808 | Elegir fichero y carpeta con SAF, en Ajustes | Puro Android; en iOS es `UIDocumentPicker` |
+
+El fichero contiene **la pantalla de Ajustes entera** —la mas pegada a Android de
+toda la app— mezclada con Biblioteca, Lecturas y Marcapaginas, que son casi puro
+Compose.
+
+**LO SIGUIENTE ES PARTIR EL FICHERO POR PANTALLAS, y no como paso previo del
+port**: 2.151 lineas en un fichero son dificiles de tocar de todas formas, con
+iPad o sin el. Es una tanda mecanica y verificable —compila o no compila— que
+deja cuatro ficheros donde hay uno.
+
+Despues, cada pantalla se porta o se queda segun lo que lleve dentro. **Ajustes
+probablemente se queda en Android mucho tiempo**, y no pasa nada: es la pantalla
+que menos falta hace en el iPad.
 
 ### Pendiente
 
