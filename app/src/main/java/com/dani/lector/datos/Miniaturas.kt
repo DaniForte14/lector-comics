@@ -3,6 +3,8 @@ package com.dani.lector.datos
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import android.util.LruCache
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Semaphore
@@ -41,8 +43,15 @@ object Miniaturas {
     private val TECHO_KB = (Runtime.getRuntime().maxMemory() / 1024 / 8)
         .coerceIn(8L * 1024, 48L * 1024).toInt()
 
-    private val memoria = object : LruCache<String, Bitmap>(TECHO_KB) {
-        override fun sizeOf(key: String, value: Bitmap) = maxOf(1, value.byteCount / 1024)
+    // LA CACHE GUARDA ImageBitmap, NO Bitmap. Es el tipo que entiende Compose
+    // en las dos plataformas, y asi la conversion se hace UNA vez al decodificar
+    // y no en cada repintado de cada carta de la rejilla.
+    //
+    // Se mide a mano porque ImageBitmap no tiene `byteCount`: ancho x alto x 2,
+    // que son los bytes de un pixel en RGB_565, que es como se decodifica.
+    private val memoria = object : LruCache<String, ImageBitmap>(TECHO_KB) {
+        override fun sizeOf(key: String, value: ImageBitmap) =
+            maxOf(1, value.width * value.height * 2 / 1024)
     }
 
     /**
@@ -53,7 +62,7 @@ object Miniaturas {
      * carta gris. Cuando la carta vuelve a entrar en pantalla lo normal es que
      * la portada ya este puesta, y asi se pinta en el mismo fotograma.
      */
-    fun enMemoria(uri: String): Bitmap? = memoria.get(uri)
+    fun enMemoria(uri: String): ImageBitmap? = memoria.get(uri)
 
     /**
      * Ficheros que ya sabemos que no se pueden abrir (un CBR en RAR5, por ejemplo).
@@ -98,15 +107,16 @@ object Miniaturas {
         BitmapFactory.Options().apply { inPreferredConfig = Bitmap.Config.RGB_565 }
     )
 
-    suspend fun obtener(ctx: Context, uri: String): Bitmap? = withContext(Dispatchers.IO) {
+    suspend fun obtener(ctx: Context, uri: String): ImageBitmap? = withContext(Dispatchers.IO) {
         memoria.get(uri)?.let { return@withContext it }
         if (uri in fallidos) return@withContext null
 
         val f = File(carpeta(ctx), clave(uri) + ".jpg")
         if (f.exists()) {
             decodificar(f)?.let {
-                memoria.put(uri, it)
-                return@withContext it
+                val img = it.asImageBitmap()
+                memoria.put(uri, img)
+                return@withContext img
             }
         }
 
@@ -152,8 +162,9 @@ object Miniaturas {
             decodificar(f)
         }.getOrNull() ?: bmp
 
-        memoria.put(uri, guardada)
-        guardada
+        val img = guardada.asImageBitmap()
+        memoria.put(uri, img)
+        img
     }
 
     /**

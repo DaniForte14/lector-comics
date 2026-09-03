@@ -3073,6 +3073,43 @@ el `.ipa`. Y ahi si haran falta el secret de Comic Vine y la firma.
   arrastrarla.** `Portada` fuera de `Componentes` costo 44 lineas; llevarsela
   habria costado `Miniaturas`, `ColorPortada` y trece llamadas.
 
+### Tanda 7: la tuberia de imagenes, y `Portada` ya es comun (04/09/2026)
+
+El paso 1 del mapa. Salio **mas pequeño de lo que decia el propio mapa**, y por
+un motivo que solo se vio al mirar: los **trece** sitios que llaman a `Portada`
+pasan todos por **dos** metodos, `vm.portada()` y `vm.portadaYa()`. No habia
+trece cambios, habia dos.
+
+**`Miniaturas` cachea `ImageBitmap` y no `Bitmap`.** Es el tipo que entiende
+Compose en las dos plataformas, y asi la conversion se hace **una vez al
+decodificar** en vez de en cada repintado de cada carta de la rejilla — que era
+justo lo que el `remember(b) { b.asImageBitmap() }` de `Portada` estaba
+esquivando. Ese `remember` ya no hace falta y se fue.
+
+La cache se mide a mano, `ancho × alto × 2`, porque `ImageBitmap` no tiene
+`byteCount` y se decodifica en RGB_565. Era una de las dos pegas apuntadas en el
+mapa.
+
+**Y la otra pega se resolvio al reves de lo previsto.** El mapa decia que
+`ColorPortada.dominante` "necesita un `Bitmap` de verdad y se queda en Android".
+Al mirarlo, resulto que **pasarlo a `ImageBitmap` QUITA codigo**: se van
+`Bitmap.createScaledBitmap`, `getPixels`, `colorToHSV` y el `recycle`. En su
+lugar, `toPixelMap()` —que es de Compose y vale en las dos plataformas— y
+**muestrear con salto en vez de reescalar**, que para lo que se busca aqui (que
+casilla de tono pesa mas) hace lo mismo y ademas se ahorra crear y reciclar un
+bitmap por portada.
+
+**OJO: ES UN CAMBIO DE COMPORTAMIENTO Y NO ESTA VERIFICADO.** Reescalar a 40×40
+promedia los pixeles vecinos; muestrear con salto los ignora. Los colores que
+salgan **pueden no ser exactamente los mismos**. La funcion es visual, asi que se
+comprueba mirando la app, no con una prueba: **hay que abrir la biblioteca y ver
+si los degradados siguen pareciendose a la portada**. Si alguno canta, el arreglo
+es promediar un bloque pequeño alrededor de cada muestra en vez de coger el pixel
+suelto.
+
+Reparto: **15 ficheros en `app`, 30 en `shared`**. `Portada.kt` en comun deja
+`Pantallas.kt` sin su ultima atadura de imagen.
+
 ### Pendiente
 
 - **Confirmar que la pantalla en negro se ha ido.** La causa está encontrada y

@@ -1,9 +1,10 @@
 package com.dani.lector.datos
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.util.LruCache
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.graphics.toArgb
 import com.dani.lector.ui.Colores
 import kotlinx.coroutines.Dispatchers
@@ -84,38 +85,50 @@ object ColorPortada {
      * las hay— se devuelve un gris del brillo medio de la imagen y ya esta. No
      * se inventa un tono que no existe.
      */
-    fun dominante(bmp: Bitmap): Color {
-        val chico = Bitmap.createScaledBitmap(bmp, MUESTRA, MUESTRA, true)
-        val pixeles = IntArray(MUESTRA * MUESTRA)
-        chico.getPixels(pixeles, 0, MUESTRA, 0, 0, MUESTRA, MUESTRA)
-        if (chico !== bmp) chico.recycle()
+    fun dominante(bmp: ImageBitmap): Color {
+        // MUESTREAR CON SALTO, y no reescalar a MUESTRA x MUESTRA.
+        //
+        // Antes se hacia `Bitmap.createScaledBitmap` y `getPixels`, que son de
+        // Android. Coger uno de cada N pixeles hace lo mismo para lo que se
+        // busca aqui —que casilla de tono pesa mas— y ademas se ahorra crear y
+        // reciclar un bitmap por cada portada.
+        //
+        // toPixelMap() es de Compose y vale en las dos plataformas.
+        val mapa = bmp.toPixelMap()
+        val salto = maxOf(1, minOf(bmp.width, bmp.height) / MUESTRA)
 
         val peso = DoubleArray(24)
         val sumaS = DoubleArray(24)
         val sumaV = DoubleArray(24)
         var brilloTotal = 0.0
-        val hsv = FloatArray(3)
+        var cuantos = 0
 
-        for (p in pixeles) {
-            android.graphics.Color.colorToHSV(p, hsv)
-            val h = hsv[0]; val s = hsv[1]; val v = hsv[2]
-            brilloTotal += v
+        var y = 0
+        while (y < bmp.height) {
+            var x = 0
+            while (x < bmp.width) {
+                val (h0, s, v) = Colores.aHsv(mapa[x, y])
+                brilloTotal += v
+                cuantos++
+                x += salto
 
-            // sin color util: negro de viñeta, blanco de bocadillo, gris
-            if (v < 0.15f || s < 0.12f || (v > 0.95f && s < 0.20f)) continue
+                // sin color util: negro de viñeta, blanco de bocadillo, gris
+                if (v < 0.15f || s < 0.12f || (v > 0.95f && s < 0.20f)) continue
 
-            val casilla = ((h / 15f).toInt()).coerceIn(0, 23)
-            // saturado suma; alejarse del brillo medio resta
-            val w = s.toDouble() * (1.0 - kotlin.math.abs(v - 0.60) )
-            peso[casilla] += w
-            sumaS[casilla] += s * w
-            sumaV[casilla] += v * w
+                val casilla = ((h0 / 15f).toInt()).coerceIn(0, 23)
+                // saturado suma; alejarse del brillo medio resta
+                val w = s.toDouble() * (1.0 - kotlin.math.abs(v - 0.60))
+                peso[casilla] += w
+                sumaS[casilla] += s * w
+                sumaV[casilla] += v * w
+            }
+            y += salto
         }
 
         val mejor = peso.indices.maxByOrNull { peso[it] } ?: 0
         if (peso[mejor] <= 0.0) {
             // portada sin color: gris del brillo medio, sin inventar tono
-            val v = (brilloTotal / pixeles.size).toFloat().coerceIn(0.2f, 0.7f)
+            val v = (brilloTotal / maxOf(1, cuantos)).toFloat().coerceIn(0.2f, 0.7f)
             return Colores.desdeHsv(0f, 0f, v)
         }
 
