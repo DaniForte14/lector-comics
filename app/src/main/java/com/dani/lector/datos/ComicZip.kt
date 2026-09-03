@@ -195,7 +195,7 @@ object ComicZip {
             else -> null
         }
 
-        bmp?.let { if (recortar) Recorte.aplicar(it) else it }
+        bmp?.let { if (recortar) RecorteAndroid.aplicar(it) else it }
             ?.also { cache(anchoMax).put(clave, it) }
     } catch (_: Throwable) { null }
 

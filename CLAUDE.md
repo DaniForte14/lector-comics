@@ -140,7 +140,8 @@ MainActivity.kt   Navegación (3 destinos) y las teclas de volumen del lector
 VistaModelo.kt    Estado y lógica de la interfaz
 
 datos/  Modelos, Parser, Escaner, Formatos, Busqueda, Progreso, Marcadores,
-        ComicZip, Rar5, ConversorCarpeta, Recorte, Miniaturas, ColorPortada,
+        ComicZip, Rar5, ConversorCarpeta, Recorte (+RecorteAndroid),
+        Miniaturas, ColorPortada,
         Racha, Sesiones, Calendario, Estadisticas, Huecos, EstadoSerie,
         SeriesRemotas, Novedades, Vigilante, Rastro, Orden, Salto, Siguiente,
         Exportar

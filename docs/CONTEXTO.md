@@ -2104,6 +2104,7 @@ veces escribe bien en disco pero la otra instancia sigue viendo su copia vieja.
 | `SiguienteTest` | por cuál seguir: lo empezado gana, el hueco no adelanta, la pág. 0 no cuenta |
 | `ExportarTest` | el nombre del fichero al guardar una página |
 | `AgendaTest` | qué sale próximamente: orden por fecha, sin fecha fuera, "mañana" / "en 3 días" |
+| `RecorteTest` | el marco liso: fondo negro, ruido del escáner, el tope de la mitad, la regla del 40% |
 
 **EJECUTADOS POR FIN el 03/09/2026**, con Java 17 en el entorno. `./gradlew
 testDebugUnitTest`: **126 pruebas, una en rojo**, y el fallo estaba en la prueba,
@@ -3210,6 +3211,72 @@ y el SAF de Ajustes en `PantallaAjustes.kt:44-56`. **El reparto para el port no
 cambia**, solo se lee mejor: Marcadores y Lecturas son casi Compose puro,
 Biblioteca lleva una atadura (el permiso) y Ajustes es la que se queda en
 Android.
+
+### Tanda 9: `Recorte` decide en comun y Android solo corta (04/09/2026)
+
+`Recorte` quita el marco liso de una pagina escaneada. Eran 102 lineas en `:app`
+y ahora son dos piezas:
+
+| Donde | Que |
+|---|---|
+| `shared/.../datos/Recorte.kt` | **la decision**: `Recorte.util` devuelve un `Recuadro` con el trozo que tiene dibujo, o null |
+| `app/.../datos/RecorteAndroid.kt` | **el corte**: leer pixeles con `getPixels` y `Bitmap.createBitmap` |
+
+**Se partio por donde estaba la dependencia**, que es la leccion que ya costo
+`Portada` en la tanda 6b. Lo unico de Android eran `Bitmap`, `Rect` y las dos
+llamadas de pixeles; las cuatro reglas que deciden el margen son aritmetica.
+
+**Los pixeles entran por dos funciones y no como un array entero**, y no es
+capricho: una pagina de 2000x3000 son 24 MB de ints, y el algoritmo solo mira
+unas pocas filas y columnas de los bordes. `RecorteAndroid` pasa dos lambdas que
+**reutilizan un unico buffer**, exactamente como hacia el codigo de antes, asi
+que no hay ni una asignacion nueva por borde mirado. El algoritmo no se ha
+tocado: mismas constantes, mismos bucles, mismo orden.
+
+`Rect` se cambia por un `Recuadro` propio de cuatro enteros. **`der` y `abajo`
+siguen siendo excluyentes**, igual que en `android.graphics.Rect`, para que
+quien corta pase `ancho`/`alto` sin sumar ni restar nada — que es justo donde se
+cuela un fallo de un pixel que nadie ve.
+
+**Y AQUI ESTA LO QUE DE VERDAD GANA LA TANDA, que otra vez no era portar.**
+`Recorte` **no tenia ni una prueba** y tiene cuatro reglas con casos de borde
+que, cuando se tuercen, **no dan ningun error**: la pagina sale recortada de mas
+o de menos y solo se ve mirando el movil pagina por pagina. Ahora hay
+`RecorteTest`, ocho casos sobre paginas de mentira —un `IntArray` y dos
+funciones que devuelven filas y columnas, que es justo lo que pide `util`:
+
+- El marco blanco se recorta, con sus dos pixeles de gracia.
+- **El marco negro tambien**, que es el caso que justifica que el fondo se tome
+  de la esquina en vez de suponerlo blanco.
+- Una pagina cuyo dibujo llega a los cuatro bordes se devuelve **sin tocar**.
+- Una pagina lisa entera se descarta por la regla del 40%.
+- Una pagina de menos de 60 pixeles ni se mira.
+- **Los dos lados del limite de ruido**: dos pixeles sueltos en una fila de 100
+  son el 2% justo y el corte sigue; tres ya paran el corte en esa fila. Sin esa
+  tolerancia, una mota del escaner impide recortar la pagina entera.
+- Y que no se busca mas alla de la mitad de la pagina, que es lo que salva a una
+  splash page clara de comerse su propio dibujo.
+
+Verificado: `comprobar.py` con **PROBLEMAS: 0**, `:app:assembleDebug` y las
+pruebas de los dos modulos con `--rerun-tasks` en verde, y `RecorteTest` lanzada
+**por separado** con `--tests` mas el control de una clase inexistente, que
+falla con "No tests found" — o sea que las ocho se ejecutan de verdad y no es
+que no fallen.
+
+**LO QUE NO ESTA COMPROBADO**: que una pagina de verdad se recorte igual que
+antes. Es la misma aritmetica sobre los mismos pixeles y la prueba cubre las
+reglas, pero **el camino Bitmap -> lambdas -> Bitmap no lo ha recorrido ningun
+comic**. Se ve en un segundo: abrir un CBZ con marco blanco y el ajuste de
+recorte puesto.
+
+**Y lo que esta tanda NO desbloquea**, para que no parezca mas de lo que es: las
+pantallas siguen sin poder mudarse. Todas reciben `vm: VistaModelo`, que son
+1.195 lineas de `AndroidViewModel` en `:app` con SharedPreferences, `Escaner`,
+`Miniaturas` y `ComicZip` dentro. La cadena real es
+`ComicZip`/`Escaner`/preferencias detras de interfaz -> `VistaModelo` -> las
+pantallas, y ahi es donde esta el trabajo de verdad.
+
+Reparto: **18 ficheros en `app`, 31 en `shared`**; en pruebas, 1 y 17.
 
 ### Pendiente
 
