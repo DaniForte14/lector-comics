@@ -26,7 +26,7 @@ class ParserTest {
     }
 
     // ── lo que ya funcionaba y no se puede romper ───────────────────────
-    @Test fun `sin almohadilla, la cifra del final`() {
+    @Test fun `sin almohadilla la cifra del final`() {
         assertEquals(36, n("Daredevil 36.cbz"))
         assertEquals(35, n("Daredevil 035.cbz"))
     }

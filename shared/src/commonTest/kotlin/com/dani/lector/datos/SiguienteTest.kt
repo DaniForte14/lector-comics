@@ -18,7 +18,7 @@ class SiguienteTest {
     private fun aMedias(pagina: Int, cuando: Long = 0) =
         Marca(pagina = pagina, paginas = 20, cuando = cuando)
 
-    @Test fun `sin nada leido, el primero`() {
+    @Test fun `sin nada leido el primero`() {
         assertEquals("#1.cbz", Siguiente.de(serie, emptyMap())?.nombre)
     }
 
@@ -40,7 +40,7 @@ class SiguienteTest {
     }
 
     /** Con dos a medias, el que tocaste mas recientemente. */
-    @Test fun `entre dos a medias, el mas reciente`() {
+    @Test fun `entre dos a medias el mas reciente`() {
         val m = mapOf("u/2" to aMedias(5, cuando = 100),
                       "u/4" to aMedias(9, cuando = 900))
         assertEquals("#4.cbz", Siguiente.de(serie, m)?.nombre)

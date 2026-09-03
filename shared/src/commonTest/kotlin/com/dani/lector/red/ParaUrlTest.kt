@@ -18,7 +18,7 @@ class ParaUrlTest {
 
     // LO MAS IMPORTANTE DE ESTA PRUEBA. Con `+` se buscaria la cadena literal
     // "Green+Lantern" en /search/?query= y no encontraria nada, nunca.
-    @Test fun `el espacio va como %20 y nunca como mas`() {
+    @Test fun `el espacio va como por ciento 20 y nunca como mas`() {
         assertEquals("Green%20Lantern", paraUrl("Green Lantern"))
     }
 

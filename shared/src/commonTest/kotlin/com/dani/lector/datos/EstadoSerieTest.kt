@@ -11,7 +11,10 @@ class EstadoSerieTest {
     /** Una serie de [n] numeros, uno al mes desde enero de [anio]. */
     private fun serie(n: Int, anio: Int = 2005) = (1..n).map {
         val mes = (it - 1) % 12 + 1
-        NumeroRemoto("$it", it, "%04d-%02d-01".format(anio + (it - 1) / 12, mes))
+        // padStart y no String.format, que es de la JVM. Mismo caso que
+        // Calendario.clave y por el mismo motivo.
+        val a = (anio + (it - 1) / 12).toString().padStart(4, '0')
+        NumeroRemoto("$it", it, "$a-${mes.toString().padStart(2, '0')}-01")
     }
 
     private val CORTE = "2026-04-26"

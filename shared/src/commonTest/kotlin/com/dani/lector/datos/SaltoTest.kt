@@ -6,7 +6,7 @@ import kotlin.test.Test
 
 class SaltoTest {
 
-    @Test fun `un numero normal, en base 1`() {
+    @Test fun `un numero normal en base 1`() {
         assertEquals(0, Salto.destino("1", 22))
         assertEquals(11, Salto.destino("12", 22))
         assertEquals(21, Salto.destino("22", 22))

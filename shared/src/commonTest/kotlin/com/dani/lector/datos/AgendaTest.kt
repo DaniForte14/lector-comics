@@ -20,7 +20,7 @@ class AgendaTest {
             ruta = nombre, volumenId = "1", nombre = nombre, anio = 2024,
             numeros = nums, cuando = 0L, seguida = seguida)
 
-    @Test fun `lo que antes llega, primero, mezclando series`() {
+    @Test fun `lo que antes llega primero mezclando series`() {
         val l = Novedades.agenda(listOf(
             ficha("Batman", listOf(num("12", "2026-10-20"), num("13", "2026-11-20"))),
             ficha("Flash", listOf(num("7", "2026-09-30")))
@@ -45,14 +45,14 @@ class AgendaTest {
     }
 
     /** Sin fecha no se puede decir cuándo sale, y colocarlo sería inventárselo. */
-    @Test fun `sin fecha, fuera`() {
+    @Test fun `sin fecha fuera`() {
         val l = Novedades.agenda(listOf(
             ficha("Batman", listOf(num("12", null), num("13", "2026-10-20")))
         ), hoy)
         assertEquals(listOf("#13"), l.map { it.etiqueta })
     }
 
-    @Test fun `el tope corta por el final, que es lo mas lejano`() {
+    @Test fun `el tope corta por el final que es lo mas lejano`() {
         val l = Novedades.agenda(listOf(
             ficha("Batman", listOf(
                 num("1", "2026-10-01"), num("2", "2026-10-08"), num("3", "2026-10-15")))
@@ -61,7 +61,7 @@ class AgendaTest {
     }
 
     /** Sin desempate, dos del mismo día pueden salir en otro orden cada vez. */
-    @Test fun `a igual fecha, por nombre de serie`() {
+    @Test fun `a igual fecha por nombre de serie`() {
         val l = Novedades.agenda(listOf(
             ficha("Zatanna", listOf(num("3", "2026-10-07"))),
             ficha("Aquaman", listOf(num("4", "2026-10-07")))

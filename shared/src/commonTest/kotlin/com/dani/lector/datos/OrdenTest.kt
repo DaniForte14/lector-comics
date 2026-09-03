@@ -11,7 +11,7 @@ class OrdenTest {
 
     private fun nombres(l: List<Comic>) = l.map { it.nombre }
 
-    @Test fun `por numero, y los sin numero al final`() {
+    @Test fun `por numero y los sin numero al final`() {
         val l = listOf(c("Annual.cbz", null), c("B 10.cbz", 10), c("A 2.cbz", 2))
         assertEquals(listOf("A 2.cbz", "B 10.cbz", "Annual.cbz"),
             nombres(OrdenCarpeta.de(l, Orden.NUMERO)))
@@ -24,7 +24,7 @@ class OrdenTest {
             nombres(OrdenCarpeta.de(l, Orden.NUMERO)))
     }
 
-    @Test fun `por nombre, sin mirar mayusculas`() {
+    @Test fun `por nombre sin mirar mayusculas`() {
         val l = listOf(c("zorro.cbz", 3), c("Alfa.cbz", 1), c("beta.cbz", 2))
         assertEquals(listOf("Alfa.cbz", "beta.cbz", "zorro.cbz"),
             nombres(OrdenCarpeta.de(l, Orden.NOMBRE)))

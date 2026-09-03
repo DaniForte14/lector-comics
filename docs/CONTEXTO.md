@@ -2870,6 +2870,32 @@ que era portable, y tres cosas no lo eran. Se descubrieron en la primera
 ejecucion que llego a compilar. Cada tanda que se mueva codigo nuevo, el CI es el
 que dice si de verdad se movio.
 
+### Segunda vuelta del CI: `commonMain` YA compila para iOS (04/09/2026)
+
+Arreglados `toSortedSet` y `Uri.decode`, la siguiente ejecucion fallo en
+**`compileTestKotlinIosSimulatorArm64`**, y eso es una noticia buena escondida en
+un log rojo: **si esta compilando las PRUEBAS es que `commonMain` e `iosMain` ya
+compilaron**. O sea que **`DiscoIos` pasa**: las firmas de Foundation escritas de
+memoria —`stringWithContentsOfFile`, `writeToFile`,
+`NSSearchPathForDirectoriesInDomains`— y el `@OptIn(ExperimentalForeignApi)`
+puesto a ciegas estaban bien.
+
+Lo que quedaba, dos cosas mas de la misma familia:
+
+- **Los nombres de funcion entre acentos graves no admiten `,` ni `%` en
+  Kotlin/Native**, porque acaban siendo simbolos de Objective-C:
+  `Name contains illegal characters: ","`. Once nombres de prueba tenian coma y
+  uno tenia un `%20`. Se quitaron las comas y el `%20` se dice con palabras.
+  **En la JVM son perfectamente validos**, asi que esto no lo coge nada de aqui.
+- **`String.format` otra vez**, ahora en `EstadoSerieTest`. Mismo cambio que en
+  `Calendario.clave`: `padStart`.
+
+**Es la tercera capa de fallos y todas de lo mismo**: la JVM acepta cosas que
+Kotlin/Native no. Va por capas porque cada arreglo deja pasar el compilador un
+poco mas adentro: primero configuracion de Gradle, luego `commonMain`, luego
+`iosMain`, ahora `commonTest`. Lo siguiente que puede saltar es la EJECUCION de
+las pruebas en el simulador, que es distinto de compilarlas.
+
 ### Pendiente
 
 - **Confirmar que la pantalla en negro se ha ido.** La causa está encontrada y
