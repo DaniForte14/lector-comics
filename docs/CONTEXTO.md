@@ -2932,6 +2932,46 @@ Cinco capas de fallos hasta el verde —permisos de `gradlew`, `iosMain` no
 encontrado, `toSortedSet`, `Uri.decode`, nombres con coma— y **ninguna se podia
 coger desde Windows**. Esa es la factura de la tanda 5 y esa es su razon de ser.
 
+### Tanda 6a: entra Compose Multiplatform, y con el `Tema` (04/09/2026)
+
+Primer paso del port de la interfaz, y **a proposito el mas pequeño que la puede
+tumbar**: meter el plugin de Compose Multiplatform en `:shared` y mover **un solo
+fichero**. Alinear `org.jetbrains.compose` 1.7.3 con Kotlin 2.0.21, AGP 8.7.2 y
+el Compose que ya usa `:app` por su BOM es lo que podia romper; probarlo con
+`Tema.kt` cuesta una tarde, descubrirlo con 3.834 lineas movidas cuesta la tanda
+entera.
+
+Salio a la primera: `compose.runtime`, `compose.foundation`, `compose.material3`
+y `compose.ui` en `commonMain`, y en Android se resuelven a los mismos
+artefactos de androidx que ya habia.
+
+**`Tema.kt` no era portable del todo, y el culpable era el color.** Usaba
+`ColorPortada.oscurecer`, que por dentro llamaba a
+`android.graphics.Color.colorToHSV` y `HSVToColor`. Asi que hubo que escribir las
+conversiones RGB↔HSV a mano, en `ui/Colores.kt`.
+
+**Y esa es la parte con pruebas, `ColoresTest`.** Son conversiones con casos de
+borde que **si se tuercen no dan ningun error**: la pantalla se tiñe de un color
+raro y nadie sabe por que. Lo que cubre:
+
+- Ida y vuelta de los siete colores puros.
+- **El rojo, que esta en el tono 0 y es donde el circulo da la vuelta**: si el
+  calculo se sale por negativo, sale magenta en vez de rojo.
+- Verde en 120 y azul en 240.
+- **Los grises no tienen tono**, que es el caso que `oscurecer` mira para no
+  inventarle color a una portada en blanco y negro.
+- Y el que justifica que la funcion exista: **un verde y un rojo oscurecidos
+  siguen distinguiendose**. Mezclar contra negro los volvia el mismo gris, que
+  fue el primer intento y se quedo invisible en el movil.
+
+**Ahora hay UNA sola aritmetica de color.** `ColorPortada` se queda en `:app`
+—necesita `Bitmap`— pero ya no tiene la suya: llama a la de `:shared`. Antes
+habia dos sitios donde tocar lo mismo.
+
+Reparto: `Tema.kt` (243 lineas) y `Colores.kt` fuera de `app`. Quedan
+`Pantallas.kt` (2.151), `Lector.kt` (978) y `Componentes.kt` (705), que son las
+que tocan `Bitmap`, `Uri` y las teclas de volumen.
+
 ### Pendiente
 
 - **Confirmar que la pantalla en negro se ha ido.** La causa está encontrada y

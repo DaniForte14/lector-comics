@@ -1,6 +1,8 @@
 plugins {
     id("org.jetbrains.kotlin.multiplatform")
     id("com.android.library")
+    id("org.jetbrains.compose")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 kotlin {
@@ -28,6 +30,14 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
+            // La interfaz, para los dos lados. `compose.` lo aporta el plugin
+            // de Compose Multiplatform y en Android se resuelve a los mismos
+            // artefactos de androidx que ya usa :app.
+            implementation(compose.runtime)
+            implementation(compose.foundation)
+            implementation(compose.material3)
+            implementation(compose.ui)
+
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
 
             // El cliente HTTP, con un motor distinto en cada plataforma.

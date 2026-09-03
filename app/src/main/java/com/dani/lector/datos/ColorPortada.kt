@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.util.LruCache
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import com.dani.lector.ui.Colores
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -115,40 +116,19 @@ object ColorPortada {
         if (peso[mejor] <= 0.0) {
             // portada sin color: gris del brillo medio, sin inventar tono
             val v = (brilloTotal / pixeles.size).toFloat().coerceIn(0.2f, 0.7f)
-            return Color(hsvA(0f, 0f, v))
+            return Colores.desdeHsv(0f, 0f, v)
         }
 
         val h = mejor * 15f + 7.5f
         val s = (sumaS[mejor] / peso[mejor]).toFloat().coerceIn(0f, 1f)
         val v = (sumaV[mejor] / peso[mejor]).toFloat().coerceIn(0f, 1f)
-        return Color(hsvA(h, s, v))
+        return Colores.desdeHsv(h, s, v)
     }
 
-    /**
-     * El mismo color, oscuro y SIN perder el tono.
-     *
-     * Mezclar contra negro parece lo obvio y es justo lo que no funciona: al
-     * mezclar se pierde saturacion, y un verde al 20% contra un negro casi puro
-     * da un gris con una idea de verde que en pantalla NO SE VE. Fue el primer
-     * intento y se quedo invisible en el movil.
-     *
-     * Aqui se baja el BRILLO y se sostiene la saturacion, que es lo que deja un
-     * verde oscuro distinguible de un rojo oscuro.
-     *
-     * OJO con [saturacionMinima]: NO se aplica a los grises. Si la portada era
-     * en blanco y negro, forzarle saturacion seria inventarle un tono, que es
-     * exactamente lo que [dominante] se cuida de no hacer.
-     */
-    fun oscurecer(base: Color, brillo: Float, saturacionMinima: Float = 0.55f): Color {
-        val hsv = FloatArray(3)
-        android.graphics.Color.colorToHSV(base.toArgb(), hsv)
-        val s = if (hsv[1] < 0.10f) hsv[1]
-                else kotlin.math.max(hsv[1], saturacionMinima)
-        return Color(hsvA(hsv[0], s, brillo.coerceIn(0f, 1f)))
-    }
-
-    private fun hsvA(h: Float, s: Float, v: Float): Int =
-        android.graphics.Color.HSVToColor(floatArrayOf(h, s, v))
+    // `oscurecer` y la conversion HSV se fueron a ui/Colores en :shared, que es
+    // donde tienen que estar: las usa el tema, que ahora es comun, y estaban
+    // escritas con android.graphics.Color, que no existe en iOS. Aqui se queda
+    // solo lo que de verdad es de Android: leer un Bitmap.
 
     fun olvidar() {
         cache.evictAll()

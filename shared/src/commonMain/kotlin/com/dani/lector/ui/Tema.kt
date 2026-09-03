@@ -8,7 +8,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import com.dani.lector.datos.ColorPortada
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -186,8 +185,8 @@ object Tipo {
 /** Degradado de fondo [arriba, abajo] para una pantalla teñida por su portada. */
 fun ambienteFondo(base: Color?): List<Color> = when {
     base == null -> listOf(Tinta, Tinta)
-    cyber -> listOf(ColorPortada.oscurecer(base, 0.20f), Tinta)
-    else  -> listOf(ColorPortada.oscurecer(base, 0.30f), Color.Black)
+    cyber -> listOf(Colores.oscurecer(base, 0.20f), Tinta)
+    else  -> listOf(Colores.oscurecer(base, 0.30f), Color.Black)
 }
 
 /**
@@ -219,9 +218,9 @@ fun ambienteBarra(base: Color?): Color = when {
     base == null -> Color(0xCC000000)
     // Se oscurece por BRILLO, no mezclando contra negro. El primer intento
     // mezclaba y no se veia nada en el movil: mezclar mata la saturacion y
-    // deja un gris. Ver ColorPortada.oscurecer.
-    cyber -> ColorPortada.oscurecer(base, 0.15f).copy(alpha = 0.93f)
-    else  -> ColorPortada.oscurecer(base, 0.20f).copy(alpha = 0.90f)
+    // deja un gris. Ver Colores.oscurecer.
+    cyber -> Colores.oscurecer(base, 0.15f).copy(alpha = 0.93f)
+    else  -> Colores.oscurecer(base, 0.20f).copy(alpha = 0.90f)
 }
 
 @Composable
