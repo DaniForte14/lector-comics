@@ -2891,10 +2891,46 @@ Lo que quedaba, dos cosas mas de la misma familia:
   `Calendario.clave`: `padStart`.
 
 **Es la tercera capa de fallos y todas de lo mismo**: la JVM acepta cosas que
-Kotlin/Native no. Va por capas porque cada arreglo deja pasar el compilador un
-poco mas adentro: primero configuracion de Gradle, luego `commonMain`, luego
-`iosMain`, ahora `commonTest`. Lo siguiente que puede saltar es la EJECUCION de
-las pruebas en el simulador, que es distinto de compilarlas.
+Kotlin/Native no. Fue por capas porque cada arreglo dejaba pasar al compilador un
+poco mas adentro: configuracion de Gradle → `commonMain` → `iosMain` →
+`commonTest`.
+
+### LOS DOS TRABAJOS EN VERDE (04/09/2026)
+
+```
+Android y pruebas comunes                                     success
+iOS (compila y CORRE las pruebas comunes en Kotlin/Native)    success
+
+> Task :shared:linkDebugTestIosSimulatorArm64
+> Task :shared:iosSimulatorArm64Test        ← EJECUTADAS, no solo compiladas
+> Task :shared:compileKotlinIosArm64        ← y compila para el iPad de verdad
+```
+
+**Que queda demostrado a dia de hoy, y que no.**
+
+DEMOSTRADO:
+
+- Las **29 pruebas de `commonTest` pasan compiladas a NATIVO**, no en la JVM. Las
+  fechas con kotlinx-datetime, el codificador de URL con su ida y vuelta,
+  `padStart`, `elegirVolumen` y los cuatro almacenes con su disco de mentira: todo
+  se comporta igual fuera de la maquina virtual.
+- **`commonMain` es de verdad comun.** Ya no es "codigo de Android en una carpeta
+  con otro nombre": lo compila el compilador de Apple.
+- **`DiscoIos` compila** para el simulador y para arm64.
+- El modulo enlaza para el **iPad de verdad** (`compileKotlinIosArm64`), que es
+  otro objetivo distinto del simulador.
+
+NO demostrado, y conviene no confundirlo:
+
+- **`DiscoIos` no se ha EJECUTADO nunca.** Compila, y nadie ha leido ni escrito un
+  fichero con el. Las pruebas de los almacenes corren con `DiscoEnMemoria`.
+- **No hay app de iOS.** No hay `.ipa`, no hay interfaz portada, no hay nada que
+  instalar en el iPad. Lo que hay es la logica compartida, verificada.
+- **Ni una peticion real a Comic Vine** ha salido desde el codigo nuevo de Ktor.
+
+Cinco capas de fallos hasta el verde —permisos de `gradlew`, `iosMain` no
+encontrado, `toSortedSet`, `Uri.decode`, nombres con coma— y **ninguna se podia
+coger desde Windows**. Esa es la factura de la tanda 5 y esa es su razon de ser.
 
 ### Pendiente
 

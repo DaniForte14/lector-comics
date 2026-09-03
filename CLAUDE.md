@@ -102,6 +102,12 @@ si se declararan siempre el proyecto **ni siquiera configuraria** en el
 ordenador de Dani, que es donde se trabaja. En Windows se compila y se prueba
 Android con normalidad; el runner macOS del CI es el que ve los targets de iOS.
 
+**EL CI ESTA EN VERDE DESDE EL 04/09/2026**, los dos trabajos. Las pruebas
+comunes se ejecutan **compiladas a nativo** en el simulador, y `:shared` compila
+tambien para arm64. Hicieron falta cinco vueltas: permisos de `gradlew`,
+`iosMain` no encontrado, `toSortedSet`, `android.net.Uri.decode` y nombres de
+prueba con coma. **Ninguna se podia coger desde Windows.**
+
 **LO QUE ESTO SIGNIFICA AL TRABAJAR: nadie puede verificar iOS desde aqui.** Si
 una tanda toca `iosMain`, se dice **"escrito, sin compilar"** y punto; quien
 compila es el CI. Lo que si se verifica en cada tanda, como siempre, es que
