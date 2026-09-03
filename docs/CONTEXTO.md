@@ -2460,7 +2460,10 @@ MISMO trabajo: dos carpetas y ningun comic. `Escaner.abrir` ya corre en
 700 y 725 ms **huele a espera fija, no a trabajo**. Hipotesis sin comprobar:
 contencion con SAF cuando algo mas esta recorriendo el arbol a la vez.
 
-**INSTRUMENTADO, a la espera del rastro.** `Escaner.abrir` lleva el cronometro
+**RESUELTO EL 04/09/2026, Y NO ERA NADA DE LO QUE SE SOSPECHABA.** Ver mas
+abajo, "Los 706 ms eran una animacion".
+
+**Instrumentado en su dia asi:** `Escaner.abrir` lleva el cronometro
 partido y apunta **solo si pasa de `LENTO_MS` (200 ms)**, para no ensuciar el
 rastro navegando:
 
@@ -2757,6 +2760,62 @@ Y `.kotlin/` a `.gitignore`, que Kotlin 2.0 deja ahi su cache de sesion.
 **LO QUE ESTO NO DEMUESTRA.** El workflow esta escrito y **no se ha ejecutado
 nunca**: el repositorio todavia no tiene remoto. Hasta que Dani no lo suba y
 salga verde, `DiscoIos` sigue siendo codigo que nadie ha compilado.
+
+### Los 706 ms eran una animacion (04/09/2026)
+
+Volver del visor a la biblioteca tardaba ~720 ms clavados; el mismo trabajo
+cambiando de pestaña, 11-22 ms. **Ninguna de las hipotesis era la buena**: ni
+contencion con SAF, ni el hilo principal ocupado, ni las cuentas por subcarpeta.
+
+**Lo resolvio partir el cronometro en dos.** Con la marca puesta al entrar en el
+cuerpo del efecto, el rastro del movil lo dijo en tres lineas:
+
+```
+carpeta: «raíz»                    00:30:11.114
+  (empieza a leer la carpeta)      00:30:11.820   ← 706 ms de espera
+  leída: 2 carpetas, 0 cómics      00:30:11.829   ← 9 ms de trabajo
+```
+
+**Nueve milisegundos de leer detras de setecientos de esperar.** Y en el mismo
+rastro, cambiando de pestaña, `(empieza a leer)` sale **en el mismo
+milisegundo** que `carpeta:`. Mismo codigo, cero espera.
+
+**LA CAUSA, Y ES UNA TRAMPA QUE VOLVERA A APARECER:**
+
+> `LocalLifecycleOwner` dentro de un NavHost **NO es la Activity: es la entrada
+> de la pila de navegacion de esa pantalla**. Una entrada que vuelve a estar
+> arriba se queda en STARTED **durante toda la animacion de transicion** y solo
+> llega a RESUMED cuando la animacion termina.
+
+`PantallaCarpeta` releia la carpeta dentro de un `LaunchedEffect` guardado por
+`enPrimerPlano()`, que exigia RESUMED. O sea que **la lectura estaba esperando a
+que acabara una animacion**, y por eso el numero salia tan constante: no era
+trabajo, era la duracion de la transicion.
+
+Se explica ademas por que solo pasaba volviendo del visor y no cambiando de
+pestaña: **las pestañas son un carrusel dentro de la MISMA entrada de
+navegacion**, asi que ahi no hay transicion que esperar.
+
+**El arreglo**: `enPrimerPlano(minimo: Lifecycle.State = RESUMED)`, y
+`PantallaCarpeta` pide STARTED. Va con parametro y **no cambiando el significado
+para todos**: los otros dos usos son para parar animaciones, y ahi RESUMED es lo
+correcto — mientras se transiciona no hace falta que nada se mueva.
+
+De paso, el observador **mira el estado en vez de acumular eventos**
+(`currentState.isAtLeast(minimo)`), asi vale igual para RESUMED que para STARTED
+sin mantener dos listas de eventos que se pueden desincronizar.
+
+**LA LECCION, que es de metodo y no de Android**: se sospecho de SAF, del hilo
+principal y de las cuentas por subcarpeta, y **las tres eran mentira**. Lo unico
+que sirvio fue **partir el intervalo en dos y medir cada mitad**. Cuando un
+numero sale sospechosamente constante —700, 706, 719, 725— no es trabajo: es una
+espera, y las esperas tienen una duracion fija que alguien decidio.
+
+Quedan dos marcas en el codigo hasta que el proximo rastro confirme el arreglo:
+`(empieza a leer la carpeta)` y la linea `LENTA` de `Escaner.abrir` (que **nunca
+llego a saltar**, porque leer siempre estuvo por debajo de sus 200 ms). La
+primera se quita en cuanto se vea el hueco cerrado; la segunda puede quedarse,
+que solo habla cuando algo va mal.
 
 ### Pendiente
 

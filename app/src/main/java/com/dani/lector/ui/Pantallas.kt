@@ -176,9 +176,19 @@ fun PantallaCarpeta(
         Rastro.apunta(ctxRastro, "carpeta: «${ruta.ifBlank { "raíz" }}»")
     }
 
-    val delante = enPrimerPlano()
+    // STARTED y no RESUMED: aqui interesa leer en cuanto la pantalla se ve, no
+    // cuando acaba la animacion de volver del visor. Ver enPrimerPlano.
+    val delante = enPrimerPlano(androidx.lifecycle.Lifecycle.State.STARTED)
     LaunchedEffect(docId, estado.catalogo, delante) {
         if (delante) {
+            // ESTA MARCA PARTE EL HUECO EN DOS. Volver del visor deja 720 ms
+            // entre "carpeta:" y "leída:", y el cronometro de dentro de
+            // Escaner.abrir NO salta (esta en 200 ms), o sea que la lectura no
+            // es lenta. Falta saber si el tiempo se va ANTES de entrar aqui
+            // —el cuerpo de un LaunchedEffect arranca en el hilo principal, y
+            // al volver del visor ese hilo esta recomponiendo media pantalla—
+            // o entre esta linea y la de abajo.
+            Rastro.apunta(ctxRastro, "  (empieza a leer la carpeta)")
             contenido = vm.abrirCarpeta(docId, ruta)
             Rastro.apunta(ctxRastro, "  leída: ${contenido?.carpetas?.size} carpetas, " +
                 "${contenido?.comics?.size} cómics")

@@ -202,19 +202,40 @@ fun Modifier.escaneo(): Modifier {
  * momento exacto en que puede haber ficheros nuevos, porque los has copiado
  * mientras estabas fuera. Nadie copia comics con el lector delante.
  */
+/**
+ * OJO CON QUIEN ES EL DUEÑO DEL CICLO DE VIDA, que costo 706 ms y un dia.
+ *
+ * `LocalLifecycleOwner` dentro de un NavHost **no es la Activity: es la entrada
+ * de la pila de navegacion de esa pantalla**. Y una entrada que vuelve a estar
+ * arriba se queda en STARTED durante TODA la animacion de transicion; solo llega
+ * a RESUMED cuando la animacion termina.
+ *
+ * Por eso [minimo]. Para parar animaciones, RESUMED es lo correcto: mientras se
+ * transiciona no hace falta que nada se mueva. Pero para VOLVER A LEER la
+ * carpeta, esperar a RESUMED significaba esperar a que acabara la animacion, y
+ * en el rastro del movil se veia clavado:
+ *
+ *     carpeta: «raíz»                    00:30:11.114
+ *       (empieza a leer la carpeta)      00:30:11.820   ← 706 ms de espera
+ *       leída: 2 carpetas, 0 cómics      00:30:11.829   ← 9 ms de trabajo
+ *
+ * Nueve milisegundos de leer detras de setecientos de esperar. Con STARTED la
+ * lectura arranca en cuanto la pantalla es visible, que es cuando ya tiene
+ * sentido.
+ *
+ * SE COMPRUEBA EL ESTADO Y NO SE ACUMULAN EVENTOS: asi vale igual para RESUMED
+ * (ON_RESUME / ON_PAUSE) que para STARTED (ON_START / ON_STOP) sin escribir dos
+ * listas de eventos que se pueden desincronizar.
+ */
 @Composable
-fun enPrimerPlano(): Boolean {
+fun enPrimerPlano(minimo: Lifecycle.State = Lifecycle.State.RESUMED): Boolean {
     val duenio = LocalLifecycleOwner.current
-    var delante by remember(duenio) {
-        mutableStateOf(duenio.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))
+    var delante by remember(duenio, minimo) {
+        mutableStateOf(duenio.lifecycle.currentState.isAtLeast(minimo))
     }
-    DisposableEffect(duenio) {
-        val ojo = LifecycleEventObserver { _, evento ->
-            when (evento) {
-                Lifecycle.Event.ON_RESUME -> delante = true
-                Lifecycle.Event.ON_PAUSE -> delante = false
-                else -> {}
-            }
+    DisposableEffect(duenio, minimo) {
+        val ojo = LifecycleEventObserver { fuente, _ ->
+            delante = fuente.lifecycle.currentState.isAtLeast(minimo)
         }
         duenio.lifecycle.addObserver(ojo)
         onDispose { duenio.lifecycle.removeObserver(ojo) }
