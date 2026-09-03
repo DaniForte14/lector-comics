@@ -3008,6 +3008,60 @@ Reparto: **16 ficheros en `app`, 29 en `shared`**. Y ya hay simetria en las
 carpetas de plataforma: `DiscoAndroid`/`DiscoIOS` y
 `AnimacionesAndroid`/`AnimacionesIOS`.
 
+### EL MAPA DE LO QUE FALTA PARA EL IPAD (04/09/2026)
+
+Escrito **cuando el analisis estaba fresco**, que es lo caro de rehacer. Al
+terminar la tanda 6b el reparto es: **29 ficheros en `:shared`, 16 en `:app`**, y
+lo que queda no es "mover mas ficheros": es escribir para iOS cosas que ahora
+mismo solo existen en Android.
+
+**EL ORDEN IMPORTA, Y NO ES EL QUE APETECE.** Apetece portar pantallas porque se
+ven; pero **la interfaz es lo ultimo que importa si la app no puede abrir un
+comic**. Hoy en iOS hay logica verificada y **cero acceso a ficheros**.
+
+**1. La tuberia de imagenes.** Hoy `Bitmap` esta en `ComicZip`, `Miniaturas`,
+`ColorPortada` y `Portada`. En la frontera comun tiene que ser `ImageBitmap`, que
+es de Compose y ya es multiplataforma. Ojo con dos cosas que ya se saben:
+`Miniaturas` **mide su cache por `byteCount`**, que `ImageBitmap` no tiene (se
+calcula con ancho × alto × 2 en RGB_565), y `ColorPortada.dominante` necesita un
+`Bitmap` de verdad, asi que se queda en Android detras de la frontera.
+
+**2. Leer un CBZ sin `java.util.zip`.** `ComicZip` usa `ZipInputStream`,
+`BitmapFactory`, `LruCache` y `contentResolver`: siete anclas. **Lo mas probable
+NO es portarlo, sino ponerle una interfaz delante** —como se hizo con `Disco` y
+con `FuenteComics`, que funcionaron las dos veces— y escribir la implementacion
+de iOS aparte. Esa interfaz **no se ha creado todavia a proposito**: solo la
+usaria el `Lector` comun, que aun no existe, y seria andamiaje.
+
+**3. `Escaner` en iOS.** No hay SAF. Hay `UIDocumentPicker` y marcadores con
+permiso (*security-scoped bookmarks*), que ademas hay que **guardar y volver a
+resolver** en cada arranque. Es la pieza mas distinta de todo el port.
+
+**4. `Lector.kt` (978 lineas), cinco anclas.** Pantalla completa y
+`KEEP_SCREEN_ON` (en iOS, `idleTimerDisabled` mas ocultar la barra); orientacion
+apaisada (facil: `BoxWithConstraints` y comparar ancho con alto); compartir
+pagina (`Intent.createChooser` → `UIActivityViewController`); **las teclas de
+volumen, que en iOS sencillamente no existen como concepto**; y la pagina, que es
+un `Bitmap`. **El visor ES la tuberia de imagenes**: aqui no hay costura por la
+que partir, como si la hubo en `Componentes`.
+
+**5. `Pantallas.kt` (2.151 lineas).** La mas grande y la menos acoplada de las
+dos. Va despues porque depende de `Portada`.
+
+**6. `iosApp/` de verdad**: proyecto de Xcode, `binaries.framework` en
+`:shared`, unas veinte lineas de Swift para el `@main`, y el workflow que genera
+el `.ipa`. Y ahi si haran falta el secret de Comic Vine y la firma.
+
+**LO QUE HAY QUE RECORDAR DE ESTA NOCHE**, aunque este arriba con mas detalle:
+
+- Un `commonMain` compilado solo para Android **no es codigo comun**. Cinco capas
+  de fallos lo demostraron y **ninguna se podia coger desde Windows**.
+- Si un tipo sale en la firma publica de `:shared`, la dependencia va con **`api`**
+  y no con `implementation`. Se tropezo dos veces con lo mismo.
+- **Partir un fichero por donde esta la dependencia sale mas barato que
+  arrastrarla.** `Portada` fuera de `Componentes` costo 44 lineas; llevarsela
+  habria costado `Miniaturas`, `ColorPortada` y trece llamadas.
+
 ### Pendiente
 
 - **Confirmar que la pantalla en negro se ha ido.** La causa está encontrada y
