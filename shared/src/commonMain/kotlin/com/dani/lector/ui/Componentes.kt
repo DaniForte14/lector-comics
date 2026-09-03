@@ -1,9 +1,11 @@
 package com.dani.lector.ui
 
 import android.graphics.Bitmap
-import android.provider.Settings
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.dani.lector.datos.Novedades
+import kotlinx.datetime.Clock
+import kotlinx.datetime.toLocalDateTime
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animate
@@ -29,7 +31,6 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.TileMode
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import kotlinx.coroutines.delay
 import androidx.compose.ui.graphics.Brush
@@ -251,15 +252,7 @@ fun enPrimerPlano(minimo: Lifecycle.State = Lifecycle.State.RESUMED): Boolean {
  * se recuerda: es un ajuste que no cambia mientras la pantalla esta abierta.
  */
 @Composable
-private fun hayAnimaciones(): Boolean {
-    val ctx = LocalContext.current
-    return remember(ctx) {
-        runCatching {
-            Settings.Global.getFloat(
-                ctx.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) != 0f
-        }.getOrDefault(true)
-    }
-}
+expect fun hayAnimaciones(): Boolean
 
 /**
  * Cabecera de pantalla: titulo grande al estilo de iOS.
@@ -351,7 +344,10 @@ fun CabeceraInicio(titulo: String, racha: Int) {
 
 /** Por hora local. Los cortes son los de siempre: 6, 13 y 21. */
 private fun saludo(): String {
-    val h = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+    // La zona de la app y no la del sistema, igual que todo lo que decide
+    // fechas aqui. Ver Novedades.ZONA. Y kotlinx-datetime, que java.util.Calendar
+    // no existe fuera de la JVM.
+    val h = Clock.System.now().toLocalDateTime(Novedades.ZONA).hour
     return when {
         h < 6 -> "Buenas noches"
         h < 13 -> "Buenos días"
@@ -423,50 +419,6 @@ fun Fila(
     }
 }
 
-@Composable
-fun Portada(
-    uri: String?,
-    modifier: Modifier = Modifier,
-    cargar: suspend (String) -> Bitmap?,
-    // Lo que ya esta en memoria, sin esperar. Por que hace falta las dos cosas:
-    // [cargar] suspende, y suspender significa saltar a otro hilo y volver, o
-    // sea uno o dos fotogramas con la carta en gris AUNQUE la portada estuviera
-    // hecha. Al bajar y volver a subir en la biblioteca eso es justo el tiron
-    // que se ve. Con esto la portada que ya esta puesta se pinta en el mismo
-    // fotograma y [cargar] solo entra cuando de verdad hay que ir a buscarla.
-    inmediato: (String) -> Bitmap? = { null },
-    // OJO: vacio va ANTES de encima. Si fuera el ultimo, la lambda final de
-    // todas las llamadas que ya hay se engancharia aqui y las marcas y chapas
-    // se pintarian solo cuando NO hay portada, que es justo al reves.
-    vacio: @Composable BoxScope.() -> Unit = {},
-    encima: @Composable BoxScope.() -> Unit = {}
-) {
-    val yaEsta = remember(uri) { uri?.let(inmediato) }
-    var bmp by remember(uri) { mutableStateOf(yaEsta) }
-    // Hace falta saber si ya se ha INTENTADO, no solo si hay bitmap: mientras
-    // carga tambien es null, y sin esto la carta diria "no se puede abrir"
-    // durante un instante en cada portada que tarde.
-    var intentado by remember(uri) { mutableStateOf(yaEsta != null) }
-    LaunchedEffect(uri) {
-        // Si ya estaba en memoria no se vuelve a pedir: seria una corrutina y
-        // un salto de hilo por cada carta que entra en pantalla, para nada.
-        if (yaEsta == null) {
-            bmp = uri?.let { cargar(it) }
-            intentado = true
-        }
-    }
-    Box(modifier.background(Panel)) {
-        val b = bmp
-        if (b != null) {
-            // remember: asImageBitmap envuelve el Bitmap en un objeto nuevo de
-            // Compose CADA vez que se llama. Es barato de uno en uno y caro
-            // multiplicado por las cartas de la rejilla y por los repintados.
-            val img = remember(b) { b.asImageBitmap() }
-            Image(img, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-        } else if (intentado) vacio()
-        encima()
-    }
-}
 
 /**
  * El corte de caratula de Apple: esquina redondeada y un filo claro encima.

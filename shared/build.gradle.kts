@@ -37,6 +37,11 @@ kotlin {
             implementation(compose.foundation)
             implementation(compose.material3)
             implementation(compose.ui)
+            // El ciclo de vida, en su version multiplataforma (la de JetBrains,
+            // no la de androidx). Lo necesita `enPrimerPlano`, que es lo que
+            // decide cuando se relee la carpeta y cuando se paran las
+            // animaciones. Ver la caceria de los 706 ms en CONTEXTO.
+            implementation("org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose:2.8.4")
 
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
 

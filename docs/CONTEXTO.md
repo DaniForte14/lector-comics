@@ -2972,6 +2972,42 @@ Reparto: `Tema.kt` (243 lineas) y `Colores.kt` fuera de `app`. Quedan
 `Pantallas.kt` (2.151), `Lector.kt` (978) y `Componentes.kt` (705), que son las
 que tocan `Bitmap`, `Uri` y las teclas de volumen.
 
+### Tanda 6b: `Componentes.kt` a comun, partido por su costura (04/09/2026)
+
+Cuatro anclas a Android en 705 lineas. Tres se resolvieron; la cuarta **no se
+toco a proposito**, y esa es la decision que merece estar escrita.
+
+- **`java.util.Calendar`** en `saludo()` → `Clock.System.now().toLocalDateTime(Novedades.ZONA).hour`.
+  De paso deja de usar la zona del sistema y usa la de la app, como todo lo demas
+  que decide fechas aqui.
+- **`Settings.Global.ANIMATOR_DURATION_SCALE`** en `hayAnimaciones()` →
+  `expect/actual`. En Apple el equivalente es **Reducir movimiento**
+  (`UIAccessibilityIsReduceMotionEnabled`), que va al reves —dice si hay que
+  REDUCIR— asi que se niega.
+- **`LocalLifecycleOwner`** en `enPrimerPlano()` → **no hizo falta expect/actual**.
+  Bastaba la version multiplataforma de JetBrains,
+  `org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose`. Era la duda que
+  mas preocupaba porque arrastraba el arreglo de los 706 ms a las dos
+  plataformas, y se quedo en una linea de dependencia.
+
+**Y LA CUARTA: `Portada` SE QUEDA EN ANDROID.** Es la unica funcion del fichero
+que habla de `Bitmap`, y llevarsela obligaba a cambiar el tipo a `ImageBitmap` en
+la misma tanda, y con el:
+
+- `Miniaturas`, que cachea `Bitmap` y **mide la cache por `byteCount`**, que
+  `ImageBitmap` no tiene
+- `ColorPortada`, que necesita un `Bitmap` de verdad para sacar el color dominante
+- y los **trece sitios** que llaman a `Portada`
+
+Asi que el fichero se partio por ahi: `Portada` a `ui/PortadaAndroid.kt` (44
+lineas) y el resto a comun. **Partir por donde estaba la dependencia sale mas
+barato que arrastrarla**, y la tuberia de imagenes se porta cuando le toque, sola
+y con su cache, en vez de de refilon dentro de otra tanda.
+
+Reparto: **16 ficheros en `app`, 29 en `shared`**. Y ya hay simetria en las
+carpetas de plataforma: `DiscoAndroid`/`DiscoIOS` y
+`AnimacionesAndroid`/`AnimacionesIOS`.
+
 ### Pendiente
 
 - **Confirmar que la pantalla en negro se ha ido.** La causa está encontrada y
