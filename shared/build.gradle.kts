@@ -27,41 +27,46 @@ kotlin {
     }
 
     sourceSets {
-        val commonMain by getting {
-            dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
-                // El cliente HTTP, con un motor distinto en cada plataforma.
-                // HttpURLConnection es de la JVM y no existe en Kotlin/Native.
-                implementation("io.ktor:ktor-client-core:3.0.3")
-                // Solo el runtime, SIN el plugin de serializacion: aqui no hay
-                // clases @Serializable, se recorre el JSON a mano igual que
-                // antes con org.json. Menos que aprender y menos que romper.
-                // api y no implementation, por lo mismo que kotlinx-datetime:
-                // los almacenes DEVUELVEN JsonObject/JsonArray en exportar().
-                api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
-                // Las fechas, para los dos lados. java.time no existe en
-                // Kotlin/Native, y todo lo que decide "que dia es hoy en España"
-                // es logica comun: no puede quedarse en el modulo de Android.
-                // api y no implementation: `Novedades` y `Calendario` DEVUELVEN LocalDate,
-                // asi que quien use :shared tiene que ver el tipo.
-                api("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
-            }
-        }
-        val androidMain by getting {
-            dependencies { implementation("io.ktor:ktor-client-okhttp:3.0.3") }
+        commonMain.dependencies {
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+
+            // El cliente HTTP, con un motor distinto en cada plataforma.
+            // HttpURLConnection es de la JVM y no existe en Kotlin/Native.
+            implementation("io.ktor:ktor-client-core:3.0.3")
+
+            // Solo el runtime, SIN el plugin de serializacion: aqui no hay
+            // clases @Serializable, se recorre el JSON a mano igual que antes
+            // con org.json. Menos que aprender y menos que romper.
+            //
+            // api y no implementation: los almacenes DEVUELVEN JsonObject y
+            // JsonArray en exportar(), asi que quien use :shared ve el tipo.
+            api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+
+            // Las fechas, para los dos lados. java.time no existe en
+            // Kotlin/Native, y todo lo que decide "que dia es hoy en España" es
+            // logica comun: no puede quedarse en el modulo de Android.
+            //
+            // api por lo mismo: Novedades y Calendario devuelven LocalDate.
+            api("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
         }
 
-        // El motor de iOS solo se puede resolver donde existe el target, o sea
-        // en un Mac. Misma regla que los targets de arriba.
+        androidMain.dependencies { implementation("io.ktor:ktor-client-okhttp:3.0.3") }
+
+        // ACCESORES (`commonMain.dependencies`) Y NO `val x by getting`.
+        //
+        // El CI lo dijo el 04/09/2026: "KotlinSourceSet with name 'iosMain' not
+        // found". `by getting` exige que el source set exista YA cuando se
+        // evalua este bloque, y los intermedios como iosMain los crea la
+        // jerarquia por defecto del plugin, que puede no haber pasado todavia.
+        // Los accesores son perezosos y se resuelven cuando toca.
+        //
+        // NO ERA UN AVISO MENOR: sin `iosMain`, DiscoIos.kt no se compilaba, o
+        // sea que el unico fichero escrito para iOS no lo miraba nadie.
         if (System.getProperty("os.name").startsWith("Mac")) {
-            val iosMain by getting {
-                dependencies { implementation("io.ktor:ktor-client-darwin:3.0.3") }
-            }
+            iosMain.dependencies { implementation("io.ktor:ktor-client-darwin:3.0.3") }
         }
 
-        val commonTest by getting {
-            dependencies { implementation(kotlin("test")) }
-        }
+        commonTest.dependencies { implementation(kotlin("test")) }
     }
 }
 
