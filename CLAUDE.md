@@ -145,8 +145,9 @@ datos/  Modelos, Parser, Escaner, Formatos, Busqueda, Progreso, Marcadores,
         SeriesRemotas, Novedades, Vigilante, Rastro, Orden, Salto, Siguiente,
         Exportar
 red/    FuenteComics (interfaz) + ComicVine (única implementación)
-ui/     Tema (tokens y el interruptor de estética), Componentes, Pantallas,
-        Lector
+ui/     Tema (tokens y el interruptor de estética), Componentes, Lector,
+        y una pantalla por fichero: PantallaBiblioteca, PantallaMarcadores,
+        PantallaEstadisticas, PantallaAjustes
 ```
 
 **Todo lo externo va detrás de una interfaz**, para poder cambiar de proveedor

@@ -262,7 +262,7 @@ Tres trampas que costaron:
   se ve peor: lo que no para deja de leerse como un efecto y pasa a ser ruido.
   Los dos respetan el ajuste de animaciones del sistema.
 - **Los degradados fijos son `val` de fichero, no se montan en el Composable**
-  (`VELO_CARTA` en `Pantallas.kt`, `RAYAS` en `Componentes.kt`). Un `Brush`
+  (`VELO_CARTA` en `PantallaBiblioteca.kt`, `RAYAS` en `Componentes.kt`). Un `Brush`
   guarda su shader dentro, así que uno nuevo por carta y por repintado es un
   shader nuevo por carta y por repintado. Se pueden sacar fuera **porque sus
   paradas van en fracciones**: si algún degradado nuevo necesita píxeles o el

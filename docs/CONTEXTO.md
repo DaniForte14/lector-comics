@@ -3051,8 +3051,9 @@ volumen, que en iOS sencillamente no existen como concepto**; y la pagina, que e
 un `Bitmap`. **El visor ES la tuberia de imagenes**: aqui no hay costura por la
 que partir, como si la hubo en `Componentes`.
 
-**5. `Pantallas.kt` (2.151 lineas).** La mas grande y la menos acoplada de las
-dos. Va despues porque depende de `Portada`.
+**5. Las cuatro pantallas** (2.151 lineas, hoy repartidas en `PantallaBiblioteca`,
+`PantallaEstadisticas`, `PantallaAjustes` y `PantallaMarcadores`). Lo mas grande
+y lo menos acoplado de los dos. Va despues porque depende de `Portada`.
 
 **EL APARATO ES UN IPAD AIR DE 4a GENERACION, CHIP A14**, y no da igual:
 
@@ -3159,9 +3160,56 @@ port**: 2.151 lineas en un fichero son dificiles de tocar de todas formas, con
 iPad o sin el. Es una tanda mecanica y verificable —compila o no compila— que
 deja cuatro ficheros donde hay uno.
 
+**HECHO el 04/09/2026**, ver "Tanda 8" mas abajo. Las lineas de la tabla de aqui
+arriba son las del fichero viejo; los sitios nuevos estan alli.
+
 Despues, cada pantalla se porta o se queda segun lo que lleve dentro. **Ajustes
 probablemente se queda en Android mucho tiempo**, y no pasa nada: es la pantalla
 que menos falta hace en el iPad.
+
+### Tanda 8: `Pantallas.kt` partido en cuatro (04/09/2026)
+
+2.158 lineas en un fichero, ahora **cuatro ficheros y una pantalla en cada uno**:
+
+| Fichero | Lineas | Que lleva |
+|---|---|---|
+| `ui/PantallaBiblioteca.kt` | 1.274 | `PantallaCarpeta`, el buscador, `TiraSerie` (la ficha de serie), `TarjetaComic`, `MenuComic` y sus 15 auxiliares |
+| `ui/PantallaEstadisticas.kt` | 498 | la pestaña de Lecturas: cifras, `CalendarioMes`, `DetalleDelDia`, la agenda y las series seguidas |
+| `ui/PantallaAjustes.kt` | 350 | Ajustes entera |
+| `ui/PantallaMarcadores.kt` | 92 | los marcapaginas |
+
+**MOVER Y NADA MAS: ni una linea de codigo cambia.** Se comprobo sin fiarse del
+ojo — se ordenan las lineas del fichero viejo y las de los cuatro nuevos, se
+quitan imports, `package` y lineas en blanco, y se comparan. **La unica
+diferencia son los dos separadores `═══ BIBLIOTECA ═══` / `═══ EL TODO ═══`, que
+sobran cuando el nombre del fichero ya lo dice, y el comentario de cabecera que
+cada fichero nuevo estrena.** El resto es identico caracter por caracter.
+
+**Por que salio limpio, y era lo que habia que mirar antes de cortar.** En este
+proyecto `private` a nivel de fichero es de FICHERO: si dos pantallas
+compartieran un auxiliar privado, partir las obliga a subirlo a `internal` o a
+duplicarlo. Se conto el uso de las 24 declaraciones privadas **antes de mover
+nada**, y **cada una la usa una sola pantalla**. Por eso el corte es mecanico:
+no hubo que cambiar la visibilidad de nada.
+
+`MenuComic` (publica) se va con Biblioteca, que es de donde se abre.
+
+**El unico tropiezo fue un import**, `androidx.compose.ui.graphics.Color`, que se
+quedo fuera de la cabecera de Biblioteca al repartirlos. Lo canto el compilador
+en el primer intento; cinco errores en cuatro sitios y una linea de arreglo.
+
+Verificado: `comprobar.py` con **PROBLEMAS: 0**, `:app:assembleDebug` en verde,
+`compileDebugKotlin` **sin un solo `w:`**, y las pruebas de los dos modulos
+relanzadas con `--rerun-tasks`, en verde. **`MainActivity` no se toco**: las
+cuatro pantallas siguen siendo publicas y en el mismo paquete `com.dani.lector.ui`.
+
+**Las anclas a Android de la tabla de arriba, con su sitio nuevo**: `LocalContext`
+en `PantallaBiblioteca.kt:167` y `:190`; el permiso de notificaciones en
+`PantallaBiblioteca.kt:1083-1108`; `BackHandler` en `PantallaEstadisticas.kt:78`;
+y el SAF de Ajustes en `PantallaAjustes.kt:44-56`. **El reparto para el port no
+cambia**, solo se lee mejor: Marcadores y Lecturas son casi Compose puro,
+Biblioteca lleva una atadura (el permiso) y Ajustes es la que se queda en
+Android.
 
 ### Pendiente
 
