@@ -36,6 +36,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dani.lector.VistaModelo
+import com.dani.lector.datos.Rastro
 import com.dani.lector.datos.*
 import kotlinx.coroutines.launch
 
@@ -1321,8 +1322,19 @@ fun PantallaEstadisticas(
     LaunchedEffect(estado.sello, estado.catalogo) { comics = vm.todosLosComics() }
 
     val lista = comics
+    // CRONOMETRADO A PROPOSITO. El disco ya no se toca aqui —VistaModelo
+    // precalienta los tres JSON al arrancar— pero esta cuenta recorre la
+    // biblioteca ENTERA y sigue corriendo en el hilo principal, dentro de la
+    // composicion. Si el rastro dice que son milisegundos, se queda asi; si
+    // dice decenas, esto se va a Dispatchers.Default y el spinner que ya hay
+    // debajo lo tapa. Ajustes > Diagnostico.
+    val ctxRastroEstad = LocalContext.current
     val r = remember(lista, estado.sello) {
-        lista?.let { Estadisticas.calcular(vm.marcas.todas(), it) }
+        val t0 = System.currentTimeMillis()
+        lista?.let { Estadisticas.calcular(vm.marcas.todas(), it) }?.also {
+            Rastro.apunta(ctxRastroEstad, "  estadísticas de ${lista.size} cómics en " +
+                "${System.currentTimeMillis() - t0} ms")
+        }
     }
 
     // POR DONDE VAS BAJANDO, igual que la pila de carpetas de la biblioteca:

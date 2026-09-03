@@ -154,7 +154,41 @@ ciertas y una falsa**:
 - `Rastro.apunta` **NO relee el fichero por miga** — solo poda al pasar de 36 KB.
   La sospecha era falsa.
 
-**Compila (`assembleDebug`) y las 138 pruebas pasan. SIN PROBAR EN EL MÓVIL.**
+**Y una pasada por el código entero**, que salió casi limpia: cuatro
+declaraciones muertas (`carpetaOriginales`, `RojoLector`, `AzuliOS`,
+`FormaMarca`), la lista de extensiones duplicada entre `ComicZip` y `Rar5`
+unificada, y el último aviso del compilador arreglado — **`compileDebugKotlin` ya
+no saca ni un `w:`**.
+
+Lo que sí era un fallo de verdad: **`marcarCarpeta` reescribía `progreso.json`
+entero una vez por cómic**, y `deshacerMarcado` igual. Arreglado en `Progreso`
+con `tanda { }`, no en los dos llamadores. Sin prueba automática: `Progreso`
+necesita `Context` y las trece pruebas del proyecto son de funciones puras.
+
+**Y el peso, medido**: el APK de debug son 25,5 MB y **15,8 son
+`lib7-Zip-JBinding.so`, el 62%**. Está ahí para convertir los CBR (RAR5 y RAR4
+grandes) y quitarlo es perder los CBR. Por el lado del tamaño **ya no queda nada
+barato**.
+
+**Compila (`assembleDebug`) y las 138 pruebas pasan.** Dani instaló ese build y
+**lo probó**: de ahí salió el aviso del tirón al pasar a Lecturas.
+
+### El tirón al entrar en Lecturas por primera vez
+
+`Progreso`, `Sesiones` y `SeriesRemotas` leían su JSON **la primera vez que
+alguien preguntaba**, y esa primera vez caía dentro de los `remember` de
+`PantallaEstadisticas`, o sea **en el hilo principal durante la composición**:
+tres ficheros parseados de golpe justo en la animación del carrusel.
+
+`VistaModelo.init` ahora llama a `precalentar()`, que los carga en
+`Dispatchers.IO` al arrancar. Y los cuatro almacenes cierran la carrera de caché
+con `return cache ?: m.also { cache = it }` — manda el que llegó primero, para
+que un precalentado lento no pise una marca recién escrita.
+
+**Queda medir, no adivinar**: `Estadisticas.calcular` sigue en el hilo principal.
+Lleva cronómetro. El rastro escribe `fichas precargadas en N ms` y
+`estadísticas de N cómics en N ms`; con esos dos números se decide si hace falta
+moverlo a `Dispatchers.Default`. **SIN PROBAR EN EL MÓVIL todavía.**
 
 Lo que **queda a medias, y a propósito**: el diagnóstico sobre `TarjetaComic` y
 `FilaResultado` ("nunca se pueden saltar" por recibir el ViewModel) sigue sin

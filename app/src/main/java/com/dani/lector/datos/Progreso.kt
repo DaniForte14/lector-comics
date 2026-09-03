@@ -33,8 +33,10 @@ class Progreso(private val ctx: Context) {
                 }
             }
         }
-        cache = m
-        return m
+        // Si otro hilo termino de cargar mientras este parseaba, manda el suyo:
+        // lo que ya este en la cache puede llevar cambios hechos entretanto, y
+        // pisarlo con esta copia recien leida del disco los perderia.
+        return cache ?: m.also { cache = it }
     }
 
     /**

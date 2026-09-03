@@ -76,7 +76,37 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
         get() = prefs.getString("raiz", null)
         private set(v) { prefs.edit { putString("raiz", v) } }
 
-    init { _estado.update { it.copy(hayCarpeta = raiz != null) } }
+    init {
+        _estado.update { it.copy(hayCarpeta = raiz != null) }
+        precalentar()
+    }
+
+    /**
+     * Leer los tres JSON ANTES de que los pida una pantalla.
+     *
+     * POR QUE. `Progreso`, `Sesiones` y `SeriesRemotas` cargan su fichero la
+     * primera vez que alguien les pregunta, y esa primera vez pasaba **dentro de
+     * un `remember` de la pestaña de Lecturas**, o sea en el hilo principal y en
+     * mitad de la composicion: al deslizar por primera vez de la biblioteca a
+     * Lecturas se leian y parseaban tres ficheros de golpe sin soltar la UI. Es
+     * el tiron que se nota al abrir la app y cambiar de pestaña.
+     *
+     * Aqui no se calcula nada ni se toca el estado: solo se deja la cache
+     * caliente para que la pantalla se la encuentre hecha. Va en `viewModelScope`
+     * y no en la corrutina de una pantalla, por la misma razon que el indice:
+     * salirse de la pantalla no debe cancelarlo.
+     *
+     * Y APUNTA LO QUE TARDA, que es la unica forma de saber si esto sobraba.
+     * Ajustes > Diagnostico.
+     */
+    private fun precalentar() {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val t0 = System.currentTimeMillis()
+            marcas.todas(); sesiones.todas(); seriesRemotas.todas()
+            Rastro.apunta(ctx, "  fichas precargadas en " +
+                "${System.currentTimeMillis() - t0} ms")
+        }
+    }
 
     /**
      * Todos los comics del arbol, cacheado.

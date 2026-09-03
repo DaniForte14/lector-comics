@@ -2349,6 +2349,51 @@ ejecutando.**
 `Progreso.importar` ya guardaba una sola vez al final, y `Marcadores`, `Sesiones`
 y `SeriesRemotas` no tienen ningun bucle que escriba por elemento. Se miraron.
 
+### El tiron al pasar por primera vez a Lecturas (03/09/2026)
+
+Dani, con el build de ese dia en el movil: **"cuando carga por primera vez, las
+transiciones de moverme de la biblioteca a las lecturas van con un poco de lag"**.
+
+**Causa, leida en el codigo y no adivinada.** `Progreso`, `Sesiones` y
+`SeriesRemotas` cargan su JSON **la primera vez que alguien les pregunta**, y esa
+primera vez ocurria dentro de los `remember` de `PantallaEstadisticas`:
+
+```
+val r = remember(...) { Estadisticas.calcular(vm.marcas.todas(), it) }
+val seguidas = remember(...) { vm.seriesSeguidas() }        // seriesRemotas.todas()
+val porDia = remember(...) { Calendario.porDia(vm.sesiones.todas(), ...) }
+```
+
+Un `remember` corre **en el hilo principal, en mitad de la composicion**. Asi que
+el primer deslizamiento a Lecturas leia y parseaba **tres ficheros de golpe** sin
+soltar la UI — y encima el `HorizontalPager` compone la pagina vecina mientras
+arrastras, asi que el tiron cae justo en la animacion.
+
+**Arreglado precalentando, no reescribiendo la pantalla.** `VistaModelo.init`
+llama a `precalentar()`, que en `viewModelScope` con `Dispatchers.IO` pide
+`marcas.todas()`, `sesiones.todas()` y `seriesRemotas.todas()`. No calcula nada ni
+toca el estado: deja la cache caliente para que la pantalla se la encuentre hecha.
+En `viewModelScope` y no en la corrutina de una pantalla, **por la misma razon que
+el indice**: salirse de la pantalla no debe cancelarlo.
+
+**Y de paso se cerro una carrera que el precalentado creaba.** Los cuatro
+almacenes hacian `cache = m; return m` al final de `cargar()`. Con dos hilos
+cargando a la vez, el que terminaba el ultimo pisaba la cache del otro — y si el
+primero ya habia escrito una marca en la suya, esa marca desaparecia de memoria
+(del fichero no, pero la pantalla mentia hasta recargar). Ahora es
+`return cache ?: m.also { cache = it }`: **manda el que llego primero**. Cuatro
+ficheros, una linea cada uno.
+
+**LO QUE FALTA POR MEDIR, y por eso lleva cronometro.** Quitado el disco, en el
+hilo principal queda todavia `Estadisticas.calcular`, que recorre la biblioteca
+entera. **No se ha tocado**: se ha instrumentado. El rastro escribe ahora dos
+lineas nuevas —`fichas precargadas en N ms` y `estadisticas de N cómics en N ms`—
+y con esos dos numeros se decide. Si son milisegundos, esto ya esta; si son
+decenas, el calculo se va a `Dispatchers.Default` y lo tapa el
+`CircularProgressIndicator` que la pantalla **ya tiene** para cuando `r == null`.
+Se instrumenta antes de mover nada porque es exactamente la regla que costo una
+tanda entera aprender.
+
 ### Pendiente
 
 - **Confirmar que la pantalla en negro se ha ido.** La causa está encontrada y
