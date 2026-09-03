@@ -216,10 +216,12 @@ tres ficheros parseados de golpe justo en la animación del carrusel.
 con `return cache ?: m.also { cache = it }` — manda el que llegó primero, para
 que un precalentado lento no pise una marca recién escrita.
 
-**Queda medir, no adivinar**: `Estadisticas.calcular` sigue en el hilo principal.
-Lleva cronómetro. El rastro escribe `fichas precargadas en N ms` y
-`estadísticas de N cómics en N ms`; con esos dos números se decide si hace falta
-moverlo a `Dispatchers.Default`. **SIN PROBAR EN EL MÓVIL todavía.**
+**Medido en el móvil, y ninguna sospecha era la buena.** `Estadisticas.calcular`:
+4-6 ms, no era. El precalentado: 23-66 ms, real pero pequeño. **El tirón de
+verdad eran 706 ms esperando a que acabara una animación**: `LocalLifecycleOwner`
+dentro de un NavHost es la entrada de navegación, no la Activity, y esa entrada
+no llega a RESUMED hasta que la transición termina. Con `enPrimerPlano(STARTED)`
+en `PantallaCarpeta`: **719 ms → 8 ms, confirmado en el móvil**.
 
 Lo que **queda a medias, y a propósito**: el diagnóstico sobre `TarjetaComic` y
 `FilaResultado` ("nunca se pueden saltar" por recibir el ViewModel) sigue sin

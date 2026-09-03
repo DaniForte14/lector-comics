@@ -2811,11 +2811,22 @@ que sirvio fue **partir el intervalo en dos y medir cada mitad**. Cuando un
 numero sale sospechosamente constante —700, 706, 719, 725— no es trabajo: es una
 espera, y las esperas tienen una duracion fija que alguien decidio.
 
-Quedan dos marcas en el codigo hasta que el proximo rastro confirme el arreglo:
-`(empieza a leer la carpeta)` y la linea `LENTA` de `Escaner.abrir` (que **nunca
-llego a saltar**, porque leer siempre estuvo por debajo de sus 200 ms). La
-primera se quita en cuanto se vea el hueco cerrado; la segunda puede quedarse,
-que solo habla cuando algo va mal.
+**CONFIRMADO EN EL MOVIL, en el mismo rastro que trae los dos builds.** Con el
+arreglo puesto, volviendo del visor:
+
+```
+carpeta: «raíz»                    00:34:04.834
+  (empieza a leer la carpeta)      00:34:04.834   ← el MISMO milisegundo
+  leída: 2 carpetas, 0 cómics      00:34:04.842   ← 8 ms en total
+```
+
+**719 ms → 8 ms**, y los cambios de pestaña siguen igual (0-13 ms), o sea que no
+se ha estropeado el camino que ya iba bien.
+
+La marca `(empieza a leer la carpeta)` se quita: ya dijo lo que tenia que decir.
+**Se queda la linea `LENTA` de `Escaner.abrir`**, que en toda esta caceria
+**nunca llego a saltar** —leer siempre estuvo por debajo de sus 200 ms— y por eso
+mismo vale la pena dejarla: solo habla cuando algo va mal de verdad.
 
 ### Pendiente
 
