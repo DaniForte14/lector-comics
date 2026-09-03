@@ -52,7 +52,12 @@ data class Estado(
 class VistaModelo(app: Application) : AndroidViewModel(app) {
 
     private val ctx get() = getApplication<Application>()
-    private val prefs get() = ctx.getSharedPreferences("lector", android.content.Context.MODE_PRIVATE)
+    // POR LAZY Y NO POR `get()`: con `get()` cada uno de los ~20 accesos a
+    // prefs de esta clase llamaba a getSharedPreferences, y algunos (orden) se
+    // leen dentro de la lista de la biblioteca, o sea por recomposicion.
+    private val prefs by lazy {
+        ctx.getSharedPreferences("lector", android.content.Context.MODE_PRIVATE)
+    }
 
     val marcas = Progreso(ctx)
     val marcadores = Marcadores(ctx)
@@ -855,11 +860,14 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
             // deshacer tiene que volver a quitar las que esto creo, no dejarlas
             // a cero, que es otra cosa distinta.
             val antes = comics.associate { it.uri to marcas.de(it.uri) }
-            comics.forEachIndexed { i, comic ->
-                if (leido) marcas.marcarTerminado(comic.uri, cuantasPaginas(comic.uri))
-                else marcas.olvidar(comic.uri)
-                _estado.update {
-                    it.copy(progreso = "Marcando ${i + 1} de ${comics.size}...")
+            // En tanda: si no, cada comic reescribe progreso.json entero.
+            marcas.tanda {
+                comics.forEachIndexed { i, comic ->
+                    if (leido) marcas.marcarTerminado(comic.uri, cuantasPaginas(comic.uri))
+                    else marcas.olvidar(comic.uri)
+                    _estado.update {
+                        it.copy(progreso = "Marcando ${i + 1} de ${comics.size}...")
+                    }
                 }
             }
             ofrecerDeshacer(antes,
@@ -913,7 +921,7 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
         vezDeshacer++
         _estado.update { it.copy(deshacer = "") }
         viewModelScope.launch(Dispatchers.IO) {
-            antes.forEach { (uri, marca) -> marcas.restaurar(uri, marca) }
+            marcas.tanda { antes.forEach { (uri, marca) -> marcas.restaurar(uri, marca) } }
             _estado.update { it.copy(sello = it.sello + 1) }
         }
     }

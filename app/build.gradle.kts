@@ -110,7 +110,6 @@ dependencies {
     // animaciones cuando la app deja de estar delante.
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
     implementation("androidx.navigation:navigation-compose:2.8.4")
-    implementation("androidx.documentfile:documentfile:1.0.1")
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     // El trabajo diario que mira si ha salido un numero de las series que

@@ -69,7 +69,12 @@ object ComicZip {
 
     private fun clavePagina(uri: String, nombre: String, ancho: Int) = "$uri|$nombre|$ancho"
 
-    private val EXT = setOf("jpg", "jpeg", "png", "webp", "gif", "bmp")
+    /**
+     * Que se considera una pagina. Publico porque Rar5 tenia su propia copia
+     * con un comentario que decia "igual que en ComicZip": dos listas que hay
+     * que acordarse de cambiar a la vez acaban no cambiandose a la vez.
+     */
+    val EXT = setOf("jpg", "jpeg", "png", "webp", "gif", "bmp")
 
     /**
      * Por que no ha salido la portada, en dos lineas y para una carta pequeña.

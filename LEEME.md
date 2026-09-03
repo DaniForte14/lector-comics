@@ -8,9 +8,8 @@ de lo que te falta de cada personaje.
 **Biblioteca.** Muestra tu árbol de carpetas tal como lo tengas organizado, en
 filas de portadas estilo catálogo. Tú organizas, la app enseña.
 
-**Lecturas.** Eliges un personaje y una *etapa* (New 52, Rebirth, Absolute
-Universe... o una edad, si la editorial no las etiqueta) y te lista sus series
-con cuántos números tiene cada una, para ir marcando lo que lees.
+**Lecturas.** Las series que sigues, con cuántos números tiene cada una y qué
+te falta, para ir marcando lo que lees. Y una agenda de lo que está por salir.
 
 **Lector.** Zoom, doble toque, modo página con giro 3D y modo tira, doble
 página al girar el móvil, recorte de bordes, teclas de volumen, zonas táctiles,
@@ -33,28 +32,26 @@ Copia `local.properties.ejemplo` a `local.properties` y rellena:
 
 ```
 comicvine.clave=...
-gemini.clave=...
-gemini.modelo=          # opcional, por defecto gemini-flash-latest
 ```
 
-Gradle las mete vía `BuildConfig`. También se pueden escribir en la pantalla de
+Gradle la mete vía `BuildConfig`. También se puede escribir en la pantalla de
 Ajustes; manda `local.properties`. **`local.properties` está en `.gitignore`.**
 
-**Las wikis de Marvel y DC no piden clave.** Y sin clave de Comic Vine o de
-Gemini la app sigue funcionando: la biblioteca y el lector van igual, solo se
-queda corto el TODO.
+Sin clave la app **sigue funcionando**: la biblioteca y el lector van igual, y
+lo único que se queda a oscuras es cuántos números tiene cada serie.
 
 ## De dónde salen los datos
 
 | Qué | De dónde | Clave |
 |---|---|---|
-| Qué series tiene un personaje, y su etapa | Wikis de Marvel y DC (MediaWiki) | no |
-| Cuántos números tiene cada serie | Comic Vine | sí |
-| Cuáles importan y por qué | Gemini | sí |
+| Qué volumen es cada carpeta | Comic Vine | sí |
+| Qué números tiene, y en qué fecha salieron | Comic Vine | sí |
 
-El reparto no es casual: **los datos, de la base de datos; el criterio, del
-modelo**. La lista se construye sobre series reales, así que el modelo no puede
-colar nada inventado. Está explicado en `CLAUDE.md`.
+**Una sola fuente, y solo cosas contables.** El 02/09/2026 se fueron Gemini y
+las wikis de Marvel y DC, que eran las dos únicas partes donde algo *opinaba*:
+un modelo se inventa cifras con total aplomo. De Comic Vine se saca lo que se
+puede contar y nada más, y **cada cifra de la pantalla dice de dónde sale**.
+Está explicado en `CLAUDE.md`.
 
 ## La estética
 
@@ -69,10 +66,11 @@ cambia color, forma y tipografía de la app entera.
 
 ## Lo que NO hace
 
-- **CBR con RAR5**: no se leen, a proposito. junrar lee RAR4 (que es lo que
-  genera todo el mundo) y la app detecta la firma del fichero: si algun dia
-  te cruzas con un RAR5, te lo dice con ese nombre en vez de dar un error
-  vago. Los CBZ y los CBR normales van.
+- **CBR sin convertir**: los RAR5 (y los RAR4 grandes) no se leen directamente.
+  junrar solo lee RAR4 y se traga el fichero entero en memoria, así que la app
+  detecta la firma y **convierte el cómic a CBZ en su caché** la primera vez que
+  lo abres; a partir de ahí va por el camino de siempre. Se nota una vez, en el
+  primer arranque de ese cómic. La caché se ve y se vacía desde Ajustes.
 - **Arcos sueltos** (por ejemplo Year One): el TODO va por series, y una
   historia dentro de una colección no tiene casilla propia. O la coges por su
   recopilatorio o no aparece.

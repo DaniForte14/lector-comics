@@ -37,7 +37,32 @@ class Progreso(private val ctx: Context) {
         return m
     }
 
+    /**
+     * Mientras dura una [tanda] no se escribe: se escribe una vez al final.
+     *
+     * POR QUE HACE FALTA. `marcar` guarda el fichero ENTERO cada vez, que es lo
+     * correcto para una marca suelta y es una barbaridad para treinta seguidas:
+     * marcar una carpeta reescribia progreso.json una vez por comic, y deshacer
+     * ese marcado, otra vez por comic.
+     *
+     * ponytail: bandera simple y no un lock. Las dos tandas que hay corren en
+     * el mismo `viewModelScope` con `Dispatchers.IO` y no se solapan; si algun
+     * dia se marcan dos carpetas a la vez, esto necesita un lock de verdad.
+     */
+    private var enTanda = false
+
+    fun <T> tanda(bloque: () -> T): T {
+        enTanda = true
+        try {
+            return bloque()
+        } finally {
+            enTanda = false
+            guardar()
+        }
+    }
+
     private fun guardar() {
+        if (enTanda) return
         val m = cache ?: return
         runCatching {
             val o = JSONObject()

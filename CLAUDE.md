@@ -137,7 +137,32 @@ MÓVIL** salvo donde se diga. Lo entregado ese día, por tandas:
 **Confirmado funcionando en el móvil**: la tanda 1 y 2, y la 3-4-5 compilan y
 arrancan (Dani las probó); la barra de progreso se subió 18 dp a petición suya.
 
-### Lo siguiente, y está a medias
+### La pasada de optimización: hecha la parte que no era adivinar (03/09/2026)
+
+Dani pidió **"más liviano, más rápido, sin perder ninguna funcionalidad"**. Las
+cuatro sospechas que había escritas se miraron una a una y salieron **tres
+ciertas y una falsa**:
+
+- `prefs` en `VistaModelo` era `get()`, o sea **una llamada a
+  `getSharedPreferences` por cada uno de los ~20 accesos** de la clase, y `orden`
+  se lee dentro de la lista de la biblioteca. Ahora es `by lazy`: **una línea, y
+  arregla los veinte sitios**, no solo el que se había apuntado.
+- `Novedades.hoy()` se llamaba suelta por fila en `Pantallas.kt:1009` y `:1712`.
+  Metida en `remember`.
+- `androidx.documentfile` era **dependencia muerta**: su única aparición era un
+  comentario diciendo que no se usa. Fuera.
+- `Rastro.apunta` **NO relee el fichero por miga** — solo poda al pasar de 36 KB.
+  La sospecha era falsa.
+
+**Compila (`assembleDebug`) y las 138 pruebas pasan. SIN PROBAR EN EL MÓVIL.**
+
+Lo que **queda a medias, y a propósito**: el diagnóstico sobre `TarjetaComic` y
+`FilaResultado` ("nunca se pueden saltar" por recibir el ViewModel) sigue sin
+recomprobar. Kotlin es 2.0.21, el *strong skipping* está activado por defecto, y
+puede que ya no sea verdad. **Eso se mide con el Layout Inspector, no se adivina**
+— es la regla que costó una tanda entera aprender.
+
+### Lo anterior, que ya está hecho
 
 Dani pidió una **pasada de optimización**: *"que sea más liviano, más rápido,
 sin perder ninguna funcionalidad, porque creo que no podemos meterle más
@@ -165,18 +190,19 @@ Layout Inspector (cuentas de recomposición) y el perfil de renderizado GPU.
 
 ### Pendientes de antes
 
-- **Correr los tests**: trece ficheros escritos y **ninguno ejecutado**. En el
-  entorno donde se escribieron solo había Java 11 y AGP pide 17, así que se
-  contrastaron reimplementando la lógica en Python. `./gradlew testDebugUnitTest`
-  es lo primero que hay que hacer con el IDE delante.
-- **`elegirVolumen` sigue sin pruebas** y es la deuda más cara: es la función
-  que impide que se cuele basura de Comic Vine. Las respuestas reales para
-  escribirlas están recogidas en `docs/CONTEXTO.md`.
+- ~~Correr los tests~~ **HECHO (03/09/2026)**: 126 pruebas, una en rojo, y el
+  fallo estaba **en la prueba** (`HuecosTest` esperaba dos "y" seguidas). Las
+  otras 125 pasaron a la primera.
+- ~~`elegirVolumen` sin pruebas~~ **HECHO**: `test/…/red/ElegirVolumenTest.kt`,
+  12 casos con los datos reales del 25/08/2026 — nombre exacto, editorial
+  mayoritaria, año exacto por delante del margen, margen de un año, dos años
+  fuera, sin año, a igualdad la de más números, y la normalización.
 - **Forzar el trabajo diario de notificaciones en el móvil** (Android Studio >
   App Inspection > Background Task Inspector). Hasta que no salte una
   notificación de verdad, es código que compila, no una función que funciona.
 - **Ver cuántos números traen `store_date`** de verdad, y si `DESFASE_ESPANA = 0`
   acierta.
-- **El proyecto NO está en git.** Cualquier tanda grande va sin red de
-  seguridad. En `_borrar_a_mano/` está el código amputado (orden de lectura y
-  el TODO por personaje): es la única copia que hay de todo eso.
+- ~~El proyecto NO está en git~~ **HECHO**: `git init` y commit `83b29d3`, 177
+  ficheros, sin remoto. `local.properties` queda fuera, lo cubre el `.gitignore`.
+  En `_borrar_a_mano/` sigue el código amputado (orden de lectura y el TODO por
+  personaje): ahora ya no es la única copia, pero tampoco está en el historial.

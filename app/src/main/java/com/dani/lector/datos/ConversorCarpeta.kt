@@ -465,19 +465,6 @@ object ConversorCarpeta {
         "(${t.javaClass.simpleName}); sigue ahí"
     }
 
-    /** La subcarpeta de originales de esta carpeta, creandola si no existe. */
-    private fun carpetaOriginales(
-        cr: android.content.ContentResolver,
-        treeUri: Uri,
-        padreId: String,
-        padreUri: Uri
-    ): Uri? {
-        buscarHijo(cr, treeUri, padreId, CARPETA_ORIGINALES, soloCarpetas = true)
-            ?.let { return it }
-        return DocumentsContract.createDocument(
-            cr, padreUri, DocumentsContract.Document.MIME_TYPE_DIR, CARPETA_ORIGINALES)
-    }
-
     /** Busca un hijo por nombre dentro de una carpeta. */
     private fun buscarHijo(
         cr: android.content.ContentResolver,

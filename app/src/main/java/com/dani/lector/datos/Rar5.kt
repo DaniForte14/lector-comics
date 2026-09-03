@@ -42,8 +42,8 @@ import java.util.zip.ZipOutputStream
  */
 object Rar5 {
 
-    /** Extensiones que se consideran pagina. Igual que en ComicZip. */
-    private val EXT = setOf("jpg", "jpeg", "png", "webp", "gif", "bmp")
+    /** Extensiones que se consideran pagina. La lista vive en ComicZip. */
+    private val EXT get() = ComicZip.EXT
 
     @Volatile private var iniciado = false
     @Volatile private var fallo: String? = null

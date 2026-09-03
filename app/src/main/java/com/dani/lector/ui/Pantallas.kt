@@ -1006,7 +1006,9 @@ private fun TiraSerie(
                 color = if (r.completa) Cian else Acento
             )
 
-            val hoy = Novedades.hoy()
+            // hoy() dentro de un remember: se pinta por fila, y sin el
+            // LocalDate.now se rehacia en cada recomposicion de cada una.
+            val hoy = remember { Novedades.hoy() }
             val proximo = remember(ficha.numeros) { Novedades.proximo(ficha.numeros, hoy) }
             if (r.enEmision) Text(
                 proximo?.let { Novedades.fraseProximo(it, hoy) } ?: "En emisión",
@@ -1709,7 +1711,7 @@ private fun FilaPrevista(p: Novedades.Prevista, hoy: java.time.LocalDate) {
  */
 @Composable
 private fun FilaSeguida(f: SeriesRemotas.Ficha, onDejar: () -> Unit) {
-    val hoy = Novedades.hoy()
+    val hoy = remember { Novedades.hoy() }
     val proximo = remember(f.numeros) { Novedades.proximo(f.numeros, hoy) }
     Row(
         Modifier.fillMaxWidth().padding(20.dp, 10.dp),

@@ -18,7 +18,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -468,7 +468,7 @@ private fun BarraInferior(
             // La marcada la dice el carrusel, no una constante: al deslizar
             // tiene que moverse sola, que es medio motivo de deslizar.
             Pestana("Biblioteca", Icons.Filled.Home, pagina == 0) { onIr(0) }
-            Pestana("Lecturas", Icons.Filled.List, pagina == 1) { onIr(1) }
+            Pestana("Lecturas", Icons.AutoMirrored.Filled.List, pagina == 1) { onIr(1) }
             Pestana("Ajustes", Icons.Filled.Settings, pagina == 2) { onIr(2) }
         }
     }

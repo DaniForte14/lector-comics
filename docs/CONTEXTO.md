@@ -2105,18 +2105,28 @@ veces escribe bien en disco pero la otra instancia sigue viendo su copia vieja.
 | `ExportarTest` | el nombre del fichero al guardar una página |
 | `AgendaTest` | qué sale próximamente: orden por fecha, sin fecha fuera, "mañana" / "en 3 días" |
 
-**Ninguno se ha ejecutado en este entorno** (Java 11 / AGP pide 17). Se han
-contrastado reimplementando la lógica aparte, en Python, y comparando. **La primera vez que se
-abra Android Studio hay que correr `./gradlew testDebugUnitTest`**, porque hasta
-entonces siguen siendo expectativas escritas a mano.
+**EJECUTADOS POR FIN el 03/09/2026**, con Java 17 en el entorno. `./gradlew
+testDebugUnitTest`: **126 pruebas, una en rojo**, y el fallo estaba en la prueba,
+no en el código — `HuecosTest` esperaba `"el 2, el 4 y el 6 y 2 tramos más"`, con
+dos "y" seguidas, y el código escribe `"el 2, el 4, el 6 y 2 tramos más"`, que es
+lo correcto y lo que confirman los otros dos casos de `texto`. Se corrigió la
+expectativa. **Las otras 125 pasaron a la primera**, así que el contraste en
+Python valió: eran expectativas escritas a mano y acertaron.
 
-**LO QUE SIGUE SIN PRUEBAS Y ES LA DEUDA MÁS CARA: `elegirVolumen`.** Es la
-función que impide que se cuele basura —el nombre exacto es lo que evita
-emparejar "Green Lantern" con "Green Lantern Corps Quarterly"— y **tocarla hoy
-es tocar sin red**. Las respuestas reales para escribir esas pruebas se
-recogieron el 25/08/2026 y están en la sección de Comic Vine de este documento.
-Tampoco tienen prueba `Wiki.interpretar`, `Wiki.interpretarIndice`, `Eras.de`,
-`Racha`, `Busqueda.de`, `Formatos.de` ni `Vinculador`.
+**LA DEUDA MÁS CARA, `elegirVolumen`, YA ESTÁ PAGADA (03/09/2026).**
+`app/src/test/java/com/dani/lector/red/ElegirVolumenTest.kt`, **12 casos, uno por
+regla y uno por cada borde que se conocía**: nombre exacto normalizado (que es lo
+que evita emparejar "Green Lantern" con "Green Lantern Corps Quarterly"),
+editorial mayoritaria con las ediciones de ECC / Panini / Planeta / Televisa /
+TM-Semic del caso real de `query=Green Lantern`, año exacto por delante del año
+de margen, el margen de un año, dos años ya fuera, un candidato sin año que no
+puede colarse por el margen, a igualdad la que más números tiene, y la
+normalización de mayúsculas, acentos y puntuación. Los candidatos salen de las
+respuestas reales del 25/08/2026 recogidas en la sección de Comic Vine de este
+documento, recortados a los cuatro campos que la función mira.
+
+Sigue **sin prueba** `Wiki.interpretar`, `Wiki.interpretarIndice`, `Eras.de`,
+`Racha`, `Busqueda.de`, `Formatos.de` y `Vinculador`.
 
 **Sin verificar**: todo el código de Compose, que solo se compila en Android
 Studio.
@@ -2245,20 +2255,108 @@ distinto a la misma cosa, y a veces ni siquiera es la misma cosa.**
   **Y ahora tienen una consecuencia nueva**: una serie sin vincular no entra en
   el orden de lectura. La pantalla las lista para que se vea cuáles faltan.
 
+### La pasada de rendimiento (03/09/2026): tres sospechas, dos ciertas
+
+Estaban escritas como **sospechas SIN VERIFICAR**. Se miraron una a una:
+
+- **`Rastro.apunta` — FALSA.** No relee el fichero por cada miga: solo poda
+  cuando pasa de `LINEAS * 120` bytes, unos 36 KB, y el resto de las veces es un
+  `appendText` y un `length()`. El comentario del propio fichero ya lo decía.
+  **La sospecha estaba mal escrita, el código estaba bien.**
+- **`VistaModelo.orden` — CIERTA, y la causa era otra.** El problema no era
+  `orden` sino `prefs`, que era `private val prefs get() = ctx.getSharedPreferences(...)`:
+  **una llamada por cada uno de los ~20 accesos a preferencias de la clase**, no
+  solo el de `orden`. Y `orden` sí se lee dentro de la lista de la biblioteca
+  (`Pantallas.kt:253`). Arreglado en la raíz con `by lazy`: una línea, y vale
+  para los veinte sitios en vez de para uno. **Es el caso de manual de "arregla
+  la función compartida, no cada llamador".**
+- **`Novedades.hoy()` por fila — CIERTA.** `Pantallas.kt:1009` (ficha de serie) y
+  `Pantallas.kt:1712` (`FilaSeguida`) llamaban a `LocalDate.now(ZONA)` sueltas
+  dentro del composable: una por fila y por recomposición. Metidas en un
+  `remember`.
+- **`androidx.documentfile` — CIERTA, dependencia muerta.** Su única aparición en
+  todo `app/src` era un comentario de `Escaner.kt` explicando que **no** se usa
+  (el escáner va con `ContentResolver` a pelo). Fuera de `build.gradle.kts`.
+
+**Lo que NO se ha tocado, a propósito.** El diagnóstico escrito sobre que
+`TarjetaComic` y `FilaResultado` "nunca se pueden saltar" por recibir el
+ViewModel sigue **sin recomprobar**: con Kotlin 2.0.21 el *strong skipping* está
+activado por defecto y puede que ya no sea verdad. Reescribirlas por si acaso es
+exactamente lo que la regla del proyecto prohíbe. **Eso se mide con el Layout
+Inspector delante, y hasta entonces no se toca.**
+
+### La pasada por el codigo entero (03/09/2026): que se quito y que NO
+
+Se barrio `app/src` entero buscando lo que sobra. **Salio muy poco, y eso es un
+dato**: 10.626 lineas y solo cuatro declaraciones muertas.
+
+- `ConversorCarpeta.carpetaOriginales` — 11 lineas, privada, **no la llamaba
+  nadie**. La constante `CARPETA_ORIGINALES` sí se usa (`Escaner` la ignora al
+  escanear), asi que se queda: lo muerto era la funcion, no la constante.
+- `Tema.RojoLector` y `Tema.AzuliOS` — el comentario decia literalmente "por si
+  se vuelve". Nadie los usaba. Ahora hay git: si se vuelve, se sacan de ahi.
+- `Tema.FormaMarca` — declarada y nunca usada.
+- La lista de extensiones de imagen estaba **duplicada** en `ComicZip` y en
+  `Rar5`, y el propio `Rar5` lo decia en un comentario ("igual que en
+  ComicZip"). Ahora vive en `ComicZip.EXT` y `Rar5` la lee de ahi.
+- El unico aviso del compilador que quedaba (`Icons.Filled.List`, obsoleto) esta
+  arreglado con la version `AutoMirrored`. **`compileDebugKotlin` no saca ni un
+  `w:`.**
+
+**El escaneo se puede repetir**: cuenta las apariciones de cada declaracion en
+todo `app/src` con los comentarios quitados, y lo que aparece una sola vez es su
+propia definicion. Ahora da cero.
+
+### De donde viene el peso del APK, medido (03/09/2026)
+
+APK de debug, **25,5 MB**, abierto y contado por dentro:
+
+| Qué | MB | |
+|---|---|---|
+| `lib/arm64-v8a/lib7-Zip-JBinding.so` | **15,81** | **62% del APK** |
+| `classes.dex` + los otros ocho dex | 9,3 | el codigo, Compose incluido |
+| `resources.arsc` y `res/` | 0,41 | |
+
+**El 62% del APK es el motor nativo de 7-Zip, y esta ahi para una sola cosa:
+convertir los CBR.** No se toca. `Rar5` no es un extra: `ComicZip` lo llama para
+los RAR5 **y para los RAR4 grandes**, que sin convertir cierran la app porque
+junrar se traga el fichero entero en memoria. Quitar la dependencia son 15,8 MB
+menos y **perder los CBR**, que es justo lo que Dani dijo que no.
+
+Se deja escrito para no volver a medirlo: **por el lado del tamaño ya no queda
+nada barato**. `abiFilters` ya esta en solo `arm64-v8a` y R8 con
+`isShrinkResources` en release. Lo unico que movería la aguja es un 7-Zip
+compilado con menos codecs, que es un proyecto entero, no una tanda.
+
+### Marcar una carpeta reescribia el fichero una vez por comic
+
+`Progreso.marcar` guarda **el JSON entero** cada vez. Es lo correcto para una
+marca suelta y una barbaridad para treinta seguidas: `marcarCarpeta` llamaba a
+`marcarTerminado` por comic, y `deshacerMarcado` a `restaurar` por comic, asi
+que una carpeta de treinta eran **treinta reescrituras del fichero completo**, y
+deshacerlo, otras treinta.
+
+Arreglado en `Progreso` **y no en los dos llamadores**: `tanda { }` levanta una
+bandera, `guardar()` no hace nada mientras dura, y al salir escribe una vez.
+Dos sitios envueltos, una sola escritura cada uno. Si mañana aparece un tercer
+bucle, se envuelve igual.
+
+**NO tiene prueba automatica**: `Progreso` necesita un `Context` para saber donde
+esta `filesDir`, y las trece pruebas del proyecto son de funciones puras. Meter
+Robolectric por esto seria mas dependencia que arreglo. **Comprobado leyendo, no
+ejecutando.**
+
+`Progreso.importar` ya guardaba una sola vez al final, y `Marcadores`, `Sesiones`
+y `SeriesRemotas` no tienen ningun bucle que escriba por elemento. Se miraron.
+
 ### Pendiente
 
 - **Confirmar que la pantalla en negro se ha ido.** La causa está encontrada y
   arreglada (ver más abajo), pero hasta que Dani no lo use un rato no está
   cerrado. Si vuelve, el rastro ahora incluye cuánto tarda el barrido del índice.
-- **Correr los tests en Android Studio.** Trece ficheros escritos y ninguno
-  ejecutado. Es lo primero de la próxima sesión con el IDE delante.
 - **Probar el deslizado en el móvil**, y en concreto lo que pasa **encima de un
   carrusel de portadas**: ahí el gesto se lo queda la fila hasta que llega a su
   tope. Está explicado arriba; falta ver si en la mano molesta o ni se nota.
-- **Escribir las pruebas de `elegirVolumen`** con las respuestas reales
-  recogidas el 25/08/2026. Sigue siendo la deuda más cara del proyecto: es la
-  función que impide que se cuele basura y ahora es, además, la única regla que
-  queda entre Comic Vine y la app.
 - **Comprobar el trabajo diario de verdad en el móvil.** Con Android Studio se
   fuerza desde `App Inspection > Background Task Inspector`, o con
   `adb shell cmd jobscheduler run -f com.dani.lector <id>`. Hasta que no salte
@@ -2293,11 +2391,18 @@ distinto a la misma cosa, y a veces ni siquiera es la misma cosa.**
 
 ### Higiene
 
-El proyecto **no está en git**. Se intentó desde el puente con el ordenador y no
-podía borrar ficheros, que es algo que git necesita constantemente. Ahora el
-puente **sí puede pedir permiso de borrado**, así que ya no está bloqueado:
-sigue pendiente porque nadie lo ha hecho, no porque no se pueda. Mientras tanto,
-**cualquier tanda grande va sin red de seguridad**.
+**El proyecto YA ESTÁ EN GIT (03/09/2026).** `git init` en la raíz del módulo y
+un primer commit, `83b29d3`, con 177 ficheros. **`local.properties` NO entró**:
+el `.gitignore` que ya había lo cubre, y solo se versiona `local.properties.ejemplo`.
+Sin remoto: es una red de seguridad local, no una copia fuera del ordenador.
+
+Al hacerlo, git avisa en bucle de `LF will be replaced by CRLF`. **Son avisos, no
+errores**: es la normalización de fin de línea de Windows. Se callan con
+`git config core.safecrlf false` si molestan.
+
+Queda por limpiar: en `~/Downloads` había **38 copias** del proyecto
+(`lector-comics-android`, `_1` … `_19`, cada una carpeta y zip). Eran los backups
+a mano que sustituye el repositorio.
 
 La basura quedó **toda junta en `_borrar_a_mano/`**, y desde el 02/09/2026 hay
 dos carpetas más ahí: `orden_de_lectura/` y `listas_y_todo/`, con el código

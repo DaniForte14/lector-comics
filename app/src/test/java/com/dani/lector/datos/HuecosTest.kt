@@ -89,6 +89,6 @@ class HuecosTest {
     @Test fun `con muchos huecos se resume`() {
         val e = Huecos.de(listOf(1, 3, 5, 7, 9, 11))
         assertEquals(5, e.faltan.size)
-        assertEquals("el 2, el 4 y el 6 y 2 tramos más", Huecos.texto(e))
+        assertEquals("el 2, el 4, el 6 y 2 tramos más", Huecos.texto(e))
     }
 }

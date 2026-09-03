@@ -69,10 +69,6 @@ val Cian      = if (cyber) Color(0xFF02D7F2) else Color(0xFF0A84FF)
 /** Alarma y destructivo. */
 val Alarma    = if (cyber) Color(0xFFFF003C) else Color(0xFFFF453A)
 
-/** El rojo original del proyecto y el azul de iOS, por si se vuelve. */
-val RojoLector = Color(0xFFE11D2E)
-val AzuliOS    = Color(0xFF0A84FF)
-
 // ─────────────────────────── FORMA ───────────────────────────
 //
 // Aqui esta media estetica y es lo que mas distingue a 2077 de cualquier otra
@@ -98,11 +94,6 @@ else RoundedCornerShape(10.dp)
 val FormaChapa: Shape = if (cyber)
     CutCornerShape(topStart = 0.dp, topEnd = 5.dp, bottomEnd = 0.dp, bottomStart = 5.dp)
 else RoundedCornerShape(6.dp)
-
-/** La marca de seleccion: cuadrada con chaflan, no un circulo. */
-val FormaMarca: Shape = if (cyber)
-    CutCornerShape(topStart = 0.dp, topEnd = 7.dp, bottomEnd = 0.dp, bottomStart = 7.dp)
-else RoundedCornerShape(11.dp)
 
 /** Grosor del filo de las caratulas: en cyberpunk se ve, en iOS casi no. */
 val FiloAncho = if (cyber) 1.dp else 0.5.dp
