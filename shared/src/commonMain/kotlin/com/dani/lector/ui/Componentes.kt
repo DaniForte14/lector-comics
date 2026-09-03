@@ -1,6 +1,5 @@
 package com.dani.lector.ui
 
-import android.graphics.Bitmap
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.dani.lector.datos.Novedades
@@ -36,7 +35,6 @@ import kotlinx.coroutines.delay
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp

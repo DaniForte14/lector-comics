@@ -74,5 +74,28 @@ for f in FUENTES:
     if llaves: print(f"{f}  LLAVES SIN CERRAR: {llaves}"); problemas += 1
     if parens: print(f"{f}  PARENTESIS SIN CERRAR: {parens}"); problemas += 1
 
+# ─────────────── QUE commonMain SEA DE VERDAD COMUN ───────────────
+#
+# POR QUE HACE FALTA ESTO. El target de Android de :shared tiene el SDK y la JVM
+# en el classpath, asi que `import android.graphics.Bitmap` dentro de commonMain
+# COMPILA SIN REJISTAR aqui y solo revienta en el runner de macOS, cinco minutos
+# despues y en otra maquina.
+#
+# Paso tres veces: toSortedSet, android.net.Uri.decode y dos imports huerfanos
+# que se quedaron al sacar Portada de Componentes. Las tres se podian haber visto
+# en un segundo, aqui.
+#
+# Solo mira los IMPORTS, que es lo barato y coge la mayoria. Lo que se cuela por
+# nombre completo (`java.util.Calendar.getInstance()`) sigue siendo cosa del CI.
+PROHIBIDO = ("import android.", "import java.", "import javax.", "import org.json.")
+
+for f in sorted(glob.glob("shared/src/commonMain/**/*.kt", recursive=True)
+                + glob.glob("shared/src/commonTest/**/*.kt", recursive=True)):
+    for n, cruda in enumerate(io.open(f, encoding="utf-8").read().splitlines(), 1):
+        s = cruda.strip()
+        if any(s.startswith(p) for p in PROHIBIDO):
+            print(f"{f}:{n}  NO ES COMUN: {s}")
+            problemas += 1
+
 print("PROBLEMAS:", problemas)
 sys.exit(1 if problemas else 0)

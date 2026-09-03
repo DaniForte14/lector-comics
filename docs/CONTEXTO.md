@@ -2990,6 +2990,12 @@ toco a proposito**, y esa es la decision que merece estar escrita.
   mas preocupaba porque arrastraba el arreglo de los 706 ms a las dos
   plataformas, y se quedo en una linea de dependencia.
 
+**Y AL SUBIRLO, EL CI CANTO DOS IMPORTS HUERFANOS** que se quedaron al sacar
+`Portada`: `android.graphics.Bitmap` y `asImageBitmap`, ya sin usar. Compilaban
+sin rechistar para Android —el target de Android de `:shared` tiene el SDK en el
+classpath— y solo reventaron en macOS. **De ahi salio la guarda de
+`comprobar.py`.**
+
 **Y LA CUARTA: `Portada` SE QUEDA EN ANDROID.** Es la unica funcion del fichero
 que habla de `Bitmap`, y llevarsela obligaba a cambiar el tipo a `ImageBitmap` en
 la misma tanda, y con el:
@@ -3056,6 +3062,11 @@ el `.ipa`. Y ahi si haran falta el secret de Comic Vine y la firma.
 
 - Un `commonMain` compilado solo para Android **no es codigo comun**. Cinco capas
   de fallos lo demostraron y **ninguna se podia coger desde Windows**.
+  **`comprobar.py` ya vigila esto**: mira los imports de `commonMain` y
+  `commonTest` y canta si aparece `android.`, `java.`, `javax.` u `org.json.`. Se
+  añadio tras la TERCERA vez que pasaba, y coge en un segundo lo que el CI tarda
+  cinco minutos y otra maquina en decir. Lo que se cuela por nombre completo
+  —`java.util.Calendar.getInstance()`— sigue siendo cosa del CI.
 - Si un tipo sale en la firma publica de `:shared`, la dependencia va con **`api`**
   y no con `implementation`. Se tropezo dos veces con lo mismo.
 - **Partir un fichero por donde esta la dependencia sale mas barato que
