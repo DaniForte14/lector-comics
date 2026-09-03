@@ -1,0 +1,16 @@
+# Copia este fichero como "local.properties" y rellena lo que uses.
+# local.properties esta en .gitignore: no se sube nunca.
+#
+# Android Studio anade solo la linea sdk.dir, no la toques.
+
+# Comic Vine (comicvine.gamespot.com/api). Si pones las dos fuentes, se usa
+# Metron y Comic Vine entra automaticamente si Metron falla.
+comicvine.clave=
+
+# Clave de Google AI Studio. Opcional: sin ella las etapas detectadas se
+# titulan con el nombre del guionista en vez de con su nombre real.
+gemini.clave=
+
+# Opcional. Si Google jubila el modelo y da 404, el error te dice cual poner.
+# Por defecto: gemini-flash-latest (alias que nunca caduca)
+gemini.modelo=

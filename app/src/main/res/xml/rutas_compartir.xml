@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lo UNICO que este provider presta: la carpeta "compartir" de la cache, donde
+  se escribe la pagina que estas mandando y nada mas. Se vacia en cada uso.
+
+  Acotado a esa carpeta a proposito y no a `cache-path` entera: ahi dentro estan
+  tambien los CBZ convertidos, que son comics completos. Un provider mas ancho
+  de lo necesario es como se presta sin querer lo que no se queria prestar.
+-->
+<paths>
+    <cache-path name="compartir" path="compartir/" />
+</paths>

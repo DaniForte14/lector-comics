@@ -1,0 +1,9 @@
+# NUNCA subir esto: lleva las claves de API
+local.properties
+
+.gradle/
+build/
+app/build/
+.idea/
+*.iml
+.DS_Store

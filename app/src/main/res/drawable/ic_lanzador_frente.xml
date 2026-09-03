@@ -1,0 +1,46 @@
+<!--
+  El icono de la app: un bocadillo de comic con el chaflan de 2077.
+
+  POR QUE UN BOCADILLO. Tiene que decir "comics" a 48 dp y sin texto. Un libro
+  vale para cualquier lector, unas gafas no dicen nada, y una portada concreta
+  ata el icono a una serie. El bocadillo solo significa una cosa.
+
+  POR QUE NEGRO SOBRE AMARILLO Y NO AL REVES: es la regla de la casa escrita en
+  LECTOR-COMICS-DISENO.md — "el amarillo acido como MANCHA, no como detalle, y
+  el texto encima va en negro". Ademas un fondo amarillo se ve en cualquier
+  fondo de pantalla; uno negro se funde con la mitad de ellos.
+
+  EL DIBUJO CABE EN LA ZONA SEGURA, Y ESO MANDA SOBRE EL TAMAÑO. Un icono
+  adaptativo es un lienzo de 108 y el lanzador lo recorta con la mascara que le
+  de la gana: circulo, cuadrado o gota. Lo unico garantizado es el CIRCULO
+  CENTRAL de 66 de diametro, o sea radio 33 desde el centro (54,54). Cada
+  esquina de este bocadillo esta dentro de ese radio —la mas lejana, la de
+  arriba a la izquierda, a 32,6— asi que ninguna mascara se lo come. La primera
+  version se salia por 8 unidades y en un lanzador redondo habria perdido una
+  esquina.
+
+  El chaflan va en la esquina de arriba a la derecha y la cola hace de esquina
+  cortada abajo a la izquierda: esquinas opuestas, como FormaTarjeta.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path
+        android:fillColor="#FF08070A"
+        android:pathData="M30,32 L66,32 L78,44 L78,64 L52,64 L38,78 L44,64 L30,64 Z" />
+
+    <!--
+      Los tres puntos del bocadillo, en el amarillo del fondo: leen como
+      "hay algo que leer aqui" y de paso rompen la mancha negra, que a
+      tamaño pequeño sin ellos parece un borron.
+    -->
+    <path android:fillColor="#FFFCEE0A"
+        android:pathData="M44,48 m-4.5,0 a4.5,4.5 0 1,0 9,0 a4.5,4.5 0 1,0 -9,0" />
+    <path android:fillColor="#FFFCEE0A"
+        android:pathData="M54,48 m-4.5,0 a4.5,4.5 0 1,0 9,0 a4.5,4.5 0 1,0 -9,0" />
+    <path android:fillColor="#FFFCEE0A"
+        android:pathData="M64,48 m-4.5,0 a4.5,4.5 0 1,0 9,0 a4.5,4.5 0 1,0 -9,0" />
+</vector>

@@ -1,0 +1,20 @@
+<!--
+  El icono de la notificacion.
+
+  Tiene que ser MONOCROMO y con transparencia: Android le aplica su propia
+  mascara y su propio color, asi que cualquier dibujo a color sale como un
+  cuadrado blanco. Por eso no vale un android.R.drawable cualquiera ni el icono
+  de la app.
+
+  Un marcapaginas y no una campana: lo que avisa es que hay algo que leer.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="#FFFFFF">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M17,3H7A2,2 0 0,0 5,5V21L12,18L19,21V5A2,2 0 0,0 17,3Z" />
+</vector>

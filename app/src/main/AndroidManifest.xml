@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!--
+      Desde Android 13 las notificaciones se piden en marcha, no basta con
+      declararlas. La app la pide en el momento en que le das a seguir una
+      serie, que es cuando se entiende para que sirve: pedirla al arrancar es
+      como se consigue que la gente diga que no.
+    -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application
+        android:name=".LectorApp"
+        android:allowBackup="true"
+        android:label="Lector"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Lector">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!--
+              ABRIR UN CBZ DESDE OTRA APP.
+
+              Dos filtros y hacen falta los dos. El primero es el limpio: los
+              tipos MIME propios del comic, que es lo que manda una app que sabe
+              lo que tiene entre manos. El segundo es el que de verdad funciona
+              casi siempre, porque el gestor de ficheros de turno suele decir
+              "application/octet-stream" y ahi lo unico que queda es mirar como
+              termina el nombre.
+
+              Los pathPattern repetidos con ".*\\..*" no son un copia y pega
+              mal hecho: el comodin de Android es GLOTON y ".*\\.cbz" no casa
+              con una ruta que ya lleve un punto antes. Es el apaño conocido, y
+              con tres niveles cubre "Batman Vol.3 #01.cbz".
+
+              NO se declara "application/zip": haria que el lector saliera en el
+              "abrir con" de CUALQUIER zip del movil, y eso es peor que tener
+              que elegir a mano el raro que se escape.
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:mimeType="application/vnd.comicbook+zip" />
+                <data android:mimeType="application/vnd.comicbook-rar" />
+                <data android:mimeType="application/x-cbz" />
+                <data android:mimeType="application/x-cbr" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:mimeType="*/*" />
+                <data android:pathPattern=".*\\.cbz" />
+                <data android:pathPattern=".*\\..*\\.cbz" />
+                <data android:pathPattern=".*\\..*\\..*\\.cbz" />
+                <data android:pathPattern=".*\\.cbr" />
+                <data android:pathPattern=".*\\..*\\.cbr" />
+                <data android:pathPattern=".*\\..*\\..*\\.cbr" />
+            </intent-filter>
+        </activity>
+
+        <!--
+          Para "compartir esta pagina". Android no deja mandarle a otra app un
+          fichero de la tuya a pelo (file:// da FileUriExposedException desde
+          Android 7): hay que prestarlo con un provider y un permiso temporal.
+
+          La autoridad lleva el packageName delante porque tiene que ser UNICA
+          en todo el movil: dos apps con la misma autoridad y la segunda no
+          instala.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.ficheros"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/rutas_compartir" />
+        </provider>
+    </application>
+</manifest>

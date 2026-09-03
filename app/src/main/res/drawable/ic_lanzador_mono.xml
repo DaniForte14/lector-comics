@@ -1,0 +1,15 @@
+<!--
+  La version de un solo color, para los iconos con tema de Android 13: el
+  sistema la recolorea con la paleta del fondo de pantalla. Es el MISMO
+  bocadillo pero macizo, sin los puntos: al recolorear todo del mismo color, los
+  puntos desaparecerian y quedaria una silueta con agujeros invisibles.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M30,32 L66,32 L78,44 L78,64 L52,64 L38,78 L44,64 L30,64 Z" />
+</vector>

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- El amarillo acido de 2077, el mismo que Acento en Tema.kt. -->
+    <color name="lanzador_fondo">#FCEE0A</color>
+</resources>
