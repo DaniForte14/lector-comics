@@ -2394,6 +2394,370 @@ decenas, el calculo se va a `Dispatchers.Default` y lo tapa el
 Se instrumenta antes de mover nada porque es exactamente la regla que costo una
 tanda entera aprender.
 
+### Lo que dijo el rastro del movil (03/09/2026, 18:06) — MEDIDO
+
+Se instrumento, se instalo, y Dani pego el rastro. **Los numeros mataron la
+sospecha principal y sacaron tres cosas que nadie estaba mirando.**
+
+```
+18:06:32.932    fichas precargadas en 37 ms
+18:06:33.322    índice: 293 cómics en 332 ms
+18:06:38.990    estadísticas de 293 cómics en 5 ms
+```
+
+- **`Estadisticas.calcular`: 4-6 ms con 293 comics.** Era la sospechosa y **no
+  era**. Se quita el cronometro y se queda donde esta: moverla a
+  `Dispatchers.Default` seria pagar un salto de hilo por cinco milisegundos.
+- **El precalentado: 37 ms.** Eso es lo que se le quito al hilo principal. Real,
+  pero no es el tiron que Dani nota.
+- **El indice: 253-495 ms** en cada arranque, y a veces **dos veces por sesion**.
+
+**LA PETADA, que estaba en el rastro dos veces y nadie habia mirado.**
+
+```
+!!! PETADA en main: java.lang.IllegalArgumentException:
+Key "DC Comics/Green lantern/Absolute green lantern" was already used.
+```
+
+`PantallaEstadisticas` tiene **dos `items()` en el MISMO `LazyColumn`** —las
+series que sigues y el nivel que estas navegando— **y los dos iban con
+`key = { it.ruta }`**. Un LazyColumn comparte espacio de claves entre todos sus
+`items`, asi que una serie **seguida** que ademas aparezca en el nivel actual
+repite clave y Compose cierra la app. Paso las dos veces igual: entrar en
+"Absolute green lantern", que Dani sigue, y luego pasar a Lecturas. Arreglado
+poniendo prefijo a las claves (`"seguida:"` y `"nivel:"`), que es lo unico que
+hacia falta: las rutas ya eran unicas **dentro** de cada lista.
+
+**LA BARRA FLOTANTE NO SE COMIA EL TOQUE.** Dani: *"cuando le doy a la barra de
+abajo para moverme a las lecturas o ajustes, siempre doy sin querer a algun
+comic"*. La pildora pinta fondo, chaflan y filo, pero **solo las tres `Pestana`
+atendian punteros**: el relleno de 4 dp, los huecos del `SpaceEvenly` y el filo
+dejaban pasar el toque a la lista de debajo. Un
+`pointerInput(Unit) { detectTapGestures { } }` en el `Row` los absorbe. Se usa
+eso y no `clickable` **a proposito**: `clickable` añadiria semantica de boton a
+un contenedor que no lo es, y lo leeria TalkBack.
+
+**EL INDICE CONSULTABA CADA CARPETA DOS VECES.** `todosBajo` recorre el arbol
+llamando a `Escaner.abrir` en cada carpeta, y `abrir` llama a `contar` por cada
+subcarpeta para el rotulo de su fila. Recorriendo entero, **cada carpeta se
+consultaba una vez como `contar` desde su padre y otra como `abrir` al
+visitarla**, y las cuentas de esa segunda vuelta se tiraban: `todosBajo` solo usa
+`comics` y `carpetas`. Ahora `abrir` lleva `conCuentas`, y el recorrido va con
+`false`. **Quien navega sigue viendo las cuentas**, que es donde se ven.
+
+**SIN EXPLICAR TODAVIA, y es lo siguiente que hay que medir.** Volver a la
+biblioteca desde el visor tarda **~720 ms** de forma sospechosamente constante:
+
+```
+02:08:22.937  pantalla: inicio
+02:08:22.977  carpeta: «raíz»
+02:08:23.694    leída: 2 carpetas, 0 cómics     ← 717 ms
+```
+
+y esa misma lectura al arrancar tarda **20-60 ms**. Es la MISMA carpeta y el
+MISMO trabajo: dos carpetas y ningun comic. `Escaner.abrir` ya corre en
+`Dispatchers.IO`, asi que no es el hilo principal. Lo que se ve constante entre
+700 y 725 ms **huele a espera fija, no a trabajo**. Hipotesis sin comprobar:
+contencion con SAF cuando algo mas esta recorriendo el arbol a la vez.
+
+**INSTRUMENTADO, a la espera del rastro.** `Escaner.abrir` lleva el cronometro
+partido y apunta **solo si pasa de `LENTO_MS` (200 ms)**, para no ensuciar el
+rastro navegando:
+
+```
+LENTA «raíz»: 717 ms (cursor 12, contar 4, 2 subcarpetas, 0 cómics)
+```
+
+Y el indice apunta ahora tambien cuando **empieza**, no solo cuando acaba, que es
+lo que permite ver si la lectura lenta cae DENTRO de un recorrido del arbol.
+
+**Como se lee el resultado**, decidido antes de mirarlo para no contarse un
+cuento con el numero delante:
+
+- `cursor` alto → la consulta a SAF es lenta de verdad. La carpeta se lee una
+  sola vez, asi que no hay nada que quitar: tocaria cachear el contenido.
+- `contar` alto → lo caro son las cuentas por subcarpeta. Se calculan solo para
+  el rotulo de cada fila, asi que se pueden diferir o cachear.
+- **`cursor` y `contar` bajos pero `total` alto** → no es trabajo, es **espera**.
+  Confirma la contencion, y el arreglo va en quien reserva SAF, no aqui.
+- Si la linea `LENTA` **no sale** y el hueco sigue estando en el rastro, entonces
+  los 720 ms no estan dentro de `abrir` y hay que buscar en el `LaunchedEffect`
+  que la llama.
+
+### La version de iPad: por que KMP y no Flutter (03/09/2026)
+
+Dani trajo un PDF de una conversacion con Gemini sobre programar iOS desde
+Linux/Windows. **Su recomendacion principal era Flutter, y para esta app estaba
+mal**, pero no por culpa del que respondia: la conversacion **termina preguntando
+si la app usa Jetpack Compose o XML, y nunca se contesto**. Usa Compose al 100%.
+Con ese dato la respuesta cambia: **Compose Multiplatform reaprovecha el codigo;
+Flutter significaria tirar 10.626 lineas y aprender Dart**.
+
+**Lo que se midio antes de decidir nada**, contando imports de Android por
+fichero:
+
+| | Lineas | Que hay que hacer |
+|---|---|---|
+| Porta tal cual | ~1.100 | Huecos, Parser, Racha, Estadisticas, Orden, Siguiente, Formatos, Busqueda, EstadoSerie, Salto, Modelos, Tema, `elegirVolumen` con sus pruebas |
+| Porta con cambio mecanico | ~1.600 | `Novedades`/`Calendario` (`java.time` → kotlinx-datetime), `ComicVine` (`HttpURLConnection` → Ktor), los cuatro almacenes JSON |
+| UI, porta con cirugia | ~3.800 | `Pantallas`, `Lector`, `Componentes`: Compose compila, pero tocan `Bitmap`, `Uri` y las teclas de volumen |
+| Hay que reimplementar | ~2.500 | `Escaner` (SAF no existe en iOS), `ComicZip`+`Rar5`+`ConversorCarpeta`, `Miniaturas`/`ColorPortada`, `Vigilante` |
+
+**DOS COSAS QUE EL PDF NO DICE Y SON LAS QUE DUELEN.** La primera: **junrar es
+Java y 7-Zip-JBinding es JVM mas una libreria nativa**, y ninguno corre en
+Kotlin/Native. Dani quiere en iOS el mismo trato que en Android —lee CBZ, y un
+CBR que entre se convierte a CBZ—, asi que **iOS necesita su propio motor RAR**.
+Lo salva la arquitectura que ya hay: `Formatos` detecta, `Rar5.aCbz` convierte y
+`ComicZip` lee, o sea que **solo se sustituye la pieza de convertir**, no el
+camino. La segunda: **desde Windows no se puede compilar iOS**, asi que esa pieza
+en concreto se verifica en el CI o no se verifica.
+
+**Tanda 1, HECHA Y VERIFICADA.** Se creo `:shared` y se movieron **sin tocar una
+sola linea** los diez ficheros con cero dependencias: `Huecos`, `EstadoSerie`,
+`Salto`, `Orden`, `Siguiente`, `Formatos`, `Modelos`, `Busqueda`, `Parser` y
+`red/FuenteComics` (con `elegirVolumen`), mas sus **siete ficheros de prueba**,
+que pasan a `commonTest` con `kotlin.test` en vez de JUnit. `git mv`, asi que el
+historial de cada fichero sigue entero.
+
+**Se movio tambien `Marca`**, que vivia dentro de `Progreso.kt`. `Progreso`
+necesita `Context` para saber donde escribir; **la marca en si son tres numeros y
+dos cuentas** y la usan `Siguiente`, `EstadoSerie` y `Estadisticas`, que son
+comunes. Quien la guarda es de cada plataforma; lo que guarda, de los dos.
+
+**Se quedaron fuera a proposito `Racha` y `Estadisticas`**, y por una linea cada
+uno: `java.util.TimeZone` y `System.currentTimeMillis()`. Entran en la tanda 2
+con kotlinx-datetime. **No se mezcla un cambio de dependencia con un movimiento
+de ficheros**: si algo se rompe, que se sepa cual de las dos cosas fue.
+
+Verificado: `:shared:build`, `:app:assembleDebug` y las pruebas de los dos
+modulos en verde, y comprobado con un filtro `--tests` a una clase inexistente
+que las pruebas movidas **se ejecutan de verdad** y no es que no fallen.
+
+### Tanda 2 del port: las fechas pasan a kotlinx-datetime (03/09/2026)
+
+**Por que entera y no a medias.** El plan era mover solo `Racha` y
+`Estadisticas`, que era lo minimo. No se pudo: `Novedades` y `Calendario`
+**devuelven `LocalDate` a la interfaz**, asi que dejarlos en Android habria
+dejado **dos librerias de fecha conviviendo** —`java.time` en la pantalla y
+kotlinx en la logica— con conversiones en la frontera. Peor que hacerlo entero.
+La red de seguridad para hacerlo de golpe existia: **cinco ficheros de prueba de
+fechas** (`Novedades`, `Calendario`, `Agenda`, `Estadisticas` y las de `Racha`).
+
+**Movidos a `:shared`**: `Novedades`, `Calendario`, `Racha`, `Estadisticas` y sus
+cuatro ficheros de prueba.
+
+**Las traducciones que NO son obvias**, apuntadas porque se van a volver a
+necesitar:
+
+| java.time | kotlinx-datetime |
+|---|---|
+| `ZoneId.of("Europe/Madrid")` | `TimeZone.of("Europe/Madrid")` |
+| `LocalDate.now(ZONA)` | `Clock.System.todayIn(ZONA)` |
+| `a.isAfter(b)` / `isBefore` | `a > b` / `a < b` (LocalDate es Comparable) |
+| `plusDays(n)` / `minusDays(n)` | `plus/minus(DatePeriod(days = n))`, **y es funcion de extension: hay que importarla** |
+| `ChronoUnit.DAYS.between(a, b)` | `a.daysUntil(b)` — **devuelve Int, no Long** |
+| `.monthValue` | `.monthNumber` |
+| `dayOfWeek.value` | `dayOfWeek.isoDayNumber` |
+| `Instant.ofEpochMilli(t).atZone(z).toLocalDate()` | `Instant.fromEpochMilliseconds(t).toLocalDateTime(z).date` |
+| `primero.lengthOfMonth()` | **no existe**: `primero.plus(1 mes).minus(1 dia).dayOfMonth` |
+| `fecha.format(ISO_LOCAL_DATE)` | `fecha.toString()`, que ya es ISO-8601 |
+| `YearMonth` | **no existe**: un `LocalDate` al dia 1 |
+
+**`String.format` tampoco existe en Kotlin/Native.** `Calendario.clave` construia
+"2026-09-03" con `"%04d-%02d-%02d".format(...)`; ahora rellena con `padStart`. No
+es cosmetico: **esa cadena es la clave con la que el calendario encuentra lo
+leido**, y si un dia saliera "2026-9-3" no daria ningun error, simplemente no
+encontraria nada.
+
+**Tres clases mas tuvieron que salir de su fichero**, y las tres por el mismo
+motivo: eran datos puros atrapados dentro de una clase que necesita `Context`.
+
+- `Marca`, de `Progreso.kt`
+- `Sesion`, de `Sesiones.kt`
+- `Ficha`, que estaba **anidada** dentro de `SeriesRemotas`. Kotlin no deja poner
+  un alias de tipo dentro de una clase, asi que pasa a primer nivel y el nombre
+  cambia de `SeriesRemotas.Ficha` a `Ficha`. Siete referencias en cuatro
+  ficheros.
+
+**Es un patron, no tres casualidades**: el dato quiere ser comun y el almacen es
+de cada plataforma. Cuando la tanda 4 mueva los cuatro almacenes JSON, esto ya
+esta hecho.
+
+**Y la dependencia va como `api`, no `implementation`.** `Novedades` y
+`Calendario` **devuelven** `LocalDate`, asi que quien use `:shared` tiene que ver
+el tipo. Con `implementation` compilaba `:shared` y fallaba `:app` con
+"Cannot access class kotlinx.datetime.LocalDate", que no dice en absoluto que el
+problema sea el alcance de la dependencia.
+
+Verificado: `:shared:build`, `:app:assembleDebug` y las pruebas en verde, y cada
+clase de prueba de fechas lanzada **por separado** con `--tests` para ver que se
+ejecuta y no que no falla.
+
+### Tanda 3 del port: Comic Vine pasa a Ktor (03/09/2026)
+
+`ComicVine` se muda a `:shared`. Era el candidato natural: **ya estaba detras de
+la interfaz `FuenteComics`**, que se escribio justo para poder cambiar de
+proveedor tocando una linea, y ha servido para cambiar de *transporte*.
+
+**Lo que habia que sustituir**: `HttpURLConnection`, `URLEncoder` y `org.json`
+son de la JVM y no existen en Kotlin/Native.
+
+**No se han hecho clases `@Serializable`, y es deliberado.** Se escribio
+`PuenteJson.kt`, cuatro funciones de extension —`optString`, `optInt`,
+`optJSONArray`, `optJSONObject`— con **los mismos nombres que las de org.json**,
+sobre `kotlinx.serialization.json`. Dos motivos:
+
+1. La respuesta de Comic Vine es un objeto enorme del que la app usa seis campos,
+   cambia sin avisar y trae campos ausentes o a null segun el volumen. Con clases
+   declaradas, **un campo inesperado tira el parseo entero**; leyendo a mano, lo
+   que no esta simplemente no esta.
+2. Manteniendo los nombres, **el codigo que interpreta la respuesta se queda
+   igual letra por letra**. Si algo se rompe en el port, no fue en la
+   interpretacion.
+
+Tampoco hace falta el plugin de serializacion: solo el runtime.
+
+**Se fue `withContext(Dispatchers.IO)`.** Estaba para no bloquear el hilo con
+`HttpURLConnection`; **Ktor suspende en vez de bloquear**, asi que sobra. Queda
+un `conRed { }` que no cambia de hilo y solo existe para que los `return@` de
+dentro tengan a donde volver, o sea para no reescribir el cuerpo de los metodos.
+
+**El `catch` ya no distingue el tipo.** Antes cazaba `SocketTimeoutException`,
+que es de `java.net`; cada motor de Ktor lanza la suya. Se reintenta ante
+cualquier fallo de red, que para el caso —tres intentos y a otra cosa— hace lo
+mismo. Y `Thread.sleep(2000)` pasa a `delay(2000)`, que ademas no bloquea.
+
+**EL CODIFICADOR DE URL SE ESCRIBIO A MANO, Y TIENE PRUEBA.** `URLEncoder` es de
+la JVM, asi que hay un `paraUrl()` que deja pasar lo "sin reservar" de RFC 3986 y
+escapa el resto sobre sus bytes UTF-8. Va **suelto y no dentro de `ComicVine`**
+precisamente para poder probarlo, y `ParaUrlTest` cubre seis casos.
+
+**Por que merecia prueba y otras cosas no**: si este codificador se equivoca **no
+da ningun error**. Comic Vine responde 200 con cero resultados y la app se queda
+sin datos como si la serie no existiera — el mismo fallo silencioso que ya costo
+un dia con `filter=name:`. El caso que mas importa es el del espacio: **%20 y
+nunca `+`**, por lo que ya estaba escrito en la seccion de Comic Vine.
+De paso, `encQuery` y `enc` **ya son la misma funcion**: el apaño de
+`.replace("+", "%20")` sobraba en cuanto el codificador dejo de ser el de
+formularios.
+
+**LO QUE NO SE HA COMPROBADO, y es lo importante de esta tanda.** Compila y las
+pruebas pasan, pero **ninguna peticion real ha salido**: desde aqui no hay red a
+Comic Vine, como ya estaba escrito. Lo que esta verificado es el codificador y
+que todo compila. **Lo que NO**: que Ktor mande las cabeceras que Comic Vine
+exige (responde 403 sin User-Agent propio), ni el camino de reintento, ni la
+lectura de `status_code`. Se prueba desde Ajustes > "Probar conexion", que para
+eso existe.
+
+### Tanda 4 del port: los cuatro almacenes JSON (03/09/2026)
+
+`Progreso`, `Marcadores`, `Sesiones` y `SeriesRemotas` pasan a `:shared`. Pedian
+un `Context` solo para una cosa: **saber donde escribir**.
+
+**Se resolvio con una interfaz, `Disco`, y no con un `expect class`.** Tres
+metodos: `leer`, `escribir`, `borrar`, por nombre de fichero. `DiscoAndroid`
+usa `filesDir` —**la misma carpeta de siempre, asi que lo que Dani ya tiene en el
+movil se sigue leyendo igual, esto no migra nada**— y `DiscoIos` usara la carpeta
+Documents. La alternativa era un objeto de plataforma con el `Context` en una
+variable global inicializada al arrancar: un sitio mas donde algo puede estar a
+null cuando no toca.
+
+**Documents y NO Caches en iOS**: el sistema vacia Caches cuando le hace falta
+espacio, y perder por donde ibas leyendo porque el iPad andaba justo de disco
+seria un fallo imposible de reproducir.
+
+**Y AQUI ESTA LO QUE DE VERDAD GANA ESTA TANDA, que no era portar.** Esos cuatro
+almacenes **no tenian ni una prueba** —necesitaban `Context`— y son justo el
+sitio donde se pierden los datos. Con `Disco` detras de una interfaz basta un
+disco de mentira en memoria: `AlmacenesTest` prueba **la vuelta entera** —
+escribir, tirar la instancia y leer con otra nueva sobre el mismo disco.
+
+La vuelta entera y no solo escribir, porque **la instancia viva responde bien
+desde su cache aunque lo que haya escrito en el fichero sea basura**: un fallo de
+serializacion no se ve de ninguna otra forma.
+
+Lo que cubre: marca guardada y releida, olvidar, disco vacio, **un JSON roto que
+se lee como vacio en vez de tirar la app**, marcapaginas, sesiones, y la ficha de
+serie con su lista anidada y sus opcionales ausentes. Mas dos que valen por si
+solas: **una tanda escribe UNA vez y sin tanda escribe una por marca** — que era
+el arreglo del marcado en bloque y hasta hoy no tenia como comprobarse.
+
+**Se llevo `LecturaTest` y `ProgresoTest`** con su codigo. En `app/src/test` solo
+queda `ExportarTest`, que prueba algo de Android de verdad.
+
+**org.json fuera.** Es de Android. La lectura ya tenia el puente de la tanda 3
+—`optString`, `optInt`, `optJSONArray`, `optJSONObject`, ahora tambien `optLong`,
+`optBoolean` y `has`— y para escribir se usa `buildJsonObject`/`buildJsonArray`
+de kotlinx, que tienen casi la misma forma que `JSONObject().apply { put(...) }`.
+Sin libreria propia: lo hace el estandar.
+
+**Segunda vez con el mismo tropiezo del alcance de dependencia.** La
+serializacion iba como `implementation` y `:shared` compilaba mientras `:app`
+fallaba con "Cannot access class". Los almacenes **devuelven** `JsonObject` en
+`exportar()`, asi que tiene que ser `api`. Es exactamente lo que ya paso con
+kotlinx-datetime en la tanda 2: **si un tipo aparece en la firma publica, va con
+`api`**.
+
+**Una sola linea decide donde se guarda todo**: `private val disco = DiscoAndroid(ctx)`
+en `VistaModelo`. En iOS sera `DiscoIos()` y no cambia nada mas.
+
+**Y de cara a la Raspberry Pi que Dani quiere montar**: la interfaz tiene ya la
+forma que haria falta —una `DiscoRemoto` que hable con la Pi entra sin tocar los
+almacenes— pero **no se ha escrito nada para eso**. Los comics en red son otro
+problema distinto y le toca a `Escaner`, no a esto.
+
+Reparto tras la tanda: **17 ficheros en `app`, 22 en `shared`**; en pruebas, 1 y
+14.
+
+### Tanda 5 del port: el CI, y por que NO hay todavia un iosApp (03/09/2026)
+
+**No se ha creado `iosApp/`, y es deliberado.** La interfaz sigue entera en
+`app/` y pegada a Android, asi que un `.ipa` hoy no tendria nada que enseñar:
+seria andamiaje que se tira entero en cuanto se porte la UI. Tampoco se declara
+un `framework` en `:shared` por lo mismo — no hay nada que lo consuma. Las dos
+cosas entran juntas en la tanda de la interfaz.
+
+**Lo que si vale hoy es el CI**, y no por costumbre: es **la unica forma de
+compilar `DiscoIos` y todo `commonMain` contra el compilador de verdad de
+Apple**. Desde Windows no se puede, y lo que se escribio en la tanda 4 para iOS
+no lo ha mirado ningun compilador todavia.
+
+`.github/workflows/compilar.yml`, dos trabajos:
+
+- **`android`, en `ubuntu-latest`**: `:app:assembleDebug`, las pruebas de los dos
+  modulos, y sube el APK como artefacto. Va en Ubuntu **porque un runner de
+  macOS cuesta diez veces mas minutos** y este trabajo coge las regresiones
+  normales, que son casi todas.
+- **`ios`, en `macos-latest`**: `:shared:iosSimulatorArm64Test` y
+  `:shared:compileKotlinIosArm64`.
+
+**Lo importante es la primera de esas dos tareas: no compila, EJECUTA las
+pruebas comunes compiladas a nativo.** Pasarlas en la JVM no demuestra lo mismo:
+las diferencias de `java.time`, de `String.format` y de todo lo que se toco en
+las tandas 2 y 3 aparecen justo ahi. Y la segunda compila para arm64, que es otro
+objetivo distinto del simulador.
+
+**No hace falta ningun secret para que esto pase.** La clave de Comic Vine se lee
+de `local.properties`, que git ignora; si no esta, `secreto()` devuelve "" y la
+app compila igual y la pide por Ajustes. El secret solo hara falta el dia que se
+quiera un instalable con la clave ya dentro. **Un blanco menos para arrancar.**
+
+**Un fallo que se caza escribiendo y no probando**: la primera version del
+workflow llamaba a `linkDebugFrameworkIosArm64`, y **esa tarea no existe** si el
+modulo no declara un framework. Habria fallado en la primera ejecucion, en un
+runner de pago. Se cambio por `compileKotlinIosArm64`, que si existe por defecto.
+
+En `DiscoIos` se añadio `@OptIn(ExperimentalForeignApi::class)`: las llamadas de
+Foundation llevan un puntero a `NSError` de ultimo parametro y eso es API
+foranea, que Kotlin 2.0 no deja usar sin opt-in. **Escrito a ciegas: si sobra,
+sale un aviso; si faltaba, el CI lo dira.**
+
+Y `.kotlin/` a `.gitignore`, que Kotlin 2.0 deja ahi su cache de sesion.
+
+**LO QUE ESTO NO DEMUESTRA.** El workflow esta escrito y **no se ha ejecutado
+nunca**: el repositorio todavia no tiene remoto. Hasta que Dani no lo suba y
+salga verde, `DiscoIos` sigue siendo codigo que nadie ha compilado.
+
 ### Pendiente
 
 - **Confirmar que la pantalla en negro se ha ido.** La causa está encontrada y

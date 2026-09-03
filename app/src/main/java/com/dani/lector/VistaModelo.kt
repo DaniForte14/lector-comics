@@ -1,5 +1,13 @@
 package com.dani.lector
 
+import com.dani.lector.red.jsonLaxo
+import com.dani.lector.red.optJSONArray
+import com.dani.lector.red.optJSONObject
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.datetime.minus
 import android.app.Application
 import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
@@ -59,12 +67,17 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
         ctx.getSharedPreferences("lector", android.content.Context.MODE_PRIVATE)
     }
 
-    val marcas = Progreso(ctx)
-    val marcadores = Marcadores(ctx)
-    val seriesRemotas = SeriesRemotas(ctx)
+    // UN SOLO DISCO PARA LOS CUATRO ALMACENES. Es la unica linea de la app que
+    // decide donde se guardan las cosas; en iOS sera un DiscoIos y no cambia
+    // nada mas. Misma jugada que LectorApp con la fuente de datos.
+    private val disco = DiscoAndroid(ctx)
+
+    val marcas = Progreso(disco)
+    val marcadores = Marcadores(disco)
+    val seriesRemotas = SeriesRemotas(disco)
 
     /** El diario de lectura: que leiste, que dia y cuanto. */
-    val sesiones = Sesiones(ctx)
+    val sesiones = Sesiones(disco)
 
     /** UNICO sitio del que salen los datos de fuera. Lo decide LectorApp. */
     private val fuente: FuenteComics get() = (ctx as LectorApp).fuente
@@ -148,6 +161,10 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
         val trabajo = cerrojoIndice.withLock {
             indice?.let { return it }
             trabajoIndice ?: viewModelScope.async(kotlinx.coroutines.Dispatchers.IO) {
+                // Con hora de EMPIEZA y no solo de acabado: hace falta para ver
+                // si una lectura lenta de carpeta cae DENTRO de un recorrido del
+                // arbol, que es la hipotesis de los ~720 ms.
+                Rastro.apunta(ctx, "  índice: empieza")
                 val t0 = System.currentTimeMillis()
                 comicsBajo(null).also {
                     Rastro.apunta(ctx, "  índice: ${it.size} cómics en " +
@@ -477,11 +494,11 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
     private fun fechaCorte(): String =
         // Sale del calendario español y no de la zona del movil, igual que todo
         // lo que decide fechas en esta app. Ver Novedades.ZONA.
-        Novedades.hoy().minusDays(DIAS_VIVA)
-            .format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
+        Novedades.hoy()
+            .minus(kotlinx.datetime.DatePeriod(days = (DIAS_VIVA).toInt())).toString()
 
     /** El estado de una carpeta segun lo ya guardado. Sin red y sin esperar. */
-    fun estadoRemoto(ruta: String, mios: List<Int>): Pair<SeriesRemotas.Ficha, EstadoSerie.Resumen>? {
+    fun estadoRemoto(ruta: String, mios: List<Int>): Pair<Ficha, EstadoSerie.Resumen>? {
         val f = seriesRemotas.de(ruta) ?: return null
         return f to EstadoSerie.de(mios, f.numeros, fechaCorte())
     }
@@ -521,7 +538,7 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
                 return@launch
             }
 
-            seriesRemotas.guardar(SeriesRemotas.Ficha(
+            seriesRemotas.guardar(Ficha(
                 ruta = ruta,
                 volumenId = vol.id,
                 nombre = vol.nombre,
@@ -614,7 +631,7 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
     }
 
     /** Las series que sigues, para poder verlas todas juntas. */
-    fun seriesSeguidas(): List<SeriesRemotas.Ficha> =
+    fun seriesSeguidas(): List<Ficha> =
         seriesRemotas.todas().filter { it.seguida }.sortedBy { it.nombre.lowercase() }
 
     /**
@@ -1011,21 +1028,22 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
      * la carpeta cambian todas.
      */
     /** El contenido de la copia. Lo comparten la copia a mano y la automatica. */
-    private fun copiaJson(): org.json.JSONObject = org.json.JSONObject()
+    private fun copiaJson(): JsonObject = buildJsonObject {
         // v3: entra el diario de lectura. Las versiones viejas se siguen
         // leyendo: al importar, lo que no venga simplemente no se toca.
-        .put("version", 3)
-        .put("progreso", marcas.exportar())
-        .put("marcadores", marcadores.exportar())
-        .put("sesiones", sesiones.exportar())
+        put("version", 3)
+        put("progreso", marcas.exportar())
+        put("marcadores", marcadores.exportar())
+        put("sesiones", sesiones.exportar())
+    }
 
     suspend fun exportarA(destino: android.net.Uri): String =
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             runCatching {
                 val raiz = copiaJson()
                 escribir(destino, raiz)
-                "Copia guardada: ${raiz.optJSONObject("progreso")?.length()} cómics y " +
-                "${raiz.optJSONArray("marcadores")?.length()} marcapáginas."
+                "Copia guardada: ${raiz.optJSONObject("progreso")?.size} cómics y " +
+                "${raiz.optJSONArray("marcadores")?.size} marcapáginas."
             }.getOrElse { "No se ha podido guardar: ${it.javaClass.simpleName}" }
         }
 
@@ -1037,7 +1055,7 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
      * JSON no se puede leer. Es un fichero que solo se lee el dia que hace
      * falta, asi que un fallo asi no se descubre hasta el peor momento.
      */
-    private fun escribir(destino: android.net.Uri, datos: org.json.JSONObject) {
+    private fun escribir(destino: android.net.Uri, datos: JsonObject) {
         ctx.contentResolver.openOutputStream(destino, "wt")?.use {
             it.write(datos.toString().toByteArray())
         }
@@ -1154,20 +1172,21 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
             runCatching {
                 val texto = ctx.contentResolver.openInputStream(origen)
                     ?.bufferedReader()?.use { it.readText() } ?: return@runCatching "Vacío."
-                val raiz = org.json.JSONObject(texto)
+                val raiz = jsonLaxo.parseToJsonElement(texto) as? JsonObject
+                    ?: return@runCatching "La copia no tiene el formato esperado."
 
                 // clave estable -> uri de AHORA, para recolocar contra la
                 // biblioteca del momento de restaurar
                 val actuales = todosLosComics().associate { Progreso.clave(it.uri) to it.uri }
 
                 val paginas = marcas.importar(
-                    raiz.optJSONObject("progreso") ?: org.json.JSONObject(), actuales)
+                    raiz.optJSONObject("progreso") ?: JsonObject(emptyMap()), actuales)
                 val puntos = marcadores.importar(
-                    raiz.optJSONArray("marcadores") ?: org.json.JSONArray(), actuales)
+                    raiz.optJSONArray("marcadores") ?: JsonArray(emptyList()), actuales)
                 // Una copia de la v2 no trae diario: se lee como vacio y no
                 // pasa nada. Un fichero viejo tiene que seguir restaurando.
                 val dias = sesiones.importar(
-                    raiz.optJSONArray("sesiones") ?: org.json.JSONArray(), actuales)
+                    raiz.optJSONArray("sesiones") ?: JsonArray(emptyList()), actuales)
 
                 _estado.update { it.copy(sello = it.sello + 1) }
                 "Restaurado: $paginas cómics, $puntos marcapáginas y $dias días de lectura."

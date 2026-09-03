@@ -40,7 +40,13 @@ def continuacion(anterior):
     return anterior.endswith(")") and re.search(r'\bif\s*\(', anterior) is not None
 
 problemas = 0
-for f in sorted(glob.glob("app/src/**/*.kt", recursive=True)):
+# LOS DOS MODULOS. Desde que existe :shared, media logica del proyecto vive
+# fuera de app/ y este comprobador se habia quedado ciego a ella justo el dia
+# que empezaron a moverse ficheros, que es cuando mas falta hace.
+FUENTES = sorted(glob.glob("app/src/**/*.kt", recursive=True)
+                 + glob.glob("shared/src/**/*.kt", recursive=True))
+
+for f in FUENTES:
     llaves = parens = 0
     comentario = False
     anterior = ""

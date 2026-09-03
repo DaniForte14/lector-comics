@@ -1,5 +1,6 @@
 package com.dani.lector.datos
 
+import kotlinx.datetime.minus
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -227,14 +228,14 @@ class TrabajoNovedades(ctx: Context, params: WorkerParameters) : CoroutineWorker
         // Y sale de Novedades.hoy(), o sea del calendario español: este trabajo
         // lo despierta el sistema a cualquier hora, y con la zona del proceso
         // una pasada de madrugada contaria el dia anterior.
-        val corte = Novedades.hoy().minusDays(120)
-            .format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
+        val corte = Novedades.hoy()
+            .minus(kotlinx.datetime.DatePeriod(days = (120).toInt())).toString()
 
         val avisos = runCatching {
             Vigilante.pasada(
                 ctx = ctx,
                 fuente = app.fuente,
-                seriesRemotas = SeriesRemotas(ctx),
+                seriesRemotas = SeriesRemotas(DiscoAndroid(ctx)),
                 fechaCorte = corte,
                 soloSeguidas = true,
                 // Doce y no tres: aqui solo entran las que sigues, que son

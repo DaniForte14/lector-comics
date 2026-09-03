@@ -11,7 +11,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.pager.rememberPagerState
@@ -461,6 +463,13 @@ private fun BarraInferior(
                 .clip(FormaChapa)
                 .background(PanelAlto)
                 .border(FiloAncho, FiloColor, FormaChapa)
+                // LA PILDORA SE COME EL TOQUE. Solo las tres pestañas atendian
+                // punteros; el relleno de 4 dp, los huecos del SpaceEvenly y el
+                // filo dejaban pasar el toque a la lista de debajo, asi que
+                // apuntar a "Lecturas" y abrir un comic sin querer era lo
+                // normal. Un detectTapGestures vacio los absorbe sin añadir
+                // semantica de boton, que es lo que haria clickable.
+                .pointerInput(Unit) { detectTapGestures { } }
                 .padding(4.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically

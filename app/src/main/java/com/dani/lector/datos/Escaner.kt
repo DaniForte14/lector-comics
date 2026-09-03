@@ -53,13 +53,34 @@ object Escaner {
      * instantanea aunque tengas mil comics.
      */
     suspend fun abrir(
-        ctx: Context, raiz: String, docId: String?, ruta: String = ""
+        ctx: Context, raiz: String, docId: String?, ruta: String = "",
+        /**
+         * Cuantos comics tiene cada subcarpeta, para el rotulo de su fila.
+         *
+         * SE PUEDE APAGAR PORQUE CUESTA UNA CONSULTA MAS POR SUBCARPETA. Quien
+         * navega las quiere; [todosBajo] no, y era justo quien mas las pagaba:
+         * recorriendo el arbol entero, cada carpeta se consultaba DOS veces
+         * —una como `contar` desde su padre y otra como `abrir` al visitarla— y
+         * las cuentas de esa segunda vuelta acababan en la basura.
+         */
+        conCuentas: Boolean = true
     ): Contenido = withContext(Dispatchers.IO) {
         val treeUri = Uri.parse(raiz)
         val id = docId ?: raizDe(raiz) ?: return@withContext Contenido(emptyList(), emptyList())
 
         val carpetas = mutableListOf<Carpeta>()
         val comics = mutableListOf<Comic>()
+
+        // CRONOMETRO PARTIDO, PARA CAZAR LOS ~720 ms. Volver a la biblioteca
+        // desde el visor tarda 700-725 ms de forma sospechosamente constante, y
+        // esta misma lectura al arrancar tarda 20-60. Es la misma carpeta y el
+        // mismo trabajo, asi que hay que saber DONDE se van: en la consulta de
+        // hijos, en los `contar`, o en ninguna de las dos —y entonces es espera,
+        // o sea contencion con otro recorrido del arbol—. Se apunta solo si
+        // pasa de LENTO_MS: navegar normal no debe ensuciar el rastro.
+        val t0 = System.currentTimeMillis()
+        var msContar = 0L
+        var tCursor = 0L
 
         val hijos = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, id)
         try {
@@ -71,7 +92,12 @@ object Escaner {
                     if (mime == DocumentsContract.Document.MIME_TYPE_DIR) {
                         if (nombre.lowercase() in IGNORADAS) continue
                         val sub = if (ruta.isBlank()) nombre else "$ruta/$nombre"
-                        val cuenta = contar(ctx, treeUri, hijoId)
+                        val cuenta = if (conCuentas) {
+                            val tc = System.currentTimeMillis()
+                            contar(ctx, treeUri, hijoId).also {
+                                msContar += System.currentTimeMillis() - tc
+                            }
+                        } else 0 to 0
                         carpetas.add(Carpeta(hijoId, nombre, sub, cuenta.first, cuenta.second))
                     } else if (Parser.esComic(nombre)) {
                         comics.add(Comic(
@@ -91,6 +117,7 @@ object Escaner {
                 }
             }
         } catch (_: Exception) { }
+        tCursor = System.currentTimeMillis() - t0
 
         Contenido(
             carpetas.sortedBy { it.nombre.lowercase() },
@@ -98,8 +125,17 @@ object Escaner {
             // de una serie. Quien quiera otro lo pide con OrdenCarpeta: asi el
             // orden es una decision de la pantalla y no del que lee el disco.
             OrdenCarpeta.de(comics, Orden.NUMERO)
-        )
+        ).also {
+            val total = System.currentTimeMillis() - t0
+            if (total >= LENTO_MS) Rastro.apunta(ctx,
+                "  LENTA «${ruta.ifBlank { "raíz" }}»: $total ms " +
+                "(cursor ${tCursor - msContar}, contar $msContar, " +
+                "${carpetas.size} subcarpetas, ${comics.size} cómics)")
+        }
     }
+
+    /** A partir de aqui una lectura de carpeta se apunta en el rastro. */
+    private const val LENTO_MS = 200
 
     /** Cuantas subcarpetas y cuantos comics tiene una carpeta, sin bajar mas. */
     private fun contar(ctx: Context, treeUri: Uri, docId: String): Pair<Int, Int> {
@@ -132,7 +168,8 @@ object Escaner {
         while (pendientes.isNotEmpty()) {
             val (id, r) = pendientes.removeLast()
             if (!vistos.add(id)) continue
-            val c = abrir(ctx, raiz, id, r)
+            // Sin cuentas: aqui solo hacen falta los comics y por donde seguir.
+            val c = abrir(ctx, raiz, id, r, conCuentas = false)
             out.addAll(c.comics)
             c.carpetas.forEach { pendientes.addLast(it.docId to it.ruta) }
         }

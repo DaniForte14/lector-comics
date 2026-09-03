@@ -93,6 +93,9 @@ android {
 }
 
 dependencies {
+    // La logica que no sabe de Android y que iOS reaprovecha tal cual.
+    implementation(project(":shared"))
+
     // Las funciones puras del proyecto se comprueban de verdad, no "a ojo".
     // El primero es Huecos; detras van Parser, Racha y los demas, que el
     // documento daba por probados y no lo estaban.

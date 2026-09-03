@@ -5,5 +5,7 @@ local.properties
 build/
 app/build/
 .idea/
+# Kotlin 2.0 deja aqui su cache de sesion. No es del proyecto.
+.kotlin/
 *.iml
 .DS_Store

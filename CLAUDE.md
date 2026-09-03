@@ -84,6 +84,37 @@ contables: qué volumen es cada carpeta, qué números tiene, y en qué fecha
 salieron. Lo que sí se mantiene, y es lo que más valor tiene: **cada cifra de la
 pantalla dice de dónde sale**.
 
+## Dos plataformas: `:app` y `:shared` (desde el 03/09/2026)
+
+Dani quiere la misma app en su iPad. **La decision: Kotlin Multiplatform en el
+MISMO repositorio**, porque la app ya es Compose al 100% y eso hace que Compose
+Multiplatform reaproveche lo que hay en vez de tirarlo.
+
+```
+shared/     commonMain — lo que no sabe de ninguna plataforma
+app/        Android. Sigue siendo la app que funciona hoy.
+iosApp/     (todavia no existe)
+```
+
+**Los objetivos de Apple solo se declaran si el anfitrion es un Mac**
+(`shared/build.gradle.kts`). Kotlin/Native no compila para iOS desde Windows, y
+si se declararan siempre el proyecto **ni siquiera configuraria** en el
+ordenador de Dani, que es donde se trabaja. En Windows se compila y se prueba
+Android con normalidad; el runner macOS del CI es el que ve los targets de iOS.
+
+**LO QUE ESTO SIGNIFICA AL TRABAJAR: nadie puede verificar iOS desde aqui.** Si
+una tanda toca `iosMain`, se dice **"escrito, sin compilar"** y punto; quien
+compila es el CI. Lo que si se verifica en cada tanda, como siempre, es que
+Android sigue compilando y en verde.
+
+**Regla de reparto**, para no discutirlo cada vez:
+
+> Lo que decide algo va en `shared`. Lo que toca disco, red, pantalla o sistema
+> se queda en su plataforma, detras de una interfaz o de un `expect/actual`.
+
+Y `comprobar.py` mira **los dos modulos**. Se quedo ciego a `shared/` el dia que
+se creo, que es justo cuando mas falta hacia.
+
 ## Cómo está montado
 
 Sin Room y sin librerías de red: persistencia en JSON y red con

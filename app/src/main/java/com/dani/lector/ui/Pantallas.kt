@@ -4,8 +4,6 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.BackHandler
-import java.time.LocalDate
-import java.time.YearMonth
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
@@ -36,6 +34,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dani.lector.VistaModelo
+// EL MES VISIBLE ES UN LocalDate DEL DIA 1, y no un YearMonth: kotlinx-datetime
+// no tiene YearMonth, y una fecha al dia 1 hace exactamente lo mismo —se compara,
+// se le suma y se le resta un mes— sin inventar un tipo propio.
+import kotlinx.datetime.DatePeriod
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.minus
+import kotlinx.datetime.plus
 import com.dani.lector.datos.Rastro
 import com.dani.lector.datos.*
 import kotlinx.coroutines.launch
@@ -1076,7 +1081,7 @@ private fun TiraSerie(
  * nada.
  */
 @Composable
-private fun SeguirSerie(vm: VistaModelo, ficha: SeriesRemotas.Ficha) {
+private fun SeguirSerie(vm: VistaModelo, ficha: Ficha) {
     val ctx = LocalContext.current
     var sinPermiso by remember { mutableStateOf(false) }
 
@@ -1322,19 +1327,12 @@ fun PantallaEstadisticas(
     LaunchedEffect(estado.sello, estado.catalogo) { comics = vm.todosLosComics() }
 
     val lista = comics
-    // CRONOMETRADO A PROPOSITO. El disco ya no se toca aqui —VistaModelo
-    // precalienta los tres JSON al arrancar— pero esta cuenta recorre la
-    // biblioteca ENTERA y sigue corriendo en el hilo principal, dentro de la
-    // composicion. Si el rastro dice que son milisegundos, se queda asi; si
-    // dice decenas, esto se va a Dispatchers.Default y el spinner que ya hay
-    // debajo lo tapa. Ajustes > Diagnostico.
-    val ctxRastroEstad = LocalContext.current
+    // MEDIDO EN EL MOVIL (03/09/2026): 4-6 ms con 293 comics. Se cronometro
+    // porque recorre la biblioteca entera en el hilo principal y se sospechaba
+    // de ella; **no era**. Se queda donde esta y sin cronometro: mover esto a
+    // Dispatchers.Default seria pagar un salto de hilo por cinco milisegundos.
     val r = remember(lista, estado.sello) {
-        val t0 = System.currentTimeMillis()
-        lista?.let { Estadisticas.calcular(vm.marcas.todas(), it) }?.also {
-            Rastro.apunta(ctxRastroEstad, "  estadísticas de ${lista.size} cómics en " +
-                "${System.currentTimeMillis() - t0} ms")
-        }
+        lista?.let { Estadisticas.calcular(vm.marcas.todas(), it) }
     }
 
     // POR DONDE VAS BAJANDO, igual que la pila de carpetas de la biblioteca:
@@ -1353,17 +1351,17 @@ fun PantallaEstadisticas(
 
     // El calendario. El mes visible es estado de la pantalla; lo que se leyó,
     // una funcion pura sobre el progreso.
-    val hoy = remember { LocalDate.now(Novedades.ZONA) }
+    val hoy = remember { Novedades.hoy() }
 
     // Lo que esta anunciado y sin salir de las series que sigues. Fuera del
     // LazyColumn, como todo lo demas: su cuerpo no es Composable y remember no
     // se puede llamar ahi. Y con el MISMO `hoy` que el calendario: un solo sitio
     // decide que dia es hoy, que es la regla de toda esta parte.
     val agenda = remember(seguidas, hoy) { Novedades.agenda(seguidas, hoy) }
-    var mesVisible by remember { mutableStateOf(YearMonth.of(hoy.year, hoy.monthValue)) }
+    var mesVisible by remember { mutableStateOf(LocalDate(hoy.year, hoy.monthNumber, 1)) }
     val porDia = remember(lista, estado.sello, mesVisible) {
         lista?.let {
-            Calendario.porDia(vm.sesiones.todas(), it, mesVisible.year, mesVisible.monthValue)
+            Calendario.porDia(vm.sesiones.todas(), it, mesVisible.year, mesVisible.monthNumber)
         } ?: emptyMap()
     }
     // El dia cuyo detalle esta abierto. null = ninguno.
@@ -1449,7 +1447,15 @@ fun PantallaEstadisticas(
                     Text("SIGUIENDO", style = Tipo.pie, color = Tenue, letterSpacing = 0.5.sp,
                         modifier = Modifier.padding(20.dp, 22.dp, 20.dp, 4.dp))
                 }
-                items(seguidas, key = { it.ruta }) { f ->
+                // CLAVE CON PREFIJO, Y NO SOLO LA RUTA. Las dos listas de esta
+                // pantalla —las que sigues y el nivel que estas mirando— van en
+                // el MISMO LazyColumn, asi que comparten espacio de claves: una
+                // serie seguida que ademas aparezca en el nivel actual repetia
+                // clave y Compose cerraba la app.
+                //   IllegalArgumentException: Key "..." was already used
+                // Paso en el movil el 03/09/2026 con "Absolute green lantern",
+                // seguida y a la vez dentro de "DC Comics/Green lantern".
+                items(seguidas, key = { "seguida:${it.ruta}" }) { f ->
                     FilaSeguida(f) { vm.seguirSerie(f.ruta, false) }
                 }
             }
@@ -1471,7 +1477,7 @@ fun PantallaEstadisticas(
                         modifier = Modifier.clickableSimple { camino = padreDe(camino) })
                 }
             }
-            items(nivel, key = { it.ruta }) { a ->
+            items(nivel, key = { "nivel:${it.ruta}" }) { a ->
                 // Solo se puede bajar si hay algo debajo. Una fila pulsable que
                 // no lleva a ningun sitio se lee como que la app falla.
                 val puedeBajar = !a.hoja
@@ -1526,14 +1532,14 @@ fun PantallaEstadisticas(
 @Composable
 private fun CalendarioMes(
     vm: VistaModelo,
-    mes: YearMonth,
+    mes: LocalDate,
     porDia: Map<Int, List<Calendario.Leido>>,
     hoy: LocalDate,
-    onMes: (YearMonth) -> Unit,
+    onMes: (LocalDate) -> Unit,
     onDia: (Int) -> Unit
 ) {
-    val semanas = remember(mes) { Calendario.semanas(mes.year, mes.monthValue) }
-    val haySiguiente = mes < YearMonth.of(hoy.year, hoy.monthValue)
+    val semanas = remember(mes) { Calendario.semanas(mes.year, mes.monthNumber) }
+    val haySiguiente = mes < LocalDate(hoy.year, hoy.monthNumber, 1)
 
     Column(
         Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
@@ -1542,16 +1548,16 @@ private fun CalendarioMes(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("${mes.year}", style = Tipo.minuscula, color = Tenue)
-                Text(Calendario.nombreMes(mes.monthValue),
+                Text(Calendario.nombreMes(mes.monthNumber),
                     style = Tipo.destacado, color = Hueso)
             }
             Text("‹", fontSize = 26.sp, color = Acento,
-                modifier = Modifier.clickableSimple { onMes(mes.minusMonths(1)) }
+                modifier = Modifier.clickableSimple { onMes(mes.minus(DatePeriod(months = 1))) }
                     .padding(horizontal = 12.dp))
             Text("›", fontSize = 26.sp,
                 color = if (haySiguiente) Acento else Apagado,
                 modifier = Modifier.clickableSimple(enabled = haySiguiente) {
-                    onMes(mes.plusMonths(1))
+                    onMes(mes.plus(DatePeriod(months = 1)))
                 }.padding(horizontal = 12.dp))
         }
 
@@ -1568,7 +1574,7 @@ private fun CalendarioMes(
                     Box(Modifier.weight(1f).aspectRatio(0.78f).padding(2.dp)) {
                         if (dia != null) Casilla(vm, dia, porDia[dia].orEmpty(),
                             esHoy = mes.year == hoy.year &&
-                                mes.monthValue == hoy.monthValue && dia == hoy.dayOfMonth,
+                                mes.monthNumber == hoy.monthNumber && dia == hoy.dayOfMonth,
                             onDia = onDia)
                     }
                 }
@@ -1629,7 +1635,7 @@ private fun Casilla(
 @Composable
 private fun DetalleDelDia(
     dia: Int,
-    mes: YearMonth,
+    mes: LocalDate,
     leidos: List<Calendario.Leido>,
     onLeer: (Comic) -> Unit,
     onCerrar: () -> Unit
@@ -1639,7 +1645,7 @@ private fun DetalleDelDia(
         onDismissRequest = onCerrar,
         confirmButton = { TextButton(onClick = onCerrar) { Text("Cerrar") } },
         title = {
-            Text("$dia de ${Calendario.nombreMes(mes.monthValue).lowercase()}",
+            Text("$dia de ${Calendario.nombreMes(mes.monthNumber).lowercase()}",
                 style = Tipo.destacado, color = Hueso)
         },
         text = {
@@ -1692,7 +1698,7 @@ private fun DetalleDelDia(
  * donde Comic Vine no traia la fecha de venta y ha habido que calcularla.
  */
 @Composable
-private fun FilaPrevista(p: Novedades.Prevista, hoy: java.time.LocalDate) {
+private fun FilaPrevista(p: Novedades.Prevista, hoy: LocalDate) {
     Row(
         Modifier.fillMaxWidth().padding(20.dp, 10.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -1722,7 +1728,7 @@ private fun FilaPrevista(p: Novedades.Prevista, hoy: java.time.LocalDate) {
  * peligro que no existe.
  */
 @Composable
-private fun FilaSeguida(f: SeriesRemotas.Ficha, onDejar: () -> Unit) {
+private fun FilaSeguida(f: Ficha, onDejar: () -> Unit) {
     val hoy = remember { Novedades.hoy() }
     val proximo = remember(f.numeros) { Novedades.proximo(f.numeros, hoy) }
     Row(
