@@ -4,7 +4,7 @@ import android.content.Context
 import java.io.File
 
 /**
- * El [Disco] de Android: la carpeta privada de la app (`filesDir`).
+ * ANDROID — El [Disco] de Android: la carpeta privada de la app (`filesDir`).
  *
  * Es la misma carpeta de siempre, asi que **los ficheros que ya tiene Dani en el
  * movil se siguen leyendo igual**: esto no migra nada ni cambia de sitio nada.

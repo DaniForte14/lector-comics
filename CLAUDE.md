@@ -113,6 +113,14 @@ una tanda toca `iosMain`, se dice **"escrito, sin compilar"** y punto; quien
 compila es el CI. Lo que si se verifica en cada tanda, como siempre, es que
 Android sigue compilando y en verde.
 
+**LO DE APPLE SE LLAMA `iOS`, SIEMPRE.** Todo fichero que solo valga para Apple
+lleva `iOS` en el nombre (`DiscoIOS.kt`) y **empieza su comentario con `iOS —`**.
+Lo de Android, con `ANDROID —`. Es para poder mirar una lista de ficheros y saber
+en un segundo qué es de quién, sin abrirlos: en Windows, Android Studio **no
+enseña `iosMain` como carpeta de código** —los targets de Apple solo se declaran
+en un Mac— así que el nombre es lo único que lo delata. Para verla, hay que pasar
+la vista del árbol de "Android" a "Project".
+
 **Regla de reparto**, para no discutirlo cada vez:
 
 > Lo que decide algo va en `shared`. Lo que toca disco, red, pantalla o sistema

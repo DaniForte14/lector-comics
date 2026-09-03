@@ -70,7 +70,7 @@ kotlin {
         // jerarquia por defecto del plugin, que puede no haber pasado todavia.
         // Los accesores son perezosos y se resuelven cuando toca.
         //
-        // NO ERA UN AVISO MENOR: sin `iosMain`, DiscoIos.kt no se compilaba, o
+        // NO ERA UN AVISO MENOR: sin `iosMain`, DiscoIOS.kt no se compilaba, o
         // sea que el unico fichero escrito para iOS no lo miraba nadie.
         if (System.getProperty("os.name").startsWith("Mac")) {
             iosMain.dependencies { implementation("io.ktor:ktor-client-darwin:3.0.3") }

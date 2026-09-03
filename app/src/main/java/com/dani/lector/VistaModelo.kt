@@ -68,7 +68,7 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
     }
 
     // UN SOLO DISCO PARA LOS CUATRO ALMACENES. Es la unica linea de la app que
-    // decide donde se guardan las cosas; en iOS sera un DiscoIos y no cambia
+    // decide donde se guardan las cosas; en iOS sera un DiscoIOS y no cambia
     // nada mas. Misma jugada que LectorApp con la fuente de datos.
     private val disco = DiscoAndroid(ctx)
 

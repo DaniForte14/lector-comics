@@ -11,7 +11,7 @@ import platform.Foundation.stringWithContentsOfFile
 import platform.Foundation.writeToFile
 
 /**
- * El [Disco] de iOS: la carpeta Documents de la app.
+ * iOS — El [Disco] de iOS: la carpeta Documents de la app.
  *
  * ES EL EQUIVALENTE DE `filesDir`: privada de la app, se respalda con el
  * dispositivo y sobrevive a las actualizaciones. La otra candidata era Caches,
@@ -26,7 +26,7 @@ import platform.Foundation.writeToFile
 // null en los tres sitios porque el error no aporta nada — leer un fichero que
 // no esta devuelve null igual, y es lo que la interfaz promete.
 @OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
-class DiscoIos : Disco {
+class DiscoIOS : Disco {
 
     private val carpeta: String by lazy {
         NSSearchPathForDirectoriesInDomains(
