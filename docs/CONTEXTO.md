@@ -2105,6 +2105,7 @@ veces escribe bien en disco pero la otra instancia sigue viendo su copia vieja.
 | `ExportarTest` | el nombre del fichero al guardar una página |
 | `AgendaTest` | qué sale próximamente: orden por fecha, sin fecha fuera, "mañana" / "en 3 días" |
 | `RecorteTest` | el marco liso: fondo negro, ruido del escáner, el tope de la mitad, la regla del 40% |
+| `ZipTest` | el índice de un ZIP montado byte a byte: comentario final, campo extra del encabezado local |
 | `ImagenesTest` | qué entra como página: `._` de macOS, `__MACOSX`, y el orden por profundidad |
 | `LimpiezaTest` | qué se renombra y qué se borra: "Corps (21)", "Batman (2016)", el relleno de cifras |
 
@@ -3801,8 +3802,10 @@ favor y las dos piezas se quedan en `:app` de todas formas.
 Verificado: `comprobar.py` con **PROBLEMAS: 0**, `:app:assembleDebug` sin un solo
 `w:` y las pruebas en verde.
 
-**LO QUE NO ESTA COMPROBADO**: que el visor siga viendose igual. Es un cambio de
-tipo, no de pixeles, pero **por el camino nuevo no ha pasado ninguna pagina**. Se
+**COMPROBADO EN EL MOVIL (04/09/2026)**: Dani abrio un comic, amplio, miro la
+tira de miniaturas y guardo y compartio una pagina. Todo bien. Queda escrito lo
+que se miraba, que era: que el visor siga viendose igual. Era un cambio de
+tipo, no de pixeles, pero por el camino nuevo no habia pasado ninguna pagina. Se
 mira abriendo un comic: que la pagina salga, que ampliar siga funcionando, que la
 tira de miniaturas de abajo se pinte, y que guardar y compartir una pagina —que
 son los dos sitios que vuelven a `Bitmap`— hagan su fichero.
@@ -3907,6 +3910,57 @@ el visor, las pantallas, `Escaner` y `Miniaturas`, todas como `Rastro.apunta(ctx
 global con un `Disco` dentro es justo el patron que este proyecto rechazo al
 escribir `Disco` —"un sitio mas donde algo puede estar a null cuando no toca"—.
 **Hay que decidirlo, no colarlo dentro de otra tanda.**
+
+### Tanda 19: leer el indice de un ZIP sin `java.util.zip` (04/09/2026)
+
+**Primer trozo de codigo escrito PARA iOS que no hay que escribir a ciegas.**
+
+`ArchivoIOS` no existe porque en el iPad no hay `java.util.zip`. Pero leer un CBZ
+son dos cosas distintas y solo una necesita a la plataforma:
+
+| | Donde | Se puede probar desde Windows |
+|---|---|---|
+| **Entender donde esta cada pagina** dentro del fichero | `:shared`, `Zip.kt` | **SI** |
+| Descomprimirla y leer el fichero | cada plataforma | No: lo dira el CI |
+
+Asi que se han partido, y la mitad dificil-de-equivocarse-sin-enterarse queda
+probada aqui. `Zip.entradas` devuelve nombre, metodo, tamaños y desplazamiento de
+cada entrada; `Zip.datosEn` dice donde empiezan sus bytes.
+
+**LOS BYTES ENTRAN POR UNA FUNCION, no como un `ByteArray`.** Un CBZ son decenas
+de megas y este proyecto **ya cerro la app dos veces por cargar un archivo
+entero en memoria**. `leer(posicion, cuantos)` da un trozo, igual que [Recorte]
+recibe filas de pixeles en vez de la imagen.
+
+**SEIS PRUEBAS, Y SE FABRICA UN ZIP BYTE A BYTE PARA HACERLAS.** Es la unica
+forma sin un fichero de verdad, y ademas es la buena: si el lector se equivoca de
+desplazamiento **no da ningun error**, devuelve una pagina corrupta o un nombre
+raro. Las dos que valen la tanda:
+
+- **El registro final se busca hacia atras.** Un ZIP se escribe de delante hacia
+  atras pero solo se puede LEER al reves: lo unico que dice donde empieza el
+  indice esta al final. Y ese final **puede tener hasta 64 KB de comentario
+  detras**, asi que hay que buscarlo. La prueba mete un comentario que lo empuja.
+- **Los datos empiezan donde dice el ENCABEZADO LOCAL, no el indice.** El campo
+  de datos extra **puede medir distinto en los dos sitios**; sumando el del
+  indice, la lectura queda desplazada unos bytes y la imagen sale corrupta sin
+  un solo error. La prueba pone un extra local de 7 bytes que no esta en el
+  indice, que es justo el caso que lo rompe.
+
+**LO QUE NO CUBRE, escrito para que nadie lo descubra con un CBZ raro delante**:
+ZIP64 (hace falta a partir de 4 GB o 65.535 entradas, y un tomo son ~50 MB y ~50
+paginas), nombres en CP437 en vez de UTF-8 —que no pierden la pagina, solo la
+ordenan raro— y el cifrado, que no es un caso de esta app.
+
+Verificado: `comprobar.py` con **PROBLEMAS: 0**, `ZipTest` lanzada por separado
+con `--tests` mas el control de una clase inexistente, y la vuelta entera en
+verde. **Android:** nada que mirar, no lo usa nadie todavia. **iOS:** esto es
+para el, pero aun no lo llama nada; el CI dira si compila para Kotlin/Native.
+
+**LO SIGUIENTE PARA `ArchivoIOS`**: descomprimir (deflate) y leer el fichero.
+Ahi ya no hay logica pura y hay que elegir —zlib de la plataforma, o una
+dependencia multiplataforma— y **eso se decide con Dani**, porque una dependencia
+nueva en `:shared` es justo lo que este proyecto lleva evitando desde el principio.
 
 ### Pendiente
 
