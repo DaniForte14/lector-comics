@@ -3962,6 +3962,52 @@ Ahi ya no hay logica pura y hay que elegir —zlib de la plataforma, o una
 dependencia multiplataforma— y **eso se decide con Dani**, porque una dependencia
 nueva en `:shared` es justo lo que este proyecto lleva evitando desde el principio.
 
+### Tanda 20: descomprimir en iOS con zlib (04/09/2026)
+
+**DECIDIDO POR DANI: zlib de la plataforma, sin dependencias nuevas.** La
+alternativa era una libreria multiplataforma que ya supiera de ZIP. Se descarta
+por lo mismo que no hay Room ni libreria de red: *"menos dependencias, menos que
+se rompa"*. zlib viene con el sistema y Kotlin/Native trae sus bindings.
+
+`ZipIOS` es la otra mitad de [Zip]: aquella entiende el indice y es comun y
+probada, esta lee el fichero —`NSFileHandle`— y descomprime.
+
+**ESCRITO ENTERO A CIEGAS.** Es interoperabilidad con C desde Kotlin/Native y
+desde Windows no la compila nada. Lo dira el CI, y **lo normal es que haga falta
+mas de una vuelta**: la tanda 5 necesito cinco. Por eso la tanda se ha acotado a
+sacar los BYTES de una pagina y no llega todavia a la imagen — si falla, falla en
+un sitio pequeño.
+
+**LOS DOS SITIOS DONDE APOSTARIA A QUE SE QUEJA, y van escritos en el fichero:**
+
+1. **La ventana negativa, `-15`.** Dentro de un ZIP los datos van en deflate
+   **crudo**, sin la cabecera de dos bytes del formato zlib. Con `15` a secas,
+   zlib busca esa cabecera, no la encuentra y **falla en todas y cada una de las
+   paginas**. Es el error clasico de quien descomprime un ZIP a mano por primera
+   vez.
+2. **`inflateInit2_` y no `inflateInit2`.** El segundo es una **macro de C**, y
+   las macros no cruzan a Kotlin. Hay que pasar a mano la version de zlib y el
+   tamaño de la estructura, que es justo lo que la macro hacia. Si `ZLIB_VERSION`
+   no existe con ese nombre en los bindings, es lo primero que cantara.
+
+**Y una que no es una trampa sino un dato**: el metodo 0 —guardado sin
+comprimir— **pasa mas de lo que parece**. Un JPEG ya esta comprimido y muchos
+empaquetadores no lo vuelven a comprimir, asi que ese camino no es un caso raro
+de reserva: en un CBZ normal puede ser el habitual. Por eso se atiende antes que
+el deflate.
+
+Verificado: **nada de esto**. `comprobar.py` en 0 y Android sigue en verde, que es
+lo unico que se puede decir desde aqui. **Android:** no lo usa nadie, no hay nada
+que mirar. **iOS:** es todo suyo y no lo ha compilado nadie todavia.
+
+**LO SIGUIENTE**: convertir esos bytes en `ImageBitmap`. En Android lo hace
+`BitmapFactory`; en iOS sera Skia, que viene con Compose Multiplatform. Y ahi
+aparece un problema que en Android esta resuelto y en iOS no: **`inSampleSize`**.
+Android decodifica una pagina de 2000x3000 directamente a 220 px sin pasar por la
+imagen entera; Skia no tiene ese atajo, y en un iPad de 4 GB **descomprimir la
+pagina completa para luego encogerla es exactamente como iOS mata la app sin
+avisar**.
+
 ### Pendiente
 
 - **Pulsar el boton de limpiar la biblioteca sobre una carpeta de verdad**, y
