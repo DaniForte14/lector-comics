@@ -2106,6 +2106,7 @@ veces escribe bien en disco pero la otra instancia sigue viendo su copia vieja.
 | `AgendaTest` | qué sale próximamente: orden por fecha, sin fecha fuera, "mañana" / "en 3 días" |
 | `RecorteTest` | el marco liso: fondo negro, ruido del escáner, el tope de la mitad, la regla del 40% |
 | `ImagenesTest` | qué entra como página: `._` de macOS, `__MACOSX`, y el orden por profundidad |
+| `LimpiezaTest` | qué se renombra y qué se borra: "Corps (21)", "Batman (2016)", el relleno de cifras |
 
 **EJECUTADOS POR FIN el 03/09/2026**, con Java 17 en el entorno. `./gradlew
 testDebugUnitTest`: **126 pruebas, una en rojo**, y el fallo estaba en la prueba,
@@ -3331,6 +3332,67 @@ pero **por el camino nuevo no ha pasado ningun comic**. Se ve abriendo uno
 cualquiera: si el orden fuera mal, se nota a la primera.
 
 Reparto: **18 ficheros en `app`, 32 en `shared`**; en pruebas, 1 y 18.
+
+### Tanda 11: las reglas que borran ficheros, por fin con pruebas (04/09/2026)
+
+`ConversorCarpeta.limpiar` es **la unica funcion de la app que renombra y borra
+ficheros de la biblioteca de Dani**. Tiene cuatro reglas con orden de prioridad,
+dos desastres esquivados en su historial, y **no tenia ni una prueba**. Es
+literalmente el caso que describe la regla del proyecto: "lo que decide algo va
+en una funcion pura con su test al lado, sobre todo si son reglas con casos de
+borde o con orden de prioridad, que se rompen sin dar ningun error".
+
+Las tres reglas de nombre salen a `shared/.../datos/Limpieza.kt`:
+
+| | Que decide |
+|---|---|
+| `sinDobleExtension` | "X.cbz.zip" -> "X.cbz" |
+| `originalDe` | como se llamaria el original de una copia, o null |
+| `aGrapa` | "Corps (1).cbz" -> "Corps #01.cbz", mirando la carpeta entera |
+
+**`originalDe` devuelve un nombre y NO un veredicto, y eso es deliberado.** Un
+"(21)" solo es una copia si "Corps.cbz" esta al lado; sin original, es el numero
+de la grapa. Esa distincion no la puede tomar una funcion que solo ve un nombre,
+asi que se queda donde esta la lista de la carpeta. **Si algun dia alguien hace
+que decida sola, se carga la numeracion de una serie entera sin dar un error**, y
+eso es exactamente lo que la primera version hacia: lo cazo Dani en una captura
+antes de que llegara a ejecutarse. Hay una prueba con ese nombre puesto.
+
+Lo que **NO se ha movido, a proposito**: la comparacion de paginas. Decidir si
+dos ficheros son el mismo comic exige contarles las paginas, y eso es leer disco.
+Se queda en `ConversorCarpeta`, que es quien puede. **La regla de Blackest Night
+—no borrar nada sin haber contado los dos— no se ha tocado ni un caracter.**
+
+**Catorce casos en `LimpiezaTest`**, y los que valen la tanda:
+
+- **"Green Lantern Corps (21).cbz"**, con su nombre puesto en el test.
+- **"Batman (2016).cbz"**, el año. Y **los dos bordes del rango**: 1929 y 2101
+  vuelven a ser numeros de grapa. Ese rango era un `if (n in 1930..2100)` suelto
+  en mitad de un `mapNotNull`, sin nada que dijera que pasa justo al lado.
+- **El relleno lo decide el mayor de la carpeta**: con numeros hasta el 17 basta
+  "#01", pero si la serie llega a 120 hace falta "#001" o el orden se rompe otra
+  vez en el 100. Es un `if (mayor >= 100) 3 else 2` del que dependia toda la
+  numeracion y que nadie habia comprobado.
+- **Si el nombre nuevo ya existe, se marca y no se renombra.** Sin eso, arreglar
+  la numeracion pisa un fichero.
+
+**Un cambio de forma, minimo, en el paso 4**: antes se recorrian los `Comic` y se
+calculaba el plan por el camino; ahora `Limpieza.aGrapa` da el plan y el bucle lo
+ejecuta. **Se sigue iterando sobre los `Comic` y no sobre los nombres**, para no
+cambiar que pasa si dos ficheros de una carpeta se llaman igual salvo por
+mayusculas. El `porNombre` de ese bloque desaparece: quien mira los choques ahora
+es `aGrapa`.
+
+Verificado: `comprobar.py` con **PROBLEMAS: 0**, `:app:assembleDebug` sin un solo
+`w:`, las pruebas de los dos modulos con `--rerun-tasks` en verde, y
+`LimpiezaTest` lanzada por separado con `--tests`.
+
+**LO QUE NO ESTA COMPROBADO, y aqui importa mas que de costumbre**: la limpieza
+**no se ha ejecutado sobre una carpeta de verdad**. Las reglas estan probadas una
+a una; lo que no ha pasado por ningun fichero es el camino entero. Si se prueba
+en el movil, **que sea sobre una carpeta de la que haya copia**.
+
+Reparto: **18 ficheros en `app`, 33 en `shared`**; en pruebas, 1 y 19.
 
 ### Pendiente
 

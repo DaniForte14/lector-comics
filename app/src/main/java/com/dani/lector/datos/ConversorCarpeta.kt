@@ -186,12 +186,6 @@ object ConversorCarpeta {
         "${t.javaClass.simpleName} ${t.message ?: ""}"
     }
 
-    /** "Batman 01 (1)" -> base "Batman 01" y copia numero 1. */
-    private val RE_COPIA = Regex("""^(.*?)\s*\((\d+)\)$""")
-
-    /** Lo mismo, pero para leer el numero de grapa de "Corps (14)". */
-    private val RE_PARENT_FINAL = Regex("""^(.*?)\s*\((\d{1,4})\)$""")
-
     /**
      * Limpia la biblioteca: arregla nombres y quita duplicados.
      *
@@ -239,8 +233,7 @@ object ConversorCarpeta {
         comics.groupBy { it.padreId }.forEach { (_, enCarpeta) ->
             val porNombre = enCarpeta.associateBy { it.nombre.lowercase() }
             enCarpeta.forEach { c ->
-                if (!c.nombre.lowercase().endsWith(".cbz.zip")) return@forEach
-                val bueno = c.nombre.dropLast(4)
+                val bueno = Limpieza.sinDobleExtension(c.nombre) ?: return@forEach
                 avance("Arreglando nombre · ${c.nombre}")
 
                 val yaEsta = porNombre[bueno.lowercase()]
@@ -275,10 +268,7 @@ object ConversorCarpeta {
             val porNombre = enCarpeta.associateBy { it.nombre.lowercase() }
 
             enCarpeta.forEach { c ->
-                val ext = c.nombre.substringAfterLast('.', "")
-                val base = c.nombre.substringBeforeLast('.')
-                val m = RE_COPIA.matchEntire(base) ?: return@forEach
-                val original = m.groupValues[1] + "." + ext
+                val original = Limpieza.originalDe(c.nombre) ?: return@forEach
                 val otro = porNombre[original.lowercase()]
 
                 avance("Revisando · ${c.nombre}")
@@ -329,36 +319,20 @@ object ConversorCarpeta {
         // de la lista en memoria tienen que seguir siendo los del disco.
         if (renombrados == 0 && borrados == 0) {
             comics.groupBy { it.padreId }.forEach { (_, enCarpeta) ->
-                val porNombre = enCarpeta.associateBy { it.nombre.lowercase() }
+                // Que numero es una grapa y cuantas cifras se rellenan lo decide
+                // Limpieza, mirando la carpeta entera —el choque con un fichero
+                // que ya existe incluido. Aqui solo se ejecuta.
+                val plan = Limpieza.aGrapa(enCarpeta.map { it.nombre })
+                    .associateBy { it.viejo }
 
-                // Candidatos de ESTA carpeta, para saber cuanto rellenar: con
-                // numeros hasta el 17 basta "#01"; si llega a 120, "#001", o el
-                // orden volveria a romperse en el 100.
-                val candidatos = enCarpeta.mapNotNull { c ->
-                    val ext = c.nombre.substringAfterLast('.', "")
-                    val base = c.nombre.substringBeforeLast('.')
-                    val m = RE_PARENT_FINAL.matchEntire(base) ?: return@mapNotNull null
-                    val n = m.groupValues[2].toIntOrNull() ?: return@mapNotNull null
-                    // Un año no es un numero de grapa. Misma regla que Parser.
-                    if (n in 1930..2100) return@mapNotNull null
-                    Triple(c, m.groupValues[1].trim(), n) to ext
-                }
-                if (candidatos.isEmpty()) return@forEach
-
-                val mayor = candidatos.maxOf { it.first.third }
-                val cifras = if (mayor >= 100) 3 else 2
-
-                candidatos.forEach { (t, ext) ->
-                    val (c, base, n) = t
-                    val nuevo = "$base #" + n.toString().padStart(cifras, '0') +
-                                if (ext.isBlank()) "" else ".$ext"
-                    if (nuevo.equals(c.nombre, ignoreCase = true)) return@forEach
-                    if (porNombre.containsKey(nuevo.lowercase())) {
-                        avisos.add("${c.nombre} — ya existe un $nuevo, no toco nada")
+                enCarpeta.forEach { c ->
+                    val g = plan[c.nombre] ?: return@forEach
+                    if (g.choca) {
+                        avisos.add("${c.nombre} — ya existe un ${g.nuevo}, no toco nada")
                         return@forEach
                     }
                     avance("Numerando · ${c.nombre}")
-                    if (renombrar(cr, c.uri, nuevo)) renombrados++
+                    if (renombrar(cr, c.uri, g.nuevo)) renombrados++
                 }
             }
         }
