@@ -3707,11 +3707,44 @@ Y hasta que no hubo un instrumento que midiera **fotogramas** en vez de sucesos,
 no habia forma de saber si eso importaba o no. Cinco sospechas cayeron por medir
 indicios; la buena salio a la primera con el instrumento correcto.
 
-**SIN CONFIRMAR TODAVIA**: falta el rastro con el arreglo puesto. Lo que tiene
-que pasar es que **desaparezcan las lineas `carpeta: «raíz»` al cambiar de
-pestaña** —solo deben salir al entrar o salir de una carpeta de verdad— y que
-los numeros de `fluidez` bajen. Si no bajan, el pager no era todo y queda el
-Baseline Profile, que es la otra mitad del coste de primera vez.
+**CONFIRMADO EN EL MOVIL (04/09/2026), y de la forma mas limpia posible.** En la
+sesion de las 16:35, catorce cambios de pestaña seguidos **sin una sola linea
+`carpeta:`**:
+
+```
+16:35:46.011  pestaña: 1
+16:35:46.519  pestaña: 2
+16:35:47.309  pestaña: 0      ← antes aqui salia "carpeta: «raíz»"
+16:35:47.876  pestaña: 1
+16:35:48.982  pestaña: 0      ← y aqui
+```
+
+La pantalla ya no se recrea. Es un si o no, no una impresion.
+
+**Y la fluidez, comparando ventanas equivalentes:**
+
+| | Antes (16:32) | Despues (16:35) |
+|---|---|---|
+| Arranque | 17 lentos, peor 172 ms | 13 lentos, peor **260 ms** |
+| Cambiando pestañas | **16** lentos, peor 135 ms | **4** lentos, peor 126 ms |
+| Navegando carpetas | 9 lentos, peor 111 ms | 17 lentos, peor 120 ms |
+
+**Los cambios de pestaña pasan de 16 a 4.** Lo que queda ya no es el pager y se
+reparte en dos sitios distintos, los dos de "primera vez":
+
+1. **Arranque en frio.** El peor fotograma de todo el rastro —260 ms— cae justo
+   al abrir la app. Eso es carga de clases y JIT, y la herramienta para eso es un
+   **Baseline Profile**: hace falta un modulo de macrobenchmark y correrlo desde
+   Android Studio, asi que es una tanda aparte y la tiene que lanzar Dani.
+2. **Primera composicion de cada carpeta nueva.** Los 17 de la tercera ventana
+   son entrar en DC Comics, luego en Green lantern —doce carpetas, cada una con
+   su carrusel de portadas— y volver. Eso es trabajo de verdad la primera vez;
+   con el pager arreglado, la segunda ya no lo repite.
+
+**NO SE TOCA NADA MAS SIN QUE DANI DIGA SI LO NOTA.** El rebote por pestañas
+—que era lo que se repetia todo el rato y por tanto lo que mas se sufre— esta
+quitado y medido. Lo que queda cuesta bastante mas y puede que ya no moleste:
+eso lo dice el que la usa, no el numero.
 
 ### Pendiente
 
