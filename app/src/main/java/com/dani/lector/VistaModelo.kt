@@ -69,6 +69,10 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
     // una, precargar las de al lado— es el mismo y vive detras de la interfaz.
     private val archivo: Archivo = ArchivoAndroid(ctx)
 
+    // Y la tercera: quien recorre tu biblioteca. En Android es SAF; en iOS sera
+    // UIDocumentPicker con marcadores con permiso, que no se parece en nada.
+    private val biblioteca: Biblioteca = BibliotecaAndroid(ctx)
+
     // UN SOLO DISCO PARA LOS CUATRO ALMACENES. Es la unica linea de la app que
     // decide donde se guardan las cosas; en iOS sera un DiscoIOS y no cambia
     // nada mas. Misma jugada que LectorApp con la fuente de datos.
@@ -201,14 +205,14 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
 
     // ─────────────────────── NAVEGACION POR CARPETAS ───────────────────────
 
-    suspend fun abrirCarpeta(docId: String?, ruta: String = ""): Escaner.Contenido {
-        val r = raiz ?: return Escaner.Contenido(emptyList(), emptyList())
-        return Escaner.abrir(ctx, r, docId, ruta)
+    suspend fun abrirCarpeta(docId: String?, ruta: String = ""): Contenido {
+        val r = raiz ?: return Contenido(emptyList(), emptyList())
+        return biblioteca.abrir(r, docId, ruta)
     }
 
     private suspend fun comicsBajo(docId: String?, ruta: String = ""): List<Comic> {
         val r = raiz ?: return emptyList()
-        return Escaner.todosBajo(ctx, r, docId, ruta)
+        return biblioteca.todosBajo(r, docId, ruta)
     }
 
     // ─────────────────────────── LECTURA ───────────────────────────

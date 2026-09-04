@@ -24,9 +24,6 @@ object Escaner {
         DocumentsContract.Document.COLUMN_LAST_MODIFIED
     )
 
-    /** Lo que hay dentro de una carpeta concreta: subcarpetas y comics. */
-    data class Contenido(val carpetas: List<Carpeta>, val comics: List<Comic>)
-
     /**
      * Carpetas que el escaner NO mira.
      *

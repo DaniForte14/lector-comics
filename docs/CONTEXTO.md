@@ -3505,7 +3505,7 @@ No hay prueba automatica posible: esto necesita `Context`.
 |---|---|
 | `Rastro` | 5 |
 | `Miniaturas` | 4 |
-| `Escaner` | 4 |
+| ~~`Escaner`~~ | ~~4~~ **hecho, tanda 17** |
 | ~~`ComicZip`~~ | ~~4~~ **hecho, tanda 16** |
 | `ConversorCarpeta` | 3 |
 | `Rar5` | 2 |
@@ -3835,6 +3835,41 @@ Verificado: `comprobar.py` con **PROBLEMAS: 0**, `:app:assembleDebug` sin un sol
 misma llamada con el `Context` guardado en otro sitio. **iOS:** aqui no se ha
 escrito nada de iOS todavia; `ArchivoIOS` es de la tanda que traiga el motor de
 descompresion, que es de las gordas.
+
+### Tanda 17: recorrer la biblioteca, detras de una interfaz (04/09/2026)
+
+Paso 3 del mapa, y **la pieza mas distinta de todo el port**. `Biblioteca` en
+`:shared`, `BibliotecaAndroid` en `:app`. Ni `VistaModelo` ni `PantallaBiblioteca`
+mencionan ya `Escaner`.
+
+**POR QUE UNA INTERFAZ Y NO UN `expect/actual`.** En Android es SAF: eliges una
+carpeta una vez, el sistema da permiso persistente sobre su arbol y se consulta
+con un `ContentResolver`. En iOS **no hay nada parecido**: `UIDocumentPicker` y
+*security-scoped bookmarks*, que hay que **guardar y volver a resolver en cada
+arranque** y abrir y cerrar el acceso a mano. No es la misma operacion escrita en
+dos idiomas: son **dos mecanismos distintos que casualmente responden a la misma
+pregunta** —que hay en esta carpeta—. Un `expect/actual` obligaria a que las dos
+tuvieran la misma forma, y no la tienen.
+
+**LA REGLA QUE HAY QUE NO ROMPER, y va escrita en la interfaz**: `raiz` y `docId`
+**son cadenas opacas**. En Android son uris de SAF y en iOS seran marcadores.
+Quien llama **no las interpreta nunca**: las guarda y las devuelve. El dia que
+alguien parta un `docId` por barras para sacar el nombre de la carpeta, el port
+se rompe y el fallo aparecera en iOS, a cinco mil kilometros de la linea culpable.
+
+`Escaner.Contenido` pasa a `Contenido` en `:shared`. Es una pareja de listas de
+`Carpeta` y `Comic`, que ya viven alli.
+
+**Lo que NO entra en la interfaz**: `raizDe`, y el parametro `conCuentas` de
+`abrir`. El primero solo lo usa el propio `Escaner`; el segundo lo pone `todosBajo`
+por dentro, y quien llama desde fuera siempre quiere las cuentas. Misma regla que
+en la tanda 16: **la interfaz lleva lo que el consumidor necesita, no lo que la
+implementacion sabe hacer**.
+
+Verificado: `comprobar.py` con **PROBLEMAS: 0**, `:app:assembleDebug` sin un solo
+`w:` y las pruebas en verde. **Android:** no cambia ningun comportamiento —misma
+llamada, el `Context` guardado en el envoltorio—. **iOS:** no se ha escrito nada;
+`BibliotecaIOS` es una tanda entera y de las caras.
 
 ### Pendiente
 

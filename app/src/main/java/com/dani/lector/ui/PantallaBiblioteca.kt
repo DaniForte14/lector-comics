@@ -76,7 +76,7 @@ fun PantallaCarpeta(
     // Ahora el efecto de abajo si escucha al catalogo, asi que cuando los
     // ficheros cambian de verdad se relee; pero al releer se SUSTITUYE lo que
     // hay, no se borra antes. Sin parpadeo y sin rueda.
-    var contenido by remember(docId) { mutableStateOf<Escaner.Contenido?>(null) }
+    var contenido by remember(docId) { mutableStateOf<Contenido?>(null) }
     // Sin el sello en el remember, por lo mismo que el contenido: el efecto lo
     // vuelve a pedir, pero mientras tanto se sigue viendo lo anterior. Con el
     // sello aqui, el banner de "seguir leyendo" desaparecia y volvia a salir
