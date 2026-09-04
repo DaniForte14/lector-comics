@@ -92,8 +92,15 @@ object Miniaturas {
     // sin parar, y ESO si se nota en la fluidez. Los dos numeros de aqui abajo
     // distinguen los dos casos: si el total es pequeño, no eran ellas.
     //
-    // Se apunta un RESUMEN cada 25 y no una linea por portada: con trescientos
-    // comics el rastro no tendria otra cosa y taparia lo que se busca.
+    // Se apunta un RESUMEN y no una linea por portada: con trescientos comics
+    // el rastro no tendria otra cosa y taparia lo que se busca.
+    //
+    // LA PRIMERA Y LUEGO CADA DIEZ, y esto ya fallo una vez: la primera version
+    // apuntaba cada 25 y **en la pantalla de inicio no llegaba a hablar nunca**.
+    // La raiz de Dani tiene 2 carpetas y ningun comic suelto, asi que ahi solo
+    // se piden el banner, las tres de "tu recorrido" y lo visible de dos
+    // carruseles: unas quince o veinte. El cronometro se quedaba mudo justo en
+    // la pantalla de la que se estaba hablando.
     private var deDisco = 0
     private var msDisco = 0L
     private var generadas = 0
@@ -102,7 +109,8 @@ object Miniaturas {
     @Synchronized
     private fun apunta(ctx: Context, disco: Boolean, ms: Long) {
         if (disco) { deDisco++; msDisco += ms } else { generadas++; msGenerar += ms }
-        if ((deDisco + generadas) % 25 == 0) Rastro.apunta(ctx,
+        val n = deDisco + generadas
+        if (n == 1 || n % 10 == 0) Rastro.apunta(ctx,
             "  portadas: $deDisco de cache ($msDisco ms), " +
             "$generadas generadas ($msGenerar ms)")
     }

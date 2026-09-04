@@ -3577,6 +3577,19 @@ recolector de basura** descomprimiendo bitmaps sin parar, y eso si se nota en la
 fluidez. Los dos numeros lo dicen: si el total es pequeño, no eran ellas y toca
 mirar la composicion con el Layout Inspector, que es lo unico que queda.
 
+**Y EL CRONOMETRO NACIO MUDO, que es un error de metodo y va escrito para no
+repetirlo.** Apuntaba cada 25 portadas. **La raiz de Dani tiene 2 carpetas y
+ningun comic suelto**, asi que ahi solo se piden el banner de "seguir leyendo",
+las tres de "tu recorrido" y lo visible de dos carruseles: unas quince o veinte.
+Nunca llegaba a 25, asi que **el cronometro se callaba justo en la pantalla de la
+que se estaba hablando** — y su silencio parecia un dato ("no cargan portadas")
+cuando solo era un umbral mal puesto. Ahora apunta la primera y luego cada diez.
+
+La leccion: **un instrumento que solo habla pasado un umbral hay que probarlo en
+el caso pequeño**, que suele ser justo el que se esta investigando. La linea
+`LENTA` de `Escaner` tiene la misma forma y por eso lleva escrito que en toda la
+caceria de los 706 ms no llego a saltar ni una vez.
+
 ### Pendiente
 
 - **Pulsar el boton de limpiar la biblioteca sobre una carpeta de verdad**, y
