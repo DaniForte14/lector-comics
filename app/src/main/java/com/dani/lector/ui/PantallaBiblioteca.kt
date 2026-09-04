@@ -7,6 +7,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -833,9 +835,7 @@ private fun ChipsFiltro(
                 val marcado = f == elegido
                 Row(
                     Modifier.padding(end = 8.dp)
-                        .clip(FormaChapa)
-                        .background(if (marcado) Acento else PanelAlto)
-                        .clickableSimple { onElegir(f) }
+                        .pulsable(FormaChapa, if (marcado) Acento else PanelAlto) { onElegir(f) }
                         .padding(horizontal = 12.dp, vertical = 7.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -909,9 +909,7 @@ private fun ChipAmbito(texto: String, marcado: Boolean, onElegir: () -> Unit) {
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         modifier = Modifier.padding(end = 8.dp)
-            .clip(FormaChapa)
-            .background(if (marcado) Acento else PanelAlto)
-            .clickableSimple(accion = onElegir)
+            .pulsable(FormaChapa, if (marcado) Acento else PanelAlto, accion = onElegir)
             .padding(horizontal = 12.dp, vertical = 7.dp)
     )
 }
@@ -1134,8 +1132,16 @@ private fun TarjetaComic(
     // la rejilla se nota mas todavia, que son tres cartas por fila.
     val marca = remember(comic.uri, sello) { vm.marcas.de(comic.uri) }
 
+    // La carta es lo que mas se toca de la app, asi que es donde mas se nota
+    // que responda. Con combinedClickable —la pulsacion larga abre el menu— no
+    // sirve `pulsable`, que trae forma y fondo; aqui la forma la pone la
+    // portada. La fuente de interaccion se comparte para que la escala y la
+    // onda salgan del MISMO toque.
+    val toque = remember { MutableInteractionSource() }
     Column(
-        Modifier.padding(4.dp).combinedClickable(
+        Modifier.escalaAlPulsar(toque).padding(4.dp).combinedClickable(
+            interactionSource = toque,
+            indication = LocalIndication.current,
             onClick = { onLeer(comic) },
             onLongClick = { onMenu(comic) }
         )

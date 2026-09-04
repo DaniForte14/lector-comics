@@ -1182,3 +1182,107 @@ calcularla. Las demás no dicen nada, que es lo correcto: lo normal no se explic
 **Y no aparece si no sigues nada.** Un titular de sección sobre una lista vacía
 es un hueco que hay que justificar; sin series seguidas, la sección entera no
 existe.
+
+---
+
+## 22. Una pasada con la skill `better-ui` (04/09/2026)
+
+Dani instaló el plugin `interfaces` y pidió pasarle `better-ui` a la app. La
+skill es un catálogo de detalles de acabado con **valores exactos**, no rangos:
+`0.96` y no `0.95`, `cubic-bezier(0.2, 0, 0, 1)` y no la de Material.
+
+**ESTÁ ESCRITA PARA WEB, y eso importa más que lo que trae.** De sus dieciocho
+reglas, siete no tienen equivalente aquí, y conviene dejar escrito cuáles para no
+volver a mirarlas cada vez que alguien pase una skill de diseño por encima:
+
+| Regla | Por qué no aplica |
+|---|---|
+| `will-change`, `transition-property`, `transition: all` | No hay CSS. En Compose el equivalente es el orden de los modificadores |
+| `AnimatePresence initial={false}` | No hay framer-motion |
+| Suprimir transiciones al cambiar de tema | El interruptor de estética es una **constante de compilación**, no un toggle en caliente: no hay cambio que suavizar |
+| Desenfoque `4px → 0` en los iconos | **`Modifier.blur` pide API 31 y el `minSdk` es 26.** Ya estaba escrito en el apartado 2 |
+| Filo de imagen a blanco puro al 10% | Ya hecho desde agosto en `caratula()` |
+| Sombras para dar elevación | La app **no tiene ni una sombra**, por la estética de iOS del apartado 3 |
+
+**Y una regla suya que aquí se incumple a propósito.** La skill prohíbe los filos
+tintados: dice que un filo con color recoge la superficie de debajo y se lee como
+suciedad en el borde de la imagen. Nuestro `FiloColor` en cyberpunk es amarillo al
+40%. **Se queda.** El filo existe porque sobre negro una portada de marco oscuro
+se funde con el fondo, y el amarillo es la marca de la casa; lo que la skill
+prohíbe es un neutro con tinte, no un color de marca puesto queriendo.
+
+### Lo que sí se aplicó
+
+**1. Formas concéntricas: la pista del interruptor.** La regla es
+`forma de fuera = forma de dentro + el hueco`. La pista y la bola llevaban las
+dos `FormaChapa` (5 dp) con 3 dp de hueco entre ellas. Con los dos chaflanes
+iguales **el hueco se estrecha justo en las esquinas cortadas** y el control se
+ve torcido sin que se sepa por qué. Nuevo token `FormaPista`, 5 + 3 = **8 dp**.
+
+Es el único sitio de toda la app donde hay dos formas anidadas, así que el token
+nace con un solo uso y no hay más que buscar.
+
+**2. La bola del interruptor se mueve.** Antes saltaba de un lado a otro: era el
+único control de la app que cambiaba de golpe, y un interruptor es justo donde el
+movimiento dice algo —de dónde vienes y a dónde vas—.
+
+Va con `animateDpAsState` y `animateColorAsState`, **no con keyframes, y el
+motivo es que así se puede interrumpir**: dándole dos veces seguidas la bola sale
+de donde esté en ese momento en vez de teletransportarse al final del recorrido
+para empezar el de vuelta.
+
+La cuenta del recorrido, por si se toca el tamaño: la pista mide 48 con 3 de
+hueco a cada lado, o sea 42 por dentro, y la bola 20. Son **22 dp justos**.
+
+**3. `Modifier.pulsable`: lo que se pulsa se encoge a 0,96.** 120 ms. Por debajo
+de 0,96 el gesto se nota exagerado y parece que se hunde la pantalla; por encima
+no se nota nada.
+
+**Lleva la forma y el fondo DENTRO del modificador a propósito, y no es por
+comodidad: en Compose el orden de los modificadores ES el efecto.** La escala
+tiene que ir por FUERA del `clip` y del `background`, o encogería solo el
+contenido dejando el fondo quieto; y el `clickable` tiene que ir por DENTRO del
+`clip`, o la onda de Material se sale en cuadrado por encima del chaflán.
+Repartido entre el llamador y el modificador, ese orden se rompe a la primera
+llamada que alguien escriba de memoria.
+
+**4. Y `pulsable` se llevó a lo que más se toca**: las cartas de la rejilla y
+los dos juegos de chips (filtro y ámbito de búsqueda).
+
+Las cartas no podían usarlo entero —llevan `combinedClickable`, porque la
+pulsación larga abre el menú, y su fondo lo pone la portada— así que la escala
+se sacó aparte a `escalaAlPulsar(fuente)`. **La fuente de interacción se
+comparte** entre la escala y la onda, para que las dos salgan del mismo toque y
+no de dos gestos distintos.
+
+**Y una que se decidió NO hacer, que es la más interesante.** La primera versión
+animaba también el color de fondo dentro de `pulsable`, que es lo que pedía la
+skill para el cambio de selección de un chip. **Se quitó antes de compilar**: el
+fondo del chip marcado es el amarillo y su texto va en negro, así que animar
+solo el fondo deja ~75 ms de **texto negro sobre panel oscuro**, ilegible. O se
+animan los dos o ninguno, y el texto no lo controla el modificador. Se queda
+instantáneo, que además es la señal estática que la propia skill exige.
+
+Todo esto se apaga solo con las animaciones del sistema, como todo lo que se
+mueve aquí.
+
+### Lo que queda en la lista y no se ha tocado
+
+- **El chevron `›` es un glifo de texto a 20 sp**, en `Fila` y en
+  `TituloFila`. Un glifo se centra por su caja, no por su forma, así que es el
+  caso de manual de alineación óptica. **No se toca desde aquí: se decide
+  mirando el móvil**, que es la regla del proyecto para lo que se ve.
+- **Los iconos que cambian de estado** cambian de golpe. La receta de la skill es
+  `escala 0.25 → 1` con opacidad **y desenfoque**, y el desenfoque está vetado
+  por el `minSdk` — que no es una preferencia de diseño, es que `Modifier.blur`
+  pide API 31. Sin él queda a medias, así que o se hace otra cosa o no se hace.
+- **La onda de Material sigue ahí.** `clickableSimple` usa el `clickable` de
+  serie, que coge `LocalIndication`. Es lo único de Material que queda en una app
+  que echó fuera `Button`, `Card` y `OutlinedTextField` (apartado 9). Quitarla es
+  una línea, pero cambia el tacto de la app entera y eso se decide viéndolo.
+
+### Y lo que NO se verificó
+
+Nada de esto se ha visto. Desde aquí no hay móvil ni Layout Inspector, así que
+**las duraciones y las curvas están leídas del código, no reproducidas**. Compila
+sin un solo aviso y las pruebas pasan, que es otra cosa.

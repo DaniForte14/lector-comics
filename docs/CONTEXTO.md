@@ -3394,6 +3394,42 @@ en el movil, **que sea sobre una carpeta de la que haya copia**.
 
 Reparto: **18 ficheros en `app`, 33 en `shared`**; en pruebas, 1 y 19.
 
+### Tanda 12: una pasada de acabado con `better-ui` (04/09/2026)
+
+Dani instalo el plugin `interfaces` y pidio pasarle la skill `better-ui` a la
+app. **El detalle esta en `docs/DISENO.md`, apartado 22**, que es donde toca;
+aqui solo lo que hace falta saber desde el codigo.
+
+Cuatro cambios, todos de tacto y ninguno de contenido: la pista del interruptor
+pasa a `FormaPista` (formas concentricas: 5 + 3 = 8), la bola del interruptor se
+desliza en vez de saltar, y lo que se pulsa se encoge a 0,96 —el boton, las
+cartas de la rejilla y los dos juegos de chips—.
+
+**Dos apuntes que valen desde el codigo:**
+
+- **El orden de los modificadores ES el efecto.** Por eso `pulsable` lleva la
+  forma y el fondo dentro en vez de dejarlos al llamador: la escala tiene que ir
+  por FUERA del `clip`/`background` o encoge solo el contenido, y el `clickable`
+  por DENTRO del `clip` o la onda se sale en cuadrado del chaflan.
+- **Se descarto animar el color de fondo del chip**, que era lo que pedia la
+  skill. El chip marcado va amarillo con el texto en negro: animando solo el
+  fondo quedan ~75 ms de texto negro sobre panel oscuro, ilegible. O los dos o
+  ninguno, y el texto no lo controla el modificador.
+
+Y una regla de la skill que **se incumple a proposito**: prohibe los filos
+tintados y `FiloColor` es amarillo al 40%. Lo que prohibe es un neutro con
+tinte, no un color de marca puesto queriendo.
+
+Verificado: `comprobar.py` con **PROBLEMAS: 0**, `:app:assembleDebug` sin un solo
+`w:` y las pruebas en verde.
+
+**LO QUE NO ESTA VERIFICADO, y en una tanda de aspecto es casi todo**: no se ha
+visto. Desde aqui no hay movil ni Layout Inspector, asi que **las duraciones
+estan leidas del codigo, no reproducidas**. Se mira en un minuto: Ajustes (la
+bola debe deslizarse, y dandole dos veces rapido no debe teletransportarse) y
+cualquier carta de la rejilla (debe encogerse bajo el dedo, y la pulsacion larga
+seguir abriendo el menu).
+
 ### Pendiente
 
 - **Confirmar que la pantalla en negro se ha ido.** La causa está encontrada y

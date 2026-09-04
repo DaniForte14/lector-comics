@@ -15,6 +15,11 @@ docs/DISENO.md      Las decisiones de aspecto y de interfaz, y qué NO se
                     puede hacer (y no es por pereza).
 ```
 
+Si pasas una skill de diseño por encima (`better-ui` y compañía), **el apartado
+22 de `docs/DISENO.md` ya dice qué de esas reglas no aplica aquí y por qué**:
+están escritas para web, y varias chocan con `minSdk 26` o con decisiones
+tomadas. No hace falta volver a descubrirlo.
+
 Son largos a propósito. **No son documentación de cortesía: son la única cosa
 que sobrevive a una conversación**, y casi todo lo que hay dentro se aprendió
 por las malas. Antes de diseñar cualquier parche, busca el tema en

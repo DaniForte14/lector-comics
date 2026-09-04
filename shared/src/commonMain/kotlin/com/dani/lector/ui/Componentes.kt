@@ -6,9 +6,16 @@ import com.dani.lector.datos.Novedades
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toLocalDateTime
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.ui.draw.scale
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -488,6 +495,67 @@ fun OpcionMenu(
 fun Modifier.clickableSimple(enabled: Boolean = true, accion: () -> Unit) =
     this.clickable(enabled = enabled, onClick = accion)
 
+/**
+ * Lo que se pulsa se encoge un poco mientras el dedo esta encima.
+ *
+ * 0,96 y no 0,95: por debajo de eso el gesto se nota exagerado y parece que la
+ * pantalla se hunde; por encima no se nota nada. Es escala de DIBUJO, no de
+ * medida, asi que nada de alrededor se recoloca mientras dura.
+ *
+ * LLEVA LA FORMA Y EL FONDO DENTRO A PROPOSITO, y no es por comodidad: el orden
+ * de los modificadores es el efecto. La escala tiene que ir POR FUERA del
+ * `clip` y del `background` o encogeria solo el contenido y dejaria el fondo
+ * quieto, y el `clickable` tiene que ir por DENTRO del `clip` para que la onda
+ * de Material se recorte con el chaflan en vez de salirse en cuadrado.
+ * Repartido entre el llamador y aqui, ese orden se rompe a la primera.
+ *
+ * Se apaga con las animaciones del sistema, como todo lo que se mueve en esta
+ * app. Y no sustituye a ninguna señal: el boton ya cambia de color, esto solo
+ * lo confirma bajo el dedo.
+ */
+@Composable
+fun Modifier.pulsable(
+    forma: Shape,
+    fondo: Color,
+    enabled: Boolean = true,
+    accion: () -> Unit
+): Modifier {
+    val fuente = remember { MutableInteractionSource() }
+    return this
+        .escalaAlPulsar(fuente)
+        .clip(forma)
+        .background(fondo)
+        .clickable(
+            interactionSource = fuente,
+            indication = LocalIndication.current,
+            enabled = enabled,
+            onClick = accion
+        )
+}
+
+/**
+ * Solo la escala, para lo que no puede usar [pulsable] entero.
+ *
+ * Existe por las cartas de la rejilla: llevan `combinedClickable` —pulsacion
+ * larga para el menu— y su forma y su fondo los pone la portada, no un color
+ * plano. Asi la cuenta del 0,96 vive en un sitio y no en dos.
+ *
+ * Va SIEMPRE la primera del encadenado, antes de cualquier `clip` o
+ * `background`: si va detras encoge el contenido y deja el fondo quieto.
+ */
+@Composable
+fun Modifier.escalaAlPulsar(fuente: MutableInteractionSource): Modifier {
+    val pulsado by fuente.collectIsPressedAsState()
+    // Corto a proposito: esto ocurre en CADA toque, y una animacion larga en
+    // algo tan frecuente se paga entera cada vez.
+    val escala by animateFloatAsState(
+        targetValue = if (pulsado) 0.96f else 1f,
+        animationSpec = tween(120),
+        label = "pulsacion"
+    )
+    return this.scale(if (hayAnimaciones()) escala else 1f)
+}
+
 
 /**
  * Campo de texto al estilo de iOS.
@@ -552,9 +620,7 @@ fun Boton(
         else -> Acento
     }
     Box(
-        modifier.clip(FormaBoton)
-            .background(fondo)
-            .then(if (activo) Modifier.clickableSimple(accion = onClick) else Modifier)
+        modifier.pulsable(FormaBoton, fondo, enabled = activo, accion = onClick)
             .padding(horizontal = 20.dp, vertical = 13.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -586,13 +652,30 @@ fun Interruptor(
                 if (detalle != null) Text(detalle, style = Tipo.pie, color = Tenue,
                     modifier = Modifier.padding(top = 2.dp))
             }
+            // LA BOLA SE MUEVE, no salta de un lado a otro. Un interruptor es
+            // justo donde el movimiento dice algo —de donde vienes y a donde
+            // vas—, y era el unico control de la app que cambiaba de golpe.
+            //
+            // Con animate*AsState y no con keyframes porque asi la animacion se
+            // puede INTERRUMPIR: dandole dos veces seguidas, la bola sale de
+            // donde este en ese momento en vez de teletransportarse al final.
+            //
+            // La pista mide 48 con 3 de hueco a cada lado, o sea 42 por dentro,
+            // y la bola 20: el recorrido son 22 justos.
+            val ms = if (hayAnimaciones()) 150 else 0
+            val desplazada by animateDpAsState(
+                if (activo) 22.dp else 0.dp, tween(ms), label = "bola")
+            val colorPista by animateColorAsState(
+                if (activo) Acento else PanelAlto, tween(ms), label = "pista")
+            val colorBola by animateColorAsState(
+                if (activo) SobreAcento else Apagado, tween(ms), label = "colorBola")
+
             Box(
-                Modifier.width(48.dp).height(26.dp).clip(FormaChapa)
-                    .background(if (activo) Acento else PanelAlto).padding(3.dp),
-                contentAlignment = if (activo) Alignment.CenterEnd else Alignment.CenterStart
+                Modifier.width(48.dp).height(26.dp).clip(FormaPista)
+                    .background(colorPista).padding(3.dp)
             ) {
-                Box(Modifier.width(20.dp).height(20.dp).clip(FormaChapa)
-                    .background(if (activo) SobreAcento else Apagado))
+                Box(Modifier.offset(x = desplazada).width(20.dp).height(20.dp)
+                    .clip(FormaChapa).background(colorBola))
             }
         }
         if (!ultima) Box(Modifier.padding(start = 16.dp)

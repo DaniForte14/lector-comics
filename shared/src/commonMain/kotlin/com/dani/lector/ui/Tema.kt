@@ -94,6 +94,18 @@ val FormaChapa: Shape = if (cyber)
     CutCornerShape(topStart = 0.dp, topEnd = 5.dp, bottomEnd = 0.dp, bottomStart = 5.dp)
 else RoundedCornerShape(6.dp)
 
+/**
+ * La pista del interruptor, que es lo unico que lleva otra forma DENTRO.
+ *
+ * El chaflan de fuera es el de dentro MAS el hueco que los separa (5 + 3). Con
+ * los dos iguales, el hueco se estrecha justo en las esquinas cortadas y el
+ * interruptor se ve torcido sin que se sepa por que. Es la regla de las formas
+ * concentricas, y aqui es el unico sitio de la app donde hay dos anidadas.
+ */
+val FormaPista: Shape = if (cyber)
+    CutCornerShape(topStart = 0.dp, topEnd = 8.dp, bottomEnd = 0.dp, bottomStart = 8.dp)
+else RoundedCornerShape(9.dp)
+
 /** Grosor del filo de las caratulas: en cyberpunk se ve, en iOS casi no. */
 val FiloAncho = if (cyber) 1.dp else 0.5.dp
 val FiloColor = if (cyber) Color(0x66FCEE0A) else Color(0x1AFFFFFF)
