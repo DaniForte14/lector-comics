@@ -3130,7 +3130,13 @@ lugar, `toPixelMap()` —que es de Compose y vale en las dos plataformas— y
 casilla de tono pesa mas) hace lo mismo y ademas se ahorra crear y reciclar un
 bitmap por portada.
 
-**OJO: ES UN CAMBIO DE COMPORTAMIENTO Y NO ESTA VERIFICADO.** Reescalar a 40×40
+**CONFIRMADO EN EL MOVIL (04/09/2026)**: Dani probo la app con las tandas 7 a 11
+puestas y dijo "de Android funciona todo". Los degradados de las portadas siguen
+pareciendose a la portada, que era lo unico que habia que mirar aqui. Se deja
+escrito lo de abajo porque explica QUE se cambio y por donde volver si algun dia
+canta un color.
+
+Reescalar a 40×40
 promedia los pixeles vecinos; muestrear con salto los ignora. Los colores que
 salgan **pueden no ser exactamente los mismos**. La funcion es visual, asi que se
 comprueba mirando la app, no con una prueba: **hay que abrir la biblioteca y ver
@@ -3265,7 +3271,9 @@ pruebas de los dos modulos con `--rerun-tasks` en verde, y `RecorteTest` lanzada
 falla con "No tests found" — o sea que las ocho se ejecutan de verdad y no es
 que no fallen.
 
-**LO QUE NO ESTA COMPROBADO**: que una pagina de verdad se recorte igual que
+**COMPROBADO EN EL MOVIL (04/09/2026)**: entra en el "de Android funciona todo"
+de Dani. Queda escrito lo que se miraba, por si vuelve:
+que una pagina de verdad se recorte igual que
 antes. Es la misma aritmetica sobre los mismos pixeles y la prueba cubre las
 reglas, pero **el camino Bitmap -> lambdas -> Bitmap no lo ha recorrido ningun
 comic**. Se ve en un segundo: abrir un CBZ con marco blanco y el ajuste de
@@ -3326,7 +3334,8 @@ Verificado: `comprobar.py` con **PROBLEMAS: 0**, `:app:assembleDebug` y las
 pruebas de los dos modulos con `--rerun-tasks` en verde, y `ImagenesTest` lanzada
 por separado con `--tests`.
 
-**LO QUE NO ESTA COMPROBADO**: que un CBZ de verdad liste sus paginas igual que
+**COMPROBADO EN EL MOVIL (04/09/2026)**, dentro del "de Android funciona todo":
+que un CBZ de verdad liste sus paginas igual que
 antes. El predicado y el comparador son los mismos caracteres movidos de sitio,
 pero **por el camino nuevo no ha pasado ningun comic**. Se ve abriendo uno
 cualquiera: si el orden fuera mal, se nota a la primera.
@@ -3387,7 +3396,11 @@ Verificado: `comprobar.py` con **PROBLEMAS: 0**, `:app:assembleDebug` sin un sol
 `w:`, las pruebas de los dos modulos con `--rerun-tasks` en verde, y
 `LimpiezaTest` lanzada por separado con `--tests`.
 
-**LO QUE NO ESTA COMPROBADO, y aqui importa mas que de costumbre**: la limpieza
+**LO QUE SIGUE SIN COMPROBAR, y aqui importa mas que de costumbre.** El
+"de Android funciona todo" del 04/09/2026 cubre que la app funciona; **NO consta
+que se haya pulsado el boton de limpiar sobre una carpeta de verdad**, que es
+otra cosa. Se pregunto expresamente y no se contesto, asi que se deja como
+pendiente en vez de darlo por bueno: la limpieza
 **no se ha ejecutado sobre una carpeta de verdad**. Las reglas estan probadas una
 a una; lo que no ha pasado por ningun fichero es el camino entero. Si se prueba
 en el movil, **que sea sobre una carpeta de la que haya copia**.
@@ -3432,6 +3445,15 @@ seguir abriendo el menu).
 
 ### Pendiente
 
+- **Pulsar el boton de limpiar la biblioteca sobre una carpeta de verdad**, y
+  **que sea una de la que haya copia**. Las reglas tienen catorce pruebas desde
+  la tanda 11, pero el camino entero —contar paginas, renombrar y borrar con
+  SAF— no lo ha recorrido ningun fichero.
+- **Mirar la tanda 12 (el acabado de `better-ui`) en el movil**: que la bola de
+  los interruptores se deslice y no salte, que dandole dos veces seguidas no se
+  teletransporte, que las cartas de la rejilla se encojan bajo el dedo y —lo que
+  mas riesgo tiene, porque cambio como se conecta el toque— **que la pulsacion
+  larga siga abriendo el menu del comic**.
 - **Confirmar que la pantalla en negro se ha ido.** La causa está encontrada y
   arreglada (ver más abajo), pero hasta que Dani no lo use un rato no está
   cerrado. Si vuelve, el rastro ahora incluye cuánto tarda el barrido del índice.
