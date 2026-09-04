@@ -3996,9 +3996,25 @@ empaquetadores no lo vuelven a comprimir, asi que ese camino no es un caso raro
 de reserva: en un CBZ normal puede ser el habitual. Por eso se atiende antes que
 el deflate.
 
-Verificado: **nada de esto**. `comprobar.py` en 0 y Android sigue en verde, que es
-lo unico que se puede decir desde aqui. **Android:** no lo usa nadie, no hay nada
-que mirar. **iOS:** es todo suyo y no lo ha compilado nadie todavia.
+**EL CI DIJO QUE NO, Y NO POR NINGUNA DE LAS DOS.** Dos errores, y los dos el
+mismo: `Unresolved reference 'fileHandleForReadingAtPath'`.
+
+> **Los metodos de una *category* de Objective-C hay que importarlos uno a uno.**
+> En Kotlin/Native no son metodos de la clase: son funciones de extension sobre
+> su companion. Sin el `import`, la llamada sencillamente no existe.
+
+`DiscoIOS` ya lo hacia —importa `stringWithContentsOfFile` y `writeToFile`— y aun
+asi se paso por alto. **Merece estar escrito aqui**: es un fallo que en Android
+no existe, que `comprobar.py` no puede ver y que cuesta una vuelta entera de CI
+cada vez.
+
+**Y las dos sospechas marcadas eran falsas**: zlib, `inflateInit2_`, `ZLIB_VERSION`
+y la ventana `-15` **pasaron a la primera**. Lo dificil compilo y lo trivial no,
+que es como suele ir.
+
+Verificado tras el arreglo: `comprobar.py` en 0 y Android en verde, que es lo
+unico que se puede decir desde aqui. **Android:** no lo usa nadie. **iOS:** lo
+dice el CI.
 
 **LO SIGUIENTE**: convertir esos bytes en `ImageBitmap`. En Android lo hace
 `BitmapFactory`; en iOS sera Skia, que viene con Compose Multiplatform. Y ahi

@@ -13,6 +13,13 @@ import platform.Foundation.NSFileHandle
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSFileSize
 import platform.Foundation.closeFile
+// LOS METODOS DE UNA *CATEGORY* DE OBJECTIVE-C SE IMPORTAN UNO A UNO. En
+// Kotlin/Native no son metodos de la clase: son funciones de extension sobre su
+// companion, y sin el import la llamada no existe. Lo mismo que ya hace DiscoIOS
+// con stringWithContentsOfFile y writeToFile. **Es lo unico que fallo del CI de
+// esta tanda**, y no fue ninguna de las dos cosas que se habian marcado como
+// sospechosas: zlib, inflateInit2_ y la ventana -15 pasaron a la primera.
+import platform.Foundation.fileHandleForReadingAtPath
 import platform.Foundation.readDataOfLength
 import platform.Foundation.seekToFileOffset
 import platform.posix.memcpy
