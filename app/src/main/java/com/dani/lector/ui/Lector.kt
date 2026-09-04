@@ -1,7 +1,6 @@
 package com.dani.lector.ui
 
 import android.app.Activity
-import android.graphics.Bitmap
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
@@ -26,7 +25,8 @@ import androidx.compose.ui.Modifier
 import android.content.Intent
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
@@ -432,7 +432,7 @@ private fun HojaExportar(
     val ctx = LocalContext.current
     val estadoHoja = rememberModalBottomSheetState()
     val alcance = rememberCoroutineScope()
-    var bmp by remember(nombrePagina) { mutableStateOf<Bitmap?>(null) }
+    var bmp by remember(nombrePagina) { mutableStateOf<ImageBitmap?>(null) }
     var aviso by remember { mutableStateOf("") }
     // Mientras escribe: las dos opciones se apagan para que no se pueda pulsar
     // dos veces y salgan dos ficheros.
@@ -471,7 +471,10 @@ private fun HojaExportar(
                 trabajando = true
                 alcance.launch {
                     val bien = withContext(Dispatchers.IO) {
-                        Exportar.aGaleria(ctx, b, fichero)
+                        // .asAndroidBitmap() porque comprimir a JPEG es de
+                        // Android y Exportar se queda en :app. Una vez por
+                        // pagina guardada, no por repintado.
+                        Exportar.aGaleria(ctx, b.asAndroidBitmap(), fichero)
                     }
                     trabajando = false
                     aviso = if (bien) "Guardada en la galería"
@@ -484,7 +487,7 @@ private fun HojaExportar(
                 trabajando = true
                 alcance.launch {
                     val intent = withContext(Dispatchers.IO) {
-                        Exportar.intentDeCompartir(ctx, b, fichero)
+                        Exportar.intentDeCompartir(ctx, b.asAndroidBitmap(), fichero)
                     }
                     trabajando = false
                     if (intent == null) aviso = "No se ha podido preparar la imagen"
@@ -510,7 +513,7 @@ private fun Miniatura(
     vm: VistaModelo, uri: String, nombre: String, num: Int,
     actual: Boolean, marcada: Boolean, onIr: () -> Unit
 ) {
-    var bmp by remember(nombre) { mutableStateOf<Bitmap?>(null) }
+    var bmp by remember(nombre) { mutableStateOf<ImageBitmap?>(null) }
     LaunchedEffect(nombre) {
         // 110 px: por debajo del limite de miniatura, asi va a su propia cache
         // y no echa fuera las paginas que estas leyendo
@@ -522,7 +525,7 @@ private fun Miniatura(
     ) {
         Box(Modifier.width(50.dp).height(75.dp).caratula(FormaChapa).background(Panel)) {
             bmp?.let {
-                Image(it.asImageBitmap(), "Página $num", Modifier.fillMaxSize(),
+                Image(it, "Página $num", Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop)
             }
             // asi se encuentran los marcapaginas: pasando la tira
@@ -760,7 +763,7 @@ private fun Contenido(
     vm: VistaModelo, uri: String, nombre: String, anchoPx: Int, num: Int, mod: Modifier,
     onProporcion: (Float) -> Unit = {}
 ) {
-    var bmp by remember(nombre) { mutableStateOf<Bitmap?>(null) }
+    var bmp by remember(nombre) { mutableStateOf<ImageBitmap?>(null) }
     var fallo by remember(nombre) { mutableStateOf(false) }
     // Se guarda por NOMBRE y no por nombre+ancho a proposito: al pedir la
     // version de detalle, la pequeña sigue en pantalla mientras se decodifica
@@ -773,7 +776,7 @@ private fun Contenido(
         } else if (bmp == null) fallo = true
     }
     when {
-        bmp != null -> Image(bmp!!.asImageBitmap(), "Página $num",
+        bmp != null -> Image(bmp!!, "Página $num",
             mod.fillMaxWidth(), contentScale = ContentScale.Fit)
         fallo -> Box(Modifier.fillMaxWidth().height(200.dp), Alignment.Center) {
             Text("No se ha podido leer la página $num", style = Tipo.secundario, color = Tenue)

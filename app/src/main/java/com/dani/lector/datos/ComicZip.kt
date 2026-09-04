@@ -3,17 +3,13 @@ package com.dani.lector.datos
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import android.net.Uri
 import com.github.junrar.Archive
 import java.io.File
 import java.io.InputStream
 import java.util.zip.ZipInputStream
-
-/** Resultado de leer un comic: o las paginas, o el motivo por el que no se ha podido. */
-sealed class Paginas {
-    data class Ok(val nombres: List<String>) : Paginas()
-    data class Error(val motivo: String) : Paginas()
-}
 
 /**
  * Lectura de CBZ (ZIP) y CBR (RAR).
@@ -27,8 +23,8 @@ object ComicZip {
      * descomprime justo al llegar a ella, y por eso parpadea al pasar.
      * Ocho paginas a media resolucion caben de sobra en memoria.
      */
-    private val cachePaginas = object : android.util.LruCache<String, Bitmap>(8) {
-        override fun sizeOf(key: String, value: Bitmap) = 1
+    private val cachePaginas = object : android.util.LruCache<String, ImageBitmap>(8) {
+        override fun sizeOf(key: String, value: ImageBitmap) = 1
     }
 
     /**
@@ -40,8 +36,8 @@ object ComicZip {
      * las paginas que estabas leyendo. Luego pasas pagina y parpadea. Caben
      * muchas mas porque pesan una milesima.
      */
-    private val cacheMini = object : android.util.LruCache<String, Bitmap>(60) {
-        override fun sizeOf(key: String, value: Bitmap) = 1
+    private val cacheMini = object : android.util.LruCache<String, ImageBitmap>(60) {
+        override fun sizeOf(key: String, value: ImageBitmap) = 1
     }
 
     /**
@@ -51,8 +47,8 @@ object ComicZip {
      * ocho de esas se comen el limite de memoria de la app. Dos bastan porque
      * solo se amplia la que tienes delante.
      */
-    private val cacheDetalle = object : android.util.LruCache<String, Bitmap>(2) {
-        override fun sizeOf(key: String, value: Bitmap) = 1
+    private val cacheDetalle = object : android.util.LruCache<String, ImageBitmap>(2) {
+        override fun sizeOf(key: String, value: ImageBitmap) = 1
     }
 
     /** El limite por debajo del cual algo es una miniatura y no una pagina. */
@@ -140,7 +136,7 @@ object ComicZip {
 
     fun pagina(
         ctx: Context, uri: String, nombre: String, anchoMax: Int, recortar: Boolean = false
-    ): Bitmap? = try {
+    ): ImageBitmap? = try {
         // el recorte entra en la clave: si cambias el ajuste, la cache no
         // puede devolverte la version anterior
         val clave = clavePagina(uri, nombre, anchoMax) + if (recortar) "|r" else ""
@@ -180,7 +176,13 @@ object ComicZip {
             else -> null
         }
 
+        // LA CONVERSION A ImageBitmap SE HACE AQUI, UNA VEZ POR DECODIFICACION.
+        // Antes salia un Bitmap y el visor llamaba a asImageBitmap() dentro del
+        // composable, o sea **una conversion por recomposicion** — el mismo
+        // fallo que la tanda 7 quito de la rejilla. Y ademas ImageBitmap es el
+        // tipo que entienden las dos plataformas, asi que es la frontera.
         bmp?.let { if (recortar) RecorteAndroid.aplicar(it) else it }
+            ?.asImageBitmap()
             ?.also { cache(anchoMax).put(clave, it) }
     } catch (_: Throwable) { null }
 
@@ -282,7 +284,7 @@ object ComicZip {
         }
     }
 
-    fun portada(ctx: Context, uri: String, anchoMax: Int = 300): Bitmap? {
+    fun portada(ctx: Context, uri: String, anchoMax: Int = 300): ImageBitmap? {
         val p = paginas(ctx, uri)
         if (p !is Paginas.Ok) return null
         return pagina(ctx, uri, p.nombres.first(), anchoMax)

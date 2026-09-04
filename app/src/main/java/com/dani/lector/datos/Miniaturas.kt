@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import android.util.LruCache
 import kotlinx.coroutines.Dispatchers
@@ -201,12 +202,19 @@ object Miniaturas {
         // lo que hay en memoria pesa lo mismo y la cuenta del techo cuadra. Si
         // guardar falla, se usa la que ya se tiene: peor cache, pero portada.
         val guardada = runCatching {
-            f.outputStream().use { bmp.compress(Bitmap.CompressFormat.JPEG, 80, it) }
+            // De vuelta a Bitmap SOLO para guardarlo: comprimir a JPEG es de
+            // Android y esto vive en :app. Es una vez en la vida de cada comic,
+            // no una por repintado, que es lo que se ha quitado del visor.
+            f.outputStream().use {
+                bmp.asAndroidBitmap().compress(Bitmap.CompressFormat.JPEG, 80, it)
+            }
             podarSiToca(ctx)
-            decodificar(f)
+            // Se relee lo GUARDADO y no se usa lo recien salido del comic: asi
+            // en memoria vive la version de 565 y la cuenta del techo cuadra.
+            decodificar(f)?.asImageBitmap()
         }.getOrNull() ?: bmp
 
-        val img = guardada.asImageBitmap()
+        val img = guardada
         memoria.put(uri, img)
         apunta(ctx, disco = false, ms = System.currentTimeMillis() - tGenerar)
         img

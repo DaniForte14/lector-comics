@@ -3756,6 +3756,48 @@ sospechas falsas seguidas**. Quitarlos seria tirar justo lo que funciono.
 quitado y medido. Lo que queda cuesta bastante mas y puede que ya no moleste:
 eso lo dice el que la usa, no el numero.
 
+### Tanda 15: la pagina que sale del comic ya es `ImageBitmap` (04/09/2026)
+
+Paso 2 del mapa del iPad —"leer un CBZ"— empezado por su mitad barata: **antes de
+poner una interfaz delante hay que arreglar el tipo que cruza la frontera**.
+
+`ComicZip.pagina` y `ComicZip.portada` devolvian `android.graphics.Bitmap`. Ahora
+devuelven `ImageBitmap`, que es el tipo que entiende Compose en las dos
+plataformas y el que ya usaba `Miniaturas` desde la tanda 7. Las tres caches del
+visor —paginas, miniaturas y detalle— guardan tambien `ImageBitmap`.
+
+**Y ESTO NO ERA SOLO PARA EL IPAD: en el visor habia el mismo fallo que la tanda
+7 quito de la rejilla.** El visor guardaba `Bitmap` y llamaba a `asImageBitmap()`
+**dentro del composable**, en tres sitios. Eso es **una conversion por
+recomposicion** en vez de una por decodificacion, y ocurre justo mientras se
+amplia y se arrastra una pagina. Ahora la conversion se hace una vez, al
+decodificar, y el visor pinta lo que le llega.
+
+`Paginas` se va a `:shared`. Es el contrato —una lista de nombres o una cadena—
+y no sabe de ninguna plataforma; lo usan el visor, el conversor y el ViewModel.
+**El motivo sigue siendo texto y no un codigo de error**, a proposito: lo unico
+que se hace con el es enseñarlo, y cada fallo tiene su frase propia. Una
+enumeracion obligaria a traducir codigo a frase en la pantalla, que es donde peor
+se mantiene.
+
+**DOS SITIOS VUELVEN A `Bitmap`, Y ESTA BIEN.** Guardar la miniatura en disco y
+exportar una pagina son comprimir a JPEG, que es de Android; las dos llaman a
+`asAndroidBitmap()`. Es **una vez por portada guardada y una por pagina
+exportada**, contra las que se han quitado, que eran por repintado. El saldo es a
+favor y las dos piezas se quedan en `:app` de todas formas.
+
+Verificado: `comprobar.py` con **PROBLEMAS: 0**, `:app:assembleDebug` sin un solo
+`w:` y las pruebas en verde.
+
+**LO QUE NO ESTA COMPROBADO**: que el visor siga viendose igual. Es un cambio de
+tipo, no de pixeles, pero **por el camino nuevo no ha pasado ninguna pagina**. Se
+mira abriendo un comic: que la pagina salga, que ampliar siga funcionando, que la
+tira de miniaturas de abajo se pinte, y que guardar y compartir una pagina —que
+son los dos sitios que vuelven a `Bitmap`— hagan su fichero.
+
+**LO SIGUIENTE**: ya con el tipo bueno en la frontera, la interfaz de leer comics
+es mecanica. Y despues `Escaner`, que es la pieza mas distinta de todo el port.
+
 ### Pendiente
 
 - **Pulsar el boton de limpiar la biblioteca sobre una carpeta de verdad**, y
