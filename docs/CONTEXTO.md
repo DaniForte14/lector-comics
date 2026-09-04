@@ -3666,6 +3666,53 @@ el caso pequeño**, que suele ser justo el que se esta investigando. La linea
 `LENTA` de `Escaner` tiene la misma forma y por eso lleva escrito que en toda la
 caceria de los 706 ms no llego a saltar ni una vez.
 
+### EL TIRON ERA EL CARRUSEL DESTRUYENDO LA BIBLIOTECA (04/09/2026)
+
+Con `Fluidez` puesto, el rastro dijo en cuatro lineas lo que cinco sospechas no
+habian conseguido:
+
+```
+16:32:40.674    fluidez: 17 de 300 fotogramas por encima de 32 ms, el peor 172 ms
+16:32:44.315    fluidez: 16 de 300, el peor 135 ms
+16:32:48.531    fluidez:  9 de 300, el peor 111 ms
+16:32:52.946    fluidez:  7 de 300, el peor 91 ms
+```
+
+**El tiron existe y es gordo**: 172 ms es perder diez fotogramas seguidos. Y va
+bajando —17, 16, 9, 7—, o sea que es coste de PRIMERA VEZ.
+
+**LA CAUSA ESTABA EN EL RASTRO DESDE EL PRIMER DIA Y NADIE LA HABIA LEIDO.** En
+todas las sesiones, cada vuelta a la pestaña 0 apunta otra vez
+`carpeta: «raíz»`. Esa linea sale de un `LaunchedEffect(docId)`, y `docId` **no
+habia cambiado**. Un LaunchedEffect con la misma clave solo vuelve a dispararse
+si el composable se ha recreado:
+
+> **`HorizontalPager` DESTRUYE por defecto la pagina que no se ve.** Cada
+> deslizamiento entre pestañas rehacia `PantallaCarpeta` entera: releer la
+> carpeta, recomponer el banner, "tu recorrido" y los dos carruseles, y perder
+> por el camino todos los `remember` —incluidas las portadas ya resueltas—.
+
+Arreglado con `beyondViewportPageCount = 1`, que mantiene compuestas las vecinas.
+Cuesta tener tres pantallas ligeras en memoria y ahorra rehacer una entera en
+cada pasada.
+
+**POR QUE SE TARDO TANTO, que es la leccion.** Las `carpeta: «raíz»` estaban en
+el rastro desde el principio y se leyeron como ruido —"se relee la carpeta al
+volver, son 15 ms, no es el tiron"—. Y era verdad que los 15 ms no eran el
+tiron: **el tiron era lo que esa linea DELATABA**, que es una recomposicion
+entera. Se estaba mirando el coste de la linea en vez de preguntar por que
+aparecia.
+
+Y hasta que no hubo un instrumento que midiera **fotogramas** en vez de sucesos,
+no habia forma de saber si eso importaba o no. Cinco sospechas cayeron por medir
+indicios; la buena salio a la primera con el instrumento correcto.
+
+**SIN CONFIRMAR TODAVIA**: falta el rastro con el arreglo puesto. Lo que tiene
+que pasar es que **desaparezcan las lineas `carpeta: «raíz»` al cambiar de
+pestaña** —solo deben salir al entrar o salir de una carpeta de verdad— y que
+los numeros de `fluidez` bajen. Si no bajan, el pager no era todo y queda el
+Baseline Profile, que es la otra mitad del coste de primera vez.
+
 ### Pendiente
 
 - **Pulsar el boton de limpiar la biblioteca sobre una carpeta de verdad**, y

@@ -294,7 +294,27 @@ class MainActivity : ComponentActivity() {
                                     "pestaña: ${paginas.currentPage}")
                             }
 
-                            HorizontalPager(paginas, Modifier.fillMaxSize()) { pagina ->
+                            // LAS TRES PAGINAS SE QUEDAN VIVAS, y esto es el
+                            // arreglo de los tirones del 04/09/2026.
+                            //
+                            // Por defecto el pager DESTRUYE la pagina que no se
+                            // ve. En el rastro se veia clarisimo: cada vuelta a
+                            // la pestaña 0 apuntaba otra vez "carpeta: «raíz»",
+                            // que sale de un LaunchedEffect(docId) — o sea que
+                            // el docId no habia cambiado y la pantalla se estaba
+                            // RECREANDO entera. Cada deslizamiento rehacia la
+                            // biblioteca de cero: releer la carpeta, recomponer
+                            // el banner, el recorrido y los dos carruseles, y
+                            // perder todos los `remember` por el camino.
+                            //
+                            // Con 1 se mantienen compuestas las vecinas. Cuesta
+                            // memoria —tres pantallas ligeras— y ahorra el
+                            // trabajo entero en cada pasada, que es justo donde
+                            // Fluidez medía 17 de cada 300 fotogramas largos.
+                            HorizontalPager(
+                                paginas, Modifier.fillMaxSize(),
+                                beyondViewportPageCount = 1
+                            ) { pagina ->
                                 when (pagina) {
                                     0 -> {
                                         val actual = pila.lastOrNull()
