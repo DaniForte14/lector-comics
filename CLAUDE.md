@@ -151,6 +151,8 @@ datos/  Modelos, Parser, Escaner, Formatos, Busqueda, Progreso, Marcadores,
         Racha, Sesiones, Calendario, Estadisticas, Huecos, EstadoSerie,
         SeriesRemotas, Novedades, Vigilante, Rastro, Orden, Salto, Siguiente,
         Exportar
+        Disco y Preferencias (interfaces; una línea en VistaModelo decide
+        si entra la versión de Android o la de iOS)
 red/    FuenteComics (interfaz) + ComicVine (única implementación)
 ui/     Tema (tokens y el interruptor de estética), Componentes, Lector,
         y una pantalla por fichero: PantallaBiblioteca, PantallaMarcadores,

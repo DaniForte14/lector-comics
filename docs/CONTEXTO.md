@@ -3443,6 +3443,67 @@ bola debe deslizarse, y dandole dos veces rapido no debe teletransportarse) y
 cualquier carta de la rejilla (debe encogerse bajo el dedo, y la pulsacion larga
 seguir abriendo el menu).
 
+### Tanda 13: los ajustes detras de una interfaz (04/09/2026)
+
+Primer paso real hacia mover `VistaModelo`, que es **el tapon del port**: las
+cuatro pantallas reciben `vm: VistaModelo`, asi que mientras esa clase siga en
+`:app` no se puede mudar ninguna.
+
+`VistaModelo` tenia cuatro ataduras a Android. Esta tanda quita una: los ajustes.
+
+| | |
+|---|---|
+| `shared/.../datos/Preferencias.kt` | la interfaz: ocho metodos, texto/si/entero/largo |
+| `shared/.../androidMain/.../PreferenciasAndroid.kt` | `SharedPreferences` |
+| `shared/.../iosMain/.../PreferenciasIOS.kt` | `NSUserDefaults`, **escrito sin compilar** |
+
+Misma jugada que `Disco` y que `FuenteComics`, que han funcionado las dos veces:
+una interfaz pequeña y **una sola linea decide cual entra**
+(`private val ajustes: Preferencias = PreferenciasAndroid(ctx)`).
+
+**AQUI NO SE MIGRA NADA.** `PreferenciasAndroid` usa el **mismo fichero
+(`"lector"`) y las mismas claves** que hasta hoy, asi que lo que Dani tiene
+guardado en el movil —la carpeta elegida, sus interruptores del visor, su orden
+de la biblioteca— se sigue leyendo igual. Diecisiete reemplazos, uno por acceso,
+**cada uno conservando su valor por defecto literal**: `recortar` sigue siendo
+`true`, `llenar` sigue siendo `false`.
+
+**LA TRAMPA DE VERDAD ESTA EN iOS, y es la razon de que esta tanda merezca su
+comentario largo.** `NSUserDefaults.boolForKey` de una clave que no existe
+devuelve **false**, e `integerForKey` devuelve **0**: no hay forma de distinguir
+"no guardado" de "guardado en false". Leyendolos a pelo, `recortar` y
+`autoConvertir` —que van **encendidos** de serie— **apareceran apagados la
+primera vez que se abra la app en el iPad**, y nadie sabria por que. Por eso las
+tres lecturas miran `objectForKey` antes y, si la clave no esta, mandan el valor
+por defecto. Es el mismo tipo de fallo silencioso que ya costo caro con
+`String.format` y con `toSortedSet`.
+
+**Sin dependencia nueva.** La primera version usaba `edit { }` de
+`androidx.core:core-ktx`, que es dependencia de `:app` y no de `:shared`; lo
+canto el compilador. Se hace con el `Editor` a pelo y `apply()`, que es
+exactamente lo que ese azucar hace por dentro.
+
+**Y se quito un `PreferenciasEnMemoria` que se habia escrito por simetria con
+`DiscoEnMemoria`.** Aquel existe porque `AlmacenesTest` tira de el; este no lo
+usaba nadie. Cuando una prueba lo necesite son diez lineas.
+
+Verificado: `comprobar.py` con **PROBLEMAS: 0**, `:app:assembleDebug` sin un solo
+`w:` y las pruebas en verde.
+
+**LO QUE NO ESTA VERIFICADO, y es lo que hay que mirar en el movil**: que los
+ajustes guardados sigan ahi. Si una clave se hubiera escrito mal, el ajuste
+**volveria a su valor por defecto sin dar ningun error** — que es justo el fallo
+que este proyecto persigue. Se comprueba abriendo Ajustes: la carpeta de la
+biblioteca tiene que seguir elegida y los interruptores como se dejaron.
+No hay prueba automatica posible: esto necesita `Context`.
+
+**LO QUE FALTA PARA MOVER `VistaModelo`**, ahora que queda una menos:
+
+1. ~~preferencias~~ **hecho**
+2. `ComicZip` / `Miniaturas` / `Rar5` detras de interfaz (la tuberia de leer)
+3. `Escaner` (SAF), que es la pieza mas distinta de todas
+4. `AndroidViewModel(Application)` -> el `ViewModel` multiplataforma
+
 ### Pendiente
 
 - **Pulsar el boton de limpiar la biblioteca sobre una carpeta de verdad**, y

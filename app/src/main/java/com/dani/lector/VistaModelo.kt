@@ -9,7 +9,6 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.datetime.minus
 import android.app.Application
-import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.dani.lector.datos.*
@@ -60,12 +59,10 @@ data class Estado(
 class VistaModelo(app: Application) : AndroidViewModel(app) {
 
     private val ctx get() = getApplication<Application>()
-    // POR LAZY Y NO POR `get()`: con `get()` cada uno de los ~20 accesos a
-    // prefs de esta clase llamaba a getSharedPreferences, y algunos (orden) se
-    // leen dentro de la lista de la biblioteca, o sea por recomposicion.
-    private val prefs by lazy {
-        ctx.getSharedPreferences("lector", android.content.Context.MODE_PRIVATE)
-    }
+    // UNA SOLA LINEA DECIDE DONDE VAN LOS AJUSTES, igual que con el disco de
+    // abajo. En Android son las SharedPreferences de siempre —el mismo fichero
+    // y las mismas claves, aqui no se migra nada—, y en iOS sera NSUserDefaults.
+    private val ajustes: Preferencias = PreferenciasAndroid(ctx)
 
     // UN SOLO DISCO PARA LOS CUATRO ALMACENES. Es la unica linea de la app que
     // decide donde se guardan las cosas; en iOS sera un DiscoIOS y no cambia
@@ -86,8 +83,8 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
     val estado = _estado.asStateFlow()
 
     var raiz: String?
-        get() = prefs.getString("raiz", null)
-        private set(v) { prefs.edit { putString("raiz", v) } }
+        get() = ajustes.texto("raiz")
+        private set(v) { ajustes.ponTexto("raiz", v) }
 
     init {
         _estado.update { it.copy(hayCarpeta = raiz != null) }
@@ -264,9 +261,9 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
      * se gana bastante pantalla y el recorte se descarta solo si sale raro.
      */
     var recortar: Boolean
-        get() = prefs.getBoolean("recortar", true)
+        get() = ajustes.si("recortar", true)
         set(v) {
-            prefs.edit { putBoolean("recortar", v) }
+            ajustes.ponSi("recortar", v)
             _estado.update { it.copy(sello = it.sello + 1) }
         }
 
@@ -279,9 +276,9 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
      * se van trozos de viñeta.
      */
     var llenar: Boolean
-        get() = prefs.getBoolean("llenar", false)
+        get() = ajustes.si("llenar", false)
         set(v) {
-            prefs.edit { putBoolean("llenar", v) }
+            ajustes.ponSi("llenar", v)
             _estado.update { it.copy(sello = it.sello + 1) }
         }
 
@@ -295,17 +292,17 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
      * Ajustes de siempre.
      */
     var autoConvertir: Boolean
-        get() = prefs.getBoolean("autoConvertir", true)
+        get() = ajustes.si("autoConvertir", true)
         set(v) {
-            prefs.edit { putBoolean("autoConvertir", v) }
+            ajustes.ponSi("autoConvertir", v)
             _estado.update { it.copy(sello = it.sello + 1) }
         }
 
     /** Dos paginas a la vez al girar el movil. Solo aplica en horizontal. */
     var dobles: Boolean
-        get() = prefs.getBoolean("dobles", true)
+        get() = ajustes.si("dobles", true)
         set(v) {
-            prefs.edit { putBoolean("dobles", v) }
+            ajustes.ponSi("dobles", v)
             _estado.update { it.copy(sello = it.sello + 1) }
         }
 
@@ -599,11 +596,11 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
         // 20 horas y no 24 a proposito: con 24 clavadas, quien abre la app cada
         // mañana a la misma hora se salta la comprobacion un dia si y otro no,
         // porque llega siempre unos minutos antes de cumplirse el plazo.
-        if (ahora - prefs.getLong("novedades_vistas", 0) < 20 * 60 * 60 * 1000) return
+        if (ahora - ajustes.largo("novedades_vistas", 0) < 20 * 60 * 60 * 1000) return
 
         revisionNovedades?.cancel()
         revisionNovedades = viewModelScope.launch {
-            prefs.edit { putLong("novedades_vistas", ahora) }
+            ajustes.ponLargo("novedades_vistas", ahora)
 
             val avisos = Vigilante.pasada(
                 ctx = ctx,
@@ -739,11 +736,11 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
 
     /** Lo ultimo que buscaste, de lo mas reciente a lo mas viejo. */
     val recientes: List<String>
-        get() = prefs.getString("recientes", "").orEmpty()
+        get() = ajustes.texto("recientes").orEmpty()
             .split("\n").filter { it.isNotBlank() }
 
     private fun guardarRecientes(l: List<String>) {
-        prefs.edit { putString("recientes", l.joinToString("\n")) }
+        ajustes.ponTexto("recientes", l.joinToString("\n"))
         _estado.update { it.copy(sello = it.sello + 1) }
     }
 
@@ -998,9 +995,9 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
      * sale al reves que la de al lado. Se elige una vez y vale para todas.
      */
     var orden: Orden
-        get() = Orden.entries.getOrNull(prefs.getInt("orden", 0)) ?: Orden.NUMERO
+        get() = Orden.entries.getOrNull(ajustes.entero("orden", 0)) ?: Orden.NUMERO
         set(v) {
-            prefs.edit { putInt("orden", v.ordinal) }
+            ajustes.ponEntero("orden", v.ordinal)
             _estado.update { it.copy(sello = it.sello + 1) }
         }
 
@@ -1071,19 +1068,19 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
      * un solo uso y no se pueden volver a abrir mañana.
      */
     var carpetaCopia: String?
-        get() = prefs.getString("carpeta_copia", null)
-        private set(v) { prefs.edit { putString("carpeta_copia", v) } }
+        get() = ajustes.texto("carpeta_copia")
+        private set(v) { ajustes.ponTexto("carpeta_copia", v) }
 
     var copiaAlSalir: Boolean
-        get() = prefs.getBoolean("copia_al_salir", true)
-        set(v) { prefs.edit { putBoolean("copia_al_salir", v) }
+        get() = ajustes.si("copia_al_salir", true)
+        set(v) { ajustes.ponSi("copia_al_salir", v)
                  _estado.update { it.copy(sello = it.sello + 1) } }
 
     fun elegirCarpetaCopia(uri: String) {
         carpetaCopia = uri
         // Se olvida cuando se hizo la ultima: la carpeta es otra y ahi todavia
         // no hay copia, por muy al dia que estuviera la de antes.
-        prefs.edit { putLong("copia_hecha", 0) }
+        ajustes.ponLargo("copia_hecha", 0)
         _estado.update { it.copy(sello = it.sello + 1) }
     }
 
@@ -1113,7 +1110,7 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
             marcadores.todos().maxOfOrNull { it.cuando } ?: 0L,
             sesiones.todas().maxOfOrNull { it.cuando } ?: 0L
         )
-        if (cambio == 0L || cambio <= prefs.getLong("copia_hecha", 0)) return
+        if (cambio == 0L || cambio <= ajustes.largo("copia_hecha", 0)) return
 
         // viewModelScope y no una corrutina suelta: si el sistema mata el
         // proceso a mitad, la copia se queda sin escribir y se hara la proxima
@@ -1122,7 +1119,7 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
             runCatching {
                 val destino = ficheroDeCopia(android.net.Uri.parse(carpeta)) ?: return@launch
                 escribir(destino, copiaJson())
-                prefs.edit { putLong("copia_hecha", cambio) }
+                ajustes.ponLargo("copia_hecha", cambio)
             }
         }
     }
