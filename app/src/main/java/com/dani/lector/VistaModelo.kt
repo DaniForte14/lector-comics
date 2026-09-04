@@ -73,6 +73,9 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
     // UIDocumentPicker con marcadores con permiso, que no se parece en nada.
     private val biblioteca: Biblioteca = BibliotecaAndroid(ctx)
 
+    // Y la cuarta: la cache de portadas.
+    private val portadas: Portadas = PortadasAndroid(ctx)
+
     // UN SOLO DISCO PARA LOS CUATRO ALMACENES. Es la unica linea de la app que
     // decide donde se guardan las cosas; en iOS sera un DiscoIOS y no cambia
     // nada mas. Misma jugada que LectorApp con la fuente de datos.
@@ -318,10 +321,10 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
     fun paginas(uri: String) = archivo.paginas(uri)
     fun pagina(uri: String, nombre: String, ancho: Int) =
         archivo.pagina(uri, nombre, ancho, recortar)
-    suspend fun portada(uri: String) = Miniaturas.obtener(ctx, uri)
+    suspend fun portada(uri: String) = portadas.obtener(uri)
 
     /** La portada solo si ya esta en memoria. Para pintar sin esperar al scroll. */
-    fun portadaYa(uri: String) = Miniaturas.enMemoria(uri)
+    fun portadaYa(uri: String) = portadas.enMemoria(uri)
 
     /**
      * Lo que ocupan los comics convertidos que se guardan en la cache.
@@ -338,10 +341,10 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
     }
 
     /** Lo que ocupan las miniaturas del catalogo. */
-    fun cachePortadas(): Long = Miniaturas.tamano(ctx)
+    fun cachePortadas(): Long = portadas.tamano()
 
     fun vaciarPortadas() {
-        Miniaturas.limpiar(ctx)
+        portadas.limpiar()
         ColorPortada.olvidar()      // los colores salen de las miniaturas
         _estado.update { it.copy(sello = it.sello + 1) }
     }

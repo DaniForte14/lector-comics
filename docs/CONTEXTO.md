@@ -3504,7 +3504,7 @@ No hay prueba automatica posible: esto necesita `Context`.
 | | llamadas |
 |---|---|
 | `Rastro` | 5 |
-| `Miniaturas` | 4 |
+| ~~`Miniaturas`~~ | ~~4~~ **hecho, tanda 18** |
 | ~~`Escaner`~~ | ~~4~~ **hecho, tanda 17** |
 | ~~`ComicZip`~~ | ~~4~~ **hecho, tanda 16** |
 | `ConversorCarpeta` | 3 |
@@ -3870,6 +3870,43 @@ Verificado: `comprobar.py` con **PROBLEMAS: 0**, `:app:assembleDebug` sin un sol
 `w:` y las pruebas en verde. **Android:** no cambia ningun comportamiento —misma
 llamada, el `Context` guardado en el envoltorio—. **iOS:** no se ha escrito nada;
 `BibliotecaIOS` es una tanda entera y de las caras.
+
+### Tanda 18: la cache de portadas, detras de una interfaz (04/09/2026)
+
+`Portadas` en `:shared`, `PortadasAndroid` en `:app`, cuatro llamadas menos en
+`VistaModelo`. Tercer envoltorio fino seguido y por el mismo motivo: **lo unico
+que hacia falta era quitarle el `Context` a quien llama**. Lo de dentro
+—`LruCache` medido por tamaño, la poda del disco a 150 MB, el cronometro de
+portadas y el `Throwable` que impide que un fichero raro tumbe la app— se queda
+donde esta, que es donde se gano.
+
+**DOS COSAS QUEDAN ESCRITAS EN LA INTERFAZ PORQUE SE VAN A OLVIDAR:**
+
+- **El techo de memoria no se puede calcular en iOS.** En Android sale de
+  `Runtime.maxMemory() / 8`, y eso no existe fuera de la JVM. En el iPad habra
+  que poner un numero fijo y prudente, y ahi no hay red: **iOS mata la app sin
+  avisar** cuando se pasa de su cuota, sin ningun `OutOfMemoryError` que atrapar
+  como en Android.
+- **`enMemoria` no suspende, y eso es su razon de ser.** Parece un duplicado de
+  `obtener` y no lo es: la version suspendida salta a un hilo de IO aunque la
+  respuesta este ahi mismo, y ese salto son uno o dos fotogramas con la carta
+  gris. Quitarla parece una simplificacion y es un parpadeo en cada scroll.
+
+Verificado: `comprobar.py` con **PROBLEMAS: 0**, `:app:assembleDebug` sin un solo
+`w:` y las pruebas en verde. **Android:** misma llamada con el `Context` en otro
+sitio; sin cambio de comportamiento. **iOS:** nada escrito.
+
+**MARCADOR DEL PORT: 4 de 9.** Hechas preferencias, `ComicZip`, `Escaner` y
+`Miniaturas`. Quedan `Rastro` (5 llamadas), `ConversorCarpeta` (3), `Rar5` (2),
+`Vigilante` (1), `ColorPortada` (1) y el `AndroidViewModel`.
+
+**Y `Rastro` no es un envoltorio mas, por eso no ha entrado hoy.** Sus llamadas
+no estan solo en `VistaModelo`: hay unas cuarenta repartidas por `MainActivity`,
+el visor, las pantallas, `Escaner` y `Miniaturas`, todas como `Rastro.apunta(ctx,
+...)`. Pasarlo a instancia obliga a tocar los cuarenta sitios; dejarlo como objeto
+global con un `Disco` dentro es justo el patron que este proyecto rechazo al
+escribir `Disco` —"un sitio mas donde algo puede estar a null cuando no toca"—.
+**Hay que decidirlo, no colarlo dentro de otra tanda.**
 
 ### Pendiente
 
