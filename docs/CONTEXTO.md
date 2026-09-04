@@ -4067,10 +4067,24 @@ aqui no da ningun error**: solo hace que la app crezca hasta que iOS la mata, qu
 es justo lo que se estaba evitando. Por eso va todo en `try/finally` y no en
 lineas seguidas.
 
-Verificado: `comprobar.py` en 0 y Android en verde. **Android:** no lo usa nadie.
-**iOS:** escrito sin compilar; lo dice el CI. La tanda anterior necesito una
-vuelta —y por un `import`, no por zlib—, asi que lo raro seria que esta pasara a
-la primera.
+**EL CI: una vuelta, y otra vez por lo trivial.** Un solo error,
+`Unresolved reference 'kCGImageAlphaPremultipliedLast'`.
+
+> **Las constantes de CoreGraphics no son constantes sueltas en Kotlin/Native**:
+> van dentro de su enumeracion (`CGImageAlphaInfo`) y hay que pedirle el
+> `.value`, que es el `UInt` que espera la API de C.
+
+**Y esto ya es un patron, con dos tandas seguidas:** ImageIO, `CFDataCreate`,
+`CGBitmapContext`, `Image.makeRaster` y `toComposeImageBitmap` compilaron **a la
+primera las dos veces**. Lo que se lleva las vueltas de CI no es la
+interoperabilidad dificil, es **como se escribe el nombre de una cosa del
+sistema**: un metodo de *category* que hay que importar, una constante que
+resulta ser un miembro de enumeracion. Son cosas que no se pueden deducir desde
+Windows y que no aparecen en ningun sitio hasta que el compilador de Apple las
+mira.
+
+Verificado tras el arreglo: `comprobar.py` en 0 y Android en verde. **Android:**
+no lo usa nadie. **iOS:** lo dice el CI.
 
 ### Pendiente
 

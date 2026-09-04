@@ -31,7 +31,11 @@ import platform.CoreGraphics.CGImageGetHeight
 import platform.CoreGraphics.CGImageGetWidth
 import platform.CoreGraphics.CGImageRelease
 import platform.CoreGraphics.CGRectMake
-import platform.CoreGraphics.kCGImageAlphaPremultipliedLast
+// LAS CONSTANTES DE CoreGraphics NO SON CONSTANTES SUELTAS en Kotlin/Native:
+// van dentro de su enumeracion y hay que pedirle el `.value`, que es el UInt que
+// espera la API de C. Es la segunda vuelta de CI que se va en algo asi —la otra
+// fue un metodo de category sin importar—; lo dificil compilo las dos veces.
+import platform.CoreGraphics.CGImageAlphaInfo
 import platform.ImageIO.CGImageSourceCreateThumbnailAtIndex
 import platform.ImageIO.CGImageSourceCreateWithData
 import platform.ImageIO.kCGImageSourceCreateThumbnailFromImageAlways
@@ -135,7 +139,8 @@ object ImagenIOS {
             val espacio = CGColorSpaceCreateDeviceRGB()
             val ctx = CGBitmapContextCreate(
                 buffer, ancho.toULong(), alto.toULong(), 8u,
-                porFila.toULong(), espacio, kCGImageAlphaPremultipliedLast
+                porFila.toULong(), espacio,
+                CGImageAlphaInfo.kCGImageAlphaPremultipliedLast.value
             )
             CGColorSpaceRelease(espacio)
             if (ctx == null) return null
