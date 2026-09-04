@@ -78,6 +78,35 @@ object Miniaturas {
     /** Como mucho tres portadas a la vez: si no, se dispara la memoria. */
     private val turnos = Semaphore(3)
 
+    // ─────────────── CRONOMETRO DE PORTADAS (04/09/2026) ───────────────
+    //
+    // Dani: "al principio cuando entro en la app todo tarda y va con lag,
+    // supongo que esta cargando las portadas". PUEDE QUE SI Y PUEDE QUE NO, y
+    // en este proyecto adivinar el rendimiento ya ha fallado tres veces
+    // seguidas. El arranque estaba cronometrado entero MENOS esto, asi que era
+    // el unico hueco por donde se podia escapar la respuesta.
+    //
+    // A PRIORI LAS PORTADAS NO DEBERIAN DAR TIRONES: se sacan en Dispatchers.IO
+    // y de tres en tres, asi que no bloquean el hilo de la interfaz. Lo que si
+    // podrian hacer es marear al recolector de basura descomprimiendo bitmaps
+    // sin parar, y ESO si se nota en la fluidez. Los dos numeros de aqui abajo
+    // distinguen los dos casos: si el total es pequeño, no eran ellas.
+    //
+    // Se apunta un RESUMEN cada 25 y no una linea por portada: con trescientos
+    // comics el rastro no tendria otra cosa y taparia lo que se busca.
+    private var deDisco = 0
+    private var msDisco = 0L
+    private var generadas = 0
+    private var msGenerar = 0L
+
+    @Synchronized
+    private fun apunta(ctx: Context, disco: Boolean, ms: Long) {
+        if (disco) { deDisco++; msDisco += ms } else { generadas++; msGenerar += ms }
+        if ((deDisco + generadas) % 25 == 0) Rastro.apunta(ctx,
+            "  portadas: $deDisco de cache ($msDisco ms), " +
+            "$generadas generadas ($msGenerar ms)")
+    }
+
     private fun carpeta(ctx: Context) = File(ctx.cacheDir, "miniaturas").apply { mkdirs() }
 
     private fun clave(uri: String): String {
@@ -113,12 +142,19 @@ object Miniaturas {
 
         val f = File(carpeta(ctx), clave(uri) + ".jpg")
         if (f.exists()) {
+            val t0 = System.currentTimeMillis()
             decodificar(f)?.let {
                 val img = it.asImageBitmap()
                 memoria.put(uri, img)
+                apunta(ctx, disco = true, ms = System.currentTimeMillis() - t0)
                 return@withContext img
             }
         }
+
+        // A partir de aqui la portada hay que SACARLA DEL COMIC, que es abrir un
+        // fichero de decenas de megas y descomprimir su primera pagina. Es el
+        // camino caro y solo se recorre una vez en la vida de cada comic.
+        val tGenerar = System.currentTimeMillis()
 
         // TODO envuelto, incluido el OutOfMemoryError.
         //
@@ -164,6 +200,7 @@ object Miniaturas {
 
         val img = guardada.asImageBitmap()
         memoria.put(uri, img)
+        apunta(ctx, disco = false, ms = System.currentTimeMillis() - tGenerar)
         img
     }
 

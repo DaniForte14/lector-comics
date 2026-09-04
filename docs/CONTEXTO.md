@@ -3524,6 +3524,59 @@ Probo el acabado en el movil y saco tres cosas. **El detalle esta en
 Verificado: `comprobar.py` con **PROBLEMAS: 0**, `:app:assembleDebug` sin un solo
 `w:` y las pruebas en verde. **Sin ver en el movil**, como toda tanda de aspecto.
 
+### El tiron del arranque: lo que el rastro descarta (04/09/2026)
+
+Dani: *"al principio cuando entro en la app todo tarda y va con lag, porque
+supongo que esta cargando las portadas"*. Pego el rastro. **La hipotesis sigue
+sin probarse, pero el rastro descarta casi todo lo demas.**
+
+**LO MEDIDO, siete arrancadas seguidas.** De "── la app arranca ──" a tener el
+indice hecho:
+
+| | ms |
+|---|---|
+| Arranque del proceso hasta `ON_CREATE` | 149-250 |
+| `fichas precargadas` | 23-66 |
+| Leer la carpeta raiz | 8-105 |
+| `indice: 293 comics` | **194-670** |
+| **Total hasta cargado del todo** | **391-956** |
+
+**Nada de eso bloquea el hilo principal**: el precalentado, el indice y el
+escaner corren en `Dispatchers.IO`. O sea que **el tiron que Dani nota no esta en
+nada de lo que hoy se mide**.
+
+**SE DESCARTO QUE EL INDICE SE RECONSTRUYA SOLO.** En el rastro del 03/09 aparece
+tres veces en una sesion, que era la sospecha buena a primera vista. Se miro:
+`tirarIndice()` solo lo llaman cuatro sitios y los cuatro los pide el usuario
+(elegir carpeta, convertir, limpiar, repasar). Y **en las siete arrancadas
+recientes el indice se construye exactamente UNA vez cada una**. Las tres de
+aquel dia eran un build anterior y el boton de "repasar biblioteca". No hay
+fuga.
+
+**LO QUE SI SALIO, Y ERA DE LA TANDA 12.** `hayAnimaciones()` hace un
+`Settings.Global.getFloat`, que es **IPC al proveedor de ajustes**, y su
+`remember` solo lo evita dentro del composable que lo llama. Mientras lo llamaban
+dos sitios daba igual. Desde que `escalaAlPulsar` lo usa **lo llama cada carta**:
+en `Green Lantern Vol. 4`, que tiene 68 numeros, son **68 IPC en el hilo
+principal justo mientras se compone la rejilla**. Ahora se recuerda una vez por
+proceso.
+
+Se cuenta entero porque es una leccion de las de este proyecto: **el coste no
+estaba en lo que se añadio —una escala— sino en lo que ya habia y paso de dos
+llamadas a sesenta y ocho.**
+
+**LO QUE FALTA POR MEDIR, y es la hipotesis de Dani.** Las portadas eran **el
+unico hueco del arranque sin cronometro**. Ahora `Miniaturas` apunta un resumen
+cada 25: `portadas: N de cache (X ms), N generadas (Y ms)`. Distingue los dos
+casos que importan — leerlas del disco es barato, sacarlas del comic es abrir un
+fichero de decenas de megas.
+
+**A priori no deberian dar tirones**: salen en `Dispatchers.IO` de tres en tres y
+no tocan el hilo de la interfaz. Lo que si podrian hacer es **marear al
+recolector de basura** descomprimiendo bitmaps sin parar, y eso si se nota en la
+fluidez. Los dos numeros lo dicen: si el total es pequeño, no eran ellas y toca
+mirar la composicion con el Layout Inspector, que es lo unico que queda.
+
 ### Pendiente
 
 - **Pulsar el boton de limpiar la biblioteca sobre una carpeta de verdad**, y
