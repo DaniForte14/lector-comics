@@ -1286,3 +1286,50 @@ mueve aquí.
 Nada de esto se ha visto. Desde aquí no hay móvil ni Layout Inspector, así que
 **las duraciones y las curvas están leídas del código, no reproducidas**. Compila
 sin un solo aviso y las pruebas pasan, que es otra cosa.
+
+---
+
+## 23. Lo que salió de probarlo en el móvil (04/09/2026)
+
+Dani instaló la tanda 12 y sacó tres cosas. Las tres se arreglaron el mismo día.
+
+**1. La escala al pulsar solo estaba en la rejilla.** *"En la biblioteca solo se
+encoge cuando estás en la carpeta de Absolute Batman, pero en el carrusel de DC
+Comics no."* Cierto: la tanda 12 tocó `TarjetaComic` y se dejó fuera
+`FilaPortadas` —el carrusel de la pantalla de inicio— y las tres portadas de
+"tu recorrido". **Justo las que más se tocan.** Ahora las tres llevan
+`escalaAlPulsar`.
+
+Es el fallo clásico de arreglar el sitio que se estaba mirando en vez de todos
+los que hacen lo mismo, y aquí no había forma de verlo compilando: solo usándolo.
+
+**2. VUELVE EL DIFUMINADO DE LOS LEÍDOS, que se había quitado a propósito.**
+
+Esto merece leerse entero antes de volver a tocarlo, porque es la segunda vez que
+cambia de bando:
+
+- El 03/09 se quitó **la capa negra al 70%** y se puso la chapa circular. El
+  motivo era real: con la rejilla llena de leídos **la pantalla entera se
+  apagaba** y el catálogo dejaba de parecer un catálogo.
+- El 04/09, usándola: *"los leídos los prefería cuando estaban difuminados, ahora
+  tiene un tick azul que es imperceptible casi"*.
+
+**Vuelve el velo, pero no al 70% que causó el problema: a 0,55**, en el token
+`VELO_LEIDO`. Apaga lo bastante para distinguirlo de un vistazo y deja la portada
+reconocible. **Y la chapa se queda**, que sobre un fondo apagado se lee mucho
+mejor que antes; además pasa de 18 a 22 dp, porque en la carta del carrusel —104
+dp de ancho— la de 18 se perdía.
+
+**El número está en un token para tocarlo.** Si la rejilla vuelve a parecer
+apagada, se baja ahí y vale para la rejilla y los carruseles a la vez. Lo que no
+hay que hacer es volver a quitarlo del todo sin leer esto: ya se probaron los dos
+extremos y ninguno valía solo.
+
+**3. Tocar "Biblioteca" estando ya en ella sube a la raíz.** Bajando tres
+carpetas, volver arriba eran tres toques de atrás. Es lo que hacen las barras de
+pestañas de siempre.
+
+**Solo cuando ya estás en esa pestaña.** Viniendo de Lecturas, el primer toque
+cambia de pestaña y te deja donde estabas —que es lo que se espera— y al inicio
+se va con el segundo. La pila se vacía de golpe hasta la raíz, que es el primer
+elemento y no se puede quitar.

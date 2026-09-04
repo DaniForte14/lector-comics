@@ -106,6 +106,26 @@ val FormaPista: Shape = if (cyber)
     CutCornerShape(topStart = 0.dp, topEnd = 8.dp, bottomEnd = 0.dp, bottomStart = 8.dp)
 else RoundedCornerShape(9.dp)
 
+/**
+ * Cuanto se apaga la portada de un comic ya leido.
+ *
+ * VUELVE UNA DECISION QUE SE HABIA DESHECHO, y conviene saber por que las dos
+ * veces. La capa negra al 70% se quito el 03/09/2026 porque con la rejilla llena
+ * de leidos **la pantalla entera se apagaba** y el catalogo dejaba de parecer un
+ * catalogo; se cambio por la chapa de leido sola. Dani lo uso y pidio lo
+ * contrario (04/09/2026): *"los preferia cuando estaban difuminados"*, y que la
+ * chapa sola es casi imperceptible.
+ *
+ * Asi que vuelve el velo, **pero no al 70% que causo el problema**: a 0,55, que
+ * apaga lo suficiente para distinguirlo de un vistazo y deja la portada
+ * reconocible. La chapa se queda ademas, y encima de un fondo apagado se lee
+ * mucho mejor que antes.
+ *
+ * ES UN NUMERO PARA TOCAR: si la rejilla vuelve a parecer apagada, se baja aqui
+ * y vale para la rejilla y para los carruseles a la vez.
+ */
+val VELO_LEIDO = 0.55f
+
 /** Grosor del filo de las caratulas: en cyberpunk se ve, en iOS casi no. */
 val FiloAncho = if (cyber) 1.dp else 0.5.dp
 val FiloColor = if (cyber) Color(0x66FCEE0A) else Color(0x1AFFFFFF)

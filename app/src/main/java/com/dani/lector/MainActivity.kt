@@ -375,7 +375,27 @@ class MainActivity : ComponentActivity() {
                                              seguirBarra else null,
                                 onLeer = { vm.abrir(it); nav.ir(this@MainActivity, "leer") },
                                 pagina = paginas.currentPage,
-                                onIr = { irA(it) }
+                                // TOCAR "BIBLIOTECA" ESTANDO YA EN ELLA SUBE A
+                                // LA RAIZ. Es lo que hacen las barras de
+                                // pestañas de siempre y lo que Dani pidio al
+                                // usarla: bajando tres carpetas, volver arriba
+                                // eran tres toques de atras o cerrar la app.
+                                //
+                                // Solo cuando YA estas en la pestaña: viniendo
+                                // de Lecturas, el primer toque cambia de
+                                // pestaña y te deja donde estabas, que es lo
+                                // que se espera. Al inicio se va con el
+                                // segundo.
+                                onIr = { destino ->
+                                    if (destino == 0 && paginas.currentPage == 0 &&
+                                        pila.size > 1
+                                    ) {
+                                        // Se vacia hasta la raiz de golpe, no de
+                                        // una en una: la raiz es el primer
+                                        // elemento y no se puede quitar.
+                                        pila.removeRange(1, pila.size)
+                                    } else irA(destino)
+                                }
                             )
 
                             avisos.firstOrNull()?.let { (titulo, texto) ->

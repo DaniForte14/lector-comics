@@ -3504,6 +3504,26 @@ No hay prueba automatica posible: esto necesita `Context`.
 3. `Escaner` (SAF), que es la pieza mas distinta de todas
 4. `AndroidViewModel(Application)` -> el `ViewModel` multiplataforma
 
+### Tanda 14: los tres avisos de Dani al probar la 12 (04/09/2026)
+
+Probo el acabado en el movil y saco tres cosas. **El detalle esta en
+`docs/DISENO.md`, apartado 23**; aqui lo que importa desde el codigo.
+
+- **La escala al pulsar faltaba en el carrusel y en "tu recorrido".** La tanda 12
+  toco `TarjetaComic` y nada mas. Es el fallo de arreglar el sitio que estabas
+  mirando en vez de todos los que hacen lo mismo — y aqui **no habia forma de
+  cogerlo compilando**: solo usandolo. Ahora los tres comparten
+  `escalaAlPulsar`.
+- **Vuelve el velo de los leidos**, que se habia quitado el 03/09 a proposito.
+  Token `VELO_LEIDO` a 0,55, ni el 70% de antes ni nada. La chapa se queda y
+  crece a 22 dp. **Es la segunda vez que esto cambia de bando**: los dos extremos
+  ya se probaron y ninguno valia solo.
+- **Tocar "Biblioteca" estando ya en ella sube a la raiz** (`pila.removeRange`).
+  Viniendo de otra pestaña, el primer toque solo cambia de pestaña.
+
+Verificado: `comprobar.py` con **PROBLEMAS: 0**, `:app:assembleDebug` sin un solo
+`w:` y las pruebas en verde. **Sin ver en el movil**, como toda tanda de aspecto.
+
 ### Pendiente
 
 - **Pulsar el boton de limpiar la biblioteca sobre una carpeta de verdad**, y

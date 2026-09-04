@@ -661,10 +661,18 @@ private fun FilaPortadas(
                     else comic.carpeta.trimEnd('/').substringAfterLast('/').ifBlank { null }
                 }
             }
+            // Misma escala al pulsar que en la rejilla. Se quedo fuera en la
+            // tanda 12 —solo se toco TarjetaComic— y se notaba: la carta de
+            // dentro de una carpeta respondia y la del carrusel de la pantalla
+            // de inicio no, que es justo la que mas se toca.
+            val toque = remember { MutableInteractionSource() }
             Box(
-                Modifier.padding(4.dp).width(104.dp).height(156.dp)
+                Modifier.escalaAlPulsar(toque)
+                    .padding(4.dp).width(104.dp).height(156.dp)
                     .caratula()
                     .combinedClickable(
+                        interactionSource = toque,
+                        indication = LocalIndication.current,
                         onClick = { onLeer(comic) },
                         onLongClick = { onMenu(comic) }
                     )
@@ -692,7 +700,14 @@ private fun FilaPortadas(
                         Modifier.align(Alignment.BottomStart).height(3.dp)
                             .fillMaxWidth(marca.porcentaje / 100f).background(Acento))
 
-                    if (marca?.terminado == true) ChapaLeido(Modifier.align(Alignment.TopStart))
+                    // El velo va DEBAJO de la chapa y del numero, que tienen
+                    // que seguir leyendose igual de bien sobre la portada
+                    // apagada. Ver VELO_LEIDO para por que vuelve a estar.
+                    if (marca?.terminado == true) {
+                        Box(Modifier.matchParentSize()
+                            .background(Tinta.copy(alpha = VELO_LEIDO)))
+                        ChapaLeido(Modifier.align(Alignment.TopStart))
+                    }
                     comic.numero?.let { n ->
                         Box(Modifier.align(Alignment.TopEnd).padding(6.dp)
                             .clip(FormaChapa)
@@ -784,9 +799,15 @@ private fun Paso(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(rotulo, style = Tipo.minuscula, color = Tenue, letterSpacing = 0.5.sp)
+        val toque = remember { MutableInteractionSource() }
         Box(
-            Modifier.padding(top = 8.dp).fillMaxWidth().aspectRatio(0.66f)
-                .then(if (comic != null) Modifier.caratula().clickable { onLeer(comic) }
+            Modifier.escalaAlPulsar(toque)
+                .padding(top = 8.dp).fillMaxWidth().aspectRatio(0.66f)
+                .then(if (comic != null)
+                          Modifier.caratula().clickable(
+                              interactionSource = toque,
+                              indication = LocalIndication.current
+                          ) { onLeer(comic) }
                       else Modifier.clip(FormaCaratula).background(PanelAlto)),
             contentAlignment = Alignment.Center
         ) {
@@ -927,10 +948,12 @@ private fun ChipAmbito(texto: String, marcado: Boolean, onElegir: () -> Unit) {
 @Composable
 private fun ChapaLeido(modifier: Modifier = Modifier) {
     Box(
-        modifier.padding(6.dp).size(18.dp).clip(CircleShape).background(Cian),
+        // 22 y no 18: en la carta del carrusel, que mide 104 de ancho, la de
+        // 18 se perdia. Dani: "un tick azul que es imperceptible casi".
+        modifier.padding(6.dp).size(22.dp).clip(CircleShape).background(Cian),
         contentAlignment = Alignment.Center
     ) {
-        Text("\u2713", fontSize = 11.sp, color = Tinta, fontWeight = FontWeight.Bold)
+        Text("\u2713", fontSize = 14.sp, color = Tinta, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -1176,7 +1199,11 @@ private fun TarjetaComic(
                     modifier = Modifier.align(Alignment.BottomStart)
                         .padding(start = 8.dp, end = 8.dp, bottom = 8.dp))
 
-                if (marca?.terminado == true) ChapaLeido(Modifier.align(Alignment.TopStart))
+                if (marca?.terminado == true) {
+                    Box(Modifier.matchParentSize()
+                        .background(Tinta.copy(alpha = VELO_LEIDO)))
+                    ChapaLeido(Modifier.align(Alignment.TopStart))
+                }
 
                 // La raya de progreso al filo de abajo, por debajo del nombre.
                 if (marca?.terminado != true && marca != null) Box(
