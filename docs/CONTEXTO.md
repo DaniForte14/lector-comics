@@ -3577,6 +3577,43 @@ recolector de basura** descomprimiendo bitmaps sin parar, y eso si se nota en la
 fluidez. Los dos numeros lo dicen: si el total es pequeño, no eran ellas y toca
 mirar la composicion con el Layout Inspector, que es lo unico que queda.
 
+### LAS PORTADAS NO ERAN, Y EL RASTRO LO DICE (04/09/2026)
+
+Con el cronometro puesto, la sesion de las 16:25:
+
+```
+16:25:21.755  ── la app arranca ──
+16:25:22.154    índice: 293 cómics en 200 ms
+16:25:22.222    portadas: 1 de cache (3 ms), 0 generadas (0 ms)
+16:25:22.317    portadas: 10 de cache (20 ms), 0 generadas (0 ms)
+16:25:37.231    portadas: 20 de cache (49 ms), 0 generadas (0 ms)
+16:25:38.587    portadas: 40 de cache (123 ms), 0 generadas (0 ms)
+```
+
+**Cuarenta portadas, todas de cache, 123 ms en total repartidos en 16 segundos.
+Cero generadas.** O sea que ni una vez hubo que abrir un comic para sacar su
+portada. **La sospecha de Dani era razonable y era falsa**, como las tres
+anteriores de este proyecto. Y el arranque completo —indice hecho y las diez
+primeras portadas puestas— son **562 ms**.
+
+**LO QUE DEJA UNA SOLA VENTANA SIN EXPLICAR**, y llevaba ahi desde el principio:
+entre `── la app arranca ──` y `ciclo: ON_CREATE` pasan **147-250 ms** en todos
+los arranques. Ahi dentro solo habia dos llamadas, y una es cara:
+
+> `WorkManager.getInstance()` **monta una base de datos Room la primera vez**, y
+> se llamaba en `Application.onCreate`: **en el hilo principal y antes de que
+> exista la Activity**. Todo lo que tarde se lo come el arranque entero.
+
+Nada de eso hace falta para pintar la primera pantalla —el canal solo se usa al
+notificar y el trabajo es DIARIO—, asi que se va a un hilo aparte. Va con `KEEP`,
+asi que si el proceso muere antes de programarlo se programa en el siguiente
+arranque y no se pierde nada.
+
+**Y se cronometra, porque esto es la hipotesis y no la conclusion.** La linea
+nueva del rastro es `arranque: canal N ms, trabajo diario N ms`. Si el trabajo
+diario sale en 150-200 ms, era eso. Si sale en 5, la ventana es carga de clases
+de Android y toca Baseline Profile, que es otra tanda entera.
+
 **Y EL CRONOMETRO NACIO MUDO, que es un error de metodo y va escrito para no
 repetirlo.** Apuntaba cada 25 portadas. **La raiz de Dani tiene 2 carpetas y
 ningun comic suelto**, asi que ahi solo se piden el banner de "seguir leyendo",
