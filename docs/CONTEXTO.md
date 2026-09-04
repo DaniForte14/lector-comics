@@ -4024,6 +4024,54 @@ imagen entera; Skia no tiene ese atajo, y en un iPad de 4 GB **descomprimir la
 pagina completa para luego encogerla es exactamente como iOS mata la app sin
 avisar**.
 
+### Tanda 21: decodificar una pagina en iOS, ya reducida (04/09/2026)
+
+**LA PREGUNTA ERA DE DISEÑO Y LA RESPUESTA NO ES SKIA.** Android decodifica en dos
+pasadas —`inJustDecodeBounds` para medir, `inSampleSize` para que el decodificador
+SALTE pixeles mientras lee— asi que una pagina de 2000x3000 sale directamente a
+220 px y **el bitmap grande no llega a existir**.
+
+Con `Image.makeFromEncoded` de Skia si existiria: **24 MB por pagina** (2000 x
+3000 x 4), y con tres a la vez 72 MB de picos. En un iPad de 4 GB eso **no
+revienta siempre, revienta a veces** — y ademas iOS mata la app sin avisar, sin
+`OutOfMemoryError` que atrapar. La peor clase de fallo.
+
+**El equivalente exacto esta en ImageIO**, que es del sistema:
+
+| | Android | iOS |
+|---|---|---|
+| Medir sin decodificar | `inJustDecodeBounds` | `CGImageSourceCopyPropertiesAtIndex` |
+| Decodificar reducido | `inSampleSize` | `kCGImageSourceThumbnailMaxPixelSize` |
+| Framework | `BitmapFactory` | **ImageIO** |
+
+Cero dependencias nuevas, la misma regla que zlib. **Skia entra solo al final**,
+para envolver los pixeles ya reducidos en un `ImageBitmap`.
+
+**TRES DECISIONES QUE VAN ESCRITAS EN EL FICHERO:**
+
+- **CoreFoundation y no `NSData`.** `CGImageSource` pide un `CFData` y, aunque
+  estan puenteados, **el puente entre un objeto de Objective-C y un puntero de C
+  no es un cast en Kotlin**. Creando el `CFData` directo con `CFDataCreate` no hay
+  puente que cruzar.
+- **El maximo es del LADO MAYOR, no del ancho.** Una pagina de comic es mas alta
+  que ancha, asi que pidiendo el ancho a secas saldria mas pequeña de lo pedido y
+  se veria borrosa. Se pide 3/2.
+- **RGBA8888 y no 565.** `CGBitmapContext` no hace 565 de forma razonable, asi que
+  una miniatura cuesta **el doble** que en Android. No es un descuido: es la razon
+  de que el techo de la cache de iOS —que ya tenia que ser un numero fijo— haya
+  que ponerlo contando con ese doble.
+
+**Y TODO LO QUE SE CREA SE SUELTA A MANO.** CoreFoundation no tiene recogida de
+basura: cada `Create` lleva su `CFRelease` y cada `malloc` su `free`. **Una fuga
+aqui no da ningun error**: solo hace que la app crezca hasta que iOS la mata, que
+es justo lo que se estaba evitando. Por eso va todo en `try/finally` y no en
+lineas seguidas.
+
+Verificado: `comprobar.py` en 0 y Android en verde. **Android:** no lo usa nadie.
+**iOS:** escrito sin compilar; lo dice el CI. La tanda anterior necesito una
+vuelta —y por un `import`, no por zlib—, asi que lo raro seria que esta pasara a
+la primera.
+
 ### Pendiente
 
 - **Pulsar el boton de limpiar la biblioteca sobre una carpeta de verdad**, y
