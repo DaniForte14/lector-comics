@@ -3741,6 +3741,16 @@ reparte en dos sitios distintos, los dos de "primera vez":
    su carrusel de portadas— y volver. Eso es trabajo de verdad la primera vez;
    con el pager arreglado, la segunda ya no lo repite.
 
+**DANI LO CONFIRMA: "si va mucho mejor" (04/09/2026).** Con eso se cierra la
+caceria. Lo que queda —arranque en frio y primera composicion de cada carpeta—
+**no molesta lo suficiente para pagar un Baseline Profile**, que es la unica
+herramienta que lo arreglaria de verdad. Queda escrito por si algun dia vuelve.
+
+**Y LOS DOS INSTRUMENTOS SE QUEDAN PUESTOS**, `Fluidez` y el contador de
+portadas. Cuestan dos restas por fotograma y una linea cada diez portadas, solo
+hablan cuando algo va mal, y son lo que resolvio esto **despues de cinco
+sospechas falsas seguidas**. Quitarlos seria tirar justo lo que funciono.
+
 **NO SE TOCA NADA MAS SIN QUE DANI DIGA SI LO NOTA.** El rebote por pestañas
 —que era lo que se repetia todo el rato y por tanto lo que mas se sufre— esta
 quitado y medido. Lo que queda cuesta bastante mas y puede que ya no moleste:
