@@ -3497,12 +3497,24 @@ que este proyecto persigue. Se comprueba abriendo Ajustes: la carpeta de la
 biblioteca tiene que seguir elegida y los interruptores como se dejaron.
 No hay prueba automatica posible: esto necesita `Context`.
 
-**LO QUE FALTA PARA MOVER `VistaModelo`**, ahora que queda una menos:
+**LO QUE FALTA PARA MOVER `VistaModelo`.** Aqui se escribio "cuatro ataduras" y
+**estaba mal**: se conto de memoria en vez de contarlas. Contadas de verdad
+(`grep` sobre el fichero) son **ocho objetos de Android y 24 llamadas**:
 
-1. ~~preferencias~~ **hecho**
-2. `ComicZip` / `Miniaturas` / `Rar5` detras de interfaz (la tuberia de leer)
-3. `Escaner` (SAF), que es la pieza mas distinta de todas
-4. `AndroidViewModel(Application)` -> el `ViewModel` multiplataforma
+| | llamadas |
+|---|---|
+| `Rastro` | 5 |
+| `Miniaturas` | 4 |
+| `Escaner` | 4 |
+| ~~`ComicZip`~~ | ~~4~~ **hecho, tanda 16** |
+| `ConversorCarpeta` | 3 |
+| `Rar5` | 2 |
+| `Vigilante` | 1 |
+| `ColorPortada` | 1 |
+
+Mas `AndroidViewModel(Application)` y las preferencias, que ya estan. **Es
+bastante mas trabajo del que decia esta linea**, y conviene saberlo antes de
+prometer un iPad para el mes que viene.
 
 ### Tanda 14: los tres avisos de Dani al probar la 12 (04/09/2026)
 
@@ -3797,6 +3809,32 @@ son los dos sitios que vuelven a `Bitmap`— hagan su fichero.
 
 **LO SIGUIENTE**: ya con el tipo bueno en la frontera, la interfaz de leer comics
 es mecanica. Y despues `Escaner`, que es la pieza mas distinta de todo el port.
+
+### Tanda 16: abrir un comic, detras de una interfaz (04/09/2026)
+
+Segunda mitad del paso 2 del mapa. Con el tipo de la frontera ya arreglado en la
+tanda 15, esto salio mecanico: `Archivo` en `:shared` y `ArchivoAndroid` en
+`:app`. **`VistaModelo` ya no menciona `ComicZip`.**
+
+**TRES METODOS Y NO SEIS, y es la decision de la tanda.** `ComicZip` sabe ademas
+decir el formato de un fichero y por que no ha podido con el, pero eso solo se lo
+preguntan `ConversorCarpeta` y `Miniaturas`, que son de Android y se quedan
+alli. La interfaz lleva **lo que `VistaModelo` necesita hoy** —listar paginas,
+decodificar una, precargar las de al lado— y no todo lo que la implementacion
+sabe hacer. Lo demas se añade el dia que alguien portable lo pida.
+
+**Y `ArchivoAndroid` es un envoltorio fino, no una mudanza.** `ComicZip` son 330
+lineas con tres caches, el respaldo de junrar y la conversion de RAR5, y cada una
+de esas decisiones costo un cierre de la app en su dia. Meterle una interfaz por
+dentro seria tocar todo eso para no ganar nada: **lo unico que hacia falta era
+quitarle el `Context` a quien lo llama**, y eso se consigue guardandolo en el
+envoltorio.
+
+Verificado: `comprobar.py` con **PROBLEMAS: 0**, `:app:assembleDebug` sin un solo
+`w:` y las pruebas en verde. **Android:** no cambia ni un comportamiento, es la
+misma llamada con el `Context` guardado en otro sitio. **iOS:** aqui no se ha
+escrito nada de iOS todavia; `ArchivoIOS` es de la tanda que traiga el motor de
+descompresion, que es de las gordas.
 
 ### Pendiente
 

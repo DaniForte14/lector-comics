@@ -64,6 +64,11 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
     // y las mismas claves, aqui no se migra nada—, y en iOS sera NSUserDefaults.
     private val ajustes: Preferencias = PreferenciasAndroid(ctx)
 
+    // Y otra que decide quien abre los comics. En iOS sera un ArchivoIOS con su
+    // propio motor de descompresion; el camino —listar paginas, decodificar
+    // una, precargar las de al lado— es el mismo y vive detras de la interfaz.
+    private val archivo: Archivo = ArchivoAndroid(ctx)
+
     // UN SOLO DISCO PARA LOS CUATRO ALMACENES. Es la unica linea de la app que
     // decide donde se guardan las cosas; en iOS sera un DiscoIOS y no cambia
     // nada mas. Misma jugada que LectorApp con la fuente de datos.
@@ -306,9 +311,9 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
             _estado.update { it.copy(sello = it.sello + 1) }
         }
 
-    fun paginas(uri: String) = ComicZip.paginas(ctx, uri)
+    fun paginas(uri: String) = archivo.paginas(uri)
     fun pagina(uri: String, nombre: String, ancho: Int) =
-        ComicZip.pagina(ctx, uri, nombre, ancho, recortar)
+        archivo.pagina(uri, nombre, ancho, recortar)
     suspend fun portada(uri: String) = Miniaturas.obtener(ctx, uri)
 
     /** La portada solo si ya esta en memoria. Para pintar sin esperar al scroll. */
@@ -339,7 +344,7 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
 
     fun precargar(uri: String, nombres: List<String>, actual: Int, ancho: Int) =
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-            ComicZip.precargar(ctx, uri, nombres, actual, ancho, recortar)
+            archivo.precargar(uri, nombres, actual, ancho, recortar)
         }
 
     /**
@@ -875,7 +880,7 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
      */
     private fun cuantasPaginas(uri: String): Int {
         val guardada = marcas.de(uri)?.paginas ?: 0
-        val p = ComicZip.paginas(ctx, uri)
+        val p = archivo.paginas(uri)
         return if (p is Paginas.Ok && p.nombres.isNotEmpty()) p.nombres.size
                else guardada.coerceAtLeast(1)
     }
