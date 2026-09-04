@@ -42,9 +42,6 @@ import java.util.zip.ZipOutputStream
  */
 object Rar5 {
 
-    /** Extensiones que se consideran pagina. La lista vive en ComicZip. */
-    private val EXT get() = ComicZip.EXT
-
     @Volatile private var iniciado = false
     @Volatile private var fallo: String? = null
 
@@ -200,7 +197,7 @@ object Rar5 {
                                 var nombre = (archivo.getProperty(i, PropID.PATH) as? String)
                                     ?.replace('\\', '/') ?: continue
                                 if (vistos.size < 4) vistos.add(nombre.substringAfterLast('/'))
-                                if (!esImagen(nombre)) continue
+                                if (!Imagenes.es(nombre)) continue
                                 esperadas++
 
                                 // Dos entradas con el mismo nombre hacen que
@@ -333,7 +330,7 @@ object Rar5 {
                         // una y despues se extrae, que es como junrar espera que
                         // se use.
                         val cabeceras = a.fileHeaders.filter {
-                            !it.isDirectory && esImagen(it.fileName.replace('\\', '/'))
+                            !it.isDirectory && Imagenes.es(it.fileName.replace('\\', '/'))
                         }
 
                         for (h in cabeceras) {
@@ -371,11 +368,6 @@ object Rar5 {
             copia.delete()
         }
     }
-
-    private fun esImagen(n: String) =
-        n.substringAfterLast('.', "").lowercase() in EXT &&
-        !n.substringAfterLast('/').startsWith(".") &&
-        !n.contains("__MACOSX")
 
     /** Cuanto ocupan los convertidos, para poder decirlo en Ajustes. */
     fun tamano(ctx: Context): Long =

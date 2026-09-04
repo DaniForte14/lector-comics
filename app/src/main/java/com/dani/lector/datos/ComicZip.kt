@@ -70,13 +70,6 @@ object ComicZip {
     private fun clavePagina(uri: String, nombre: String, ancho: Int) = "$uri|$nombre|$ancho"
 
     /**
-     * Que se considera una pagina. Publico porque Rar5 tenia su propia copia
-     * con un comentario que decia "igual que en ComicZip": dos listas que hay
-     * que acordarse de cambiar a la vez acaban no cambiandose a la vez.
-     */
-    val EXT = setOf("jpg", "jpeg", "png", "webp", "gif", "bmp")
-
-    /**
      * Por que no ha salido la portada, en dos lineas y para una carta pequeña.
      *
      * El mensaje largo y con solucion ya existe, pero solo aparece al ABRIR el
@@ -102,14 +95,6 @@ object ComicZip {
             else Formatos.de(c.copyOf(leidos))
         } ?: Formato.DESCONOCIDO
     } catch (_: Exception) { Formato.DESCONOCIDO }
-
-    private fun esImagen(n: String) =
-        n.substringAfterLast('.', "").lowercase() in EXT &&
-        !n.substringAfterLast('/').startsWith(".") &&
-        !n.contains("__MACOSX")
-
-    private fun ordenar(l: List<String>) =
-        l.sortedWith(compareBy({ it.count { c -> c == '/' } }, { it.lowercase() }))
 
     fun paginas(ctx: Context, uri: String): Paginas = try {
         when (formato(ctx, uri)) {
@@ -213,13 +198,13 @@ object ComicZip {
                 var h = a.nextFileHeader()
                 while (h != null) {
                     val n = h.fileName.replace('\\', '/')
-                    if (!h.isDirectory && esImagen(n)) out.add(n)
+                    if (!h.isDirectory && Imagenes.es(n)) out.add(n)
                     h = a.nextFileHeader()
                 }
             }
         }
         return if (out.isEmpty()) Paginas.Error("Este CBR (RAR4) no tiene imágenes dentro.")
-               else Paginas.Ok(ordenar(out))
+               else Paginas.Ok(Imagenes.ordenadas(out))
     }
 
     /** Lista las imagenes de un ZIP, venga de SAF o de un fichero convertido. */
@@ -229,12 +214,13 @@ object ComicZip {
             ZipInputStream(ins.buffered()).use { z ->
                 var e = z.nextEntry
                 while (e != null) {
-                    if (!e.isDirectory && esImagen(e.name)) out.add(e.name)
+                    if (!e.isDirectory && Imagenes.es(e.name)) out.add(e.name)
                     e = z.nextEntry
                 }
             }
         }
-        return if (out.isEmpty()) Paginas.Error(siVacio) else Paginas.Ok(ordenar(out))
+        return if (out.isEmpty()) Paginas.Error(siVacio)
+               else Paginas.Ok(Imagenes.ordenadas(out))
     }
 
     /**

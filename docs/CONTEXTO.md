@@ -2105,6 +2105,7 @@ veces escribe bien en disco pero la otra instancia sigue viendo su copia vieja.
 | `ExportarTest` | el nombre del fichero al guardar una página |
 | `AgendaTest` | qué sale próximamente: orden por fecha, sin fecha fuera, "mañana" / "en 3 días" |
 | `RecorteTest` | el marco liso: fondo negro, ruido del escáner, el tope de la mitad, la regla del 40% |
+| `ImagenesTest` | qué entra como página: `._` de macOS, `__MACOSX`, y el orden por profundidad |
 
 **EJECUTADOS POR FIN el 03/09/2026**, con Java 17 en el entorno. `./gradlew
 testDebugUnitTest`: **126 pruebas, una en rojo**, y el fallo estaba en la prueba,
@@ -3277,6 +3278,59 @@ pantallas siguen sin poder mudarse. Todas reciben `vm: VistaModelo`, que son
 pantallas, y ahi es donde esta el trabajo de verdad.
 
 Reparto: **18 ficheros en `app`, 31 en `shared`**; en pruebas, 1 y 17.
+
+### Tanda 10: la regla de que es una pagina, en un solo sitio (04/09/2026)
+
+**La regla estaba duplicada letra por letra**, en `ComicZip:106` y en
+`Rar5:375`. Y no por descuido de hoy: el 03/09 se unifico **la lista de
+extensiones** en `ComicZip.EXT` y se dejo el *predicado* copiado en los dos
+ficheros. O sea que se arreglo el sintoma que se veia —dos listas— y sobrevivio
+la copia de verdad, con el agravante de que el comentario de `EXT` avisaba
+exactamente de eso: "dos listas que hay que acordarse de cambiar a la vez acaban
+no cambiandose a la vez".
+
+Ahora las dos reglas viven en `shared/.../datos/Imagenes.kt`:
+
+| | Que decide |
+|---|---|
+| `Imagenes.es(nombre)` | si una entrada del archivo es una pagina |
+| `Imagenes.ordenadas(lista)` | en que orden se leen |
+| `Imagenes.EXT` | la lista de extensiones |
+
+`ComicZip` y `Rar5` las llaman las dos; **no queda ni una copia** (`grep esImagen`
+sobre `app/src` y `shared/src` no devuelve nada). Y son decisiones, no
+fontaneria: ni el nombre de una entrada ni su orden saben de Android, asi que
+van a `:shared` por la regla de reparto de siempre.
+
+**Y otra vez lo que gana la tanda son las pruebas, que no habia ninguna.** Las
+dos reglas fallan calladas: el comic se abre igual, solo que por la pagina que
+no era o con una pagina de mas. `ImagenesTest`, once casos, y los que importan
+son estos cuatro:
+
+- **`._portada.jpg` fuera.** Es un fichero de metadatos de macOS de dos
+  kilobytes **que si tiene extension de imagen**, y sin la regla saldria como
+  primera pagina del comic.
+- **`__MACOSX/` fuera.** El compresor de macOS mete ahi una copia sombra de cada
+  imagen: sin esto **cada pagina saldria dos veces**.
+- **Una carpeta oculta no tira sus paginas** (`.extras/pagina01.jpg` SI entra):
+  lo oculto es el nombre del fichero, no la ruta. Es el borde que separa las dos
+  reglas de arriba de una que se pasaria de lista.
+- **Primero por profundidad y luego por nombre.** Hay CBZ con las paginas
+  sueltas en la raiz y ademas una subcarpeta de extras; ordenando solo por
+  nombre, `extras/aaa.jpg` se cuela delante de `pagina01.jpg` y **abres el comic
+  por los extras**. Y el nombre se compara en minusculas porque en orden de
+  bytes todas las mayusculas van antes: `Page10` se colaria delante de `page02`.
+
+Verificado: `comprobar.py` con **PROBLEMAS: 0**, `:app:assembleDebug` y las
+pruebas de los dos modulos con `--rerun-tasks` en verde, y `ImagenesTest` lanzada
+por separado con `--tests`.
+
+**LO QUE NO ESTA COMPROBADO**: que un CBZ de verdad liste sus paginas igual que
+antes. El predicado y el comparador son los mismos caracteres movidos de sitio,
+pero **por el camino nuevo no ha pasado ningun comic**. Se ve abriendo uno
+cualquiera: si el orden fuera mal, se nota a la primera.
+
+Reparto: **18 ficheros en `app`, 32 en `shared`**; en pruebas, 1 y 18.
 
 ### Pendiente
 
