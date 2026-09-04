@@ -13,7 +13,12 @@ docs/CONTEXTO.md    Qué hace, cómo está montado, y TODAS las trampas
                     encontradas — con los errores cometidos y por qué.
 docs/DISENO.md      Las decisiones de aspecto y de interfaz, y qué NO se
                     puede hacer (y no es por pereza).
+docs/SIGUIENTE.md   Por dónde seguir. Se lee en dos minutos: qué toca ahora,
+                    qué NO hay que deshacer y cómo se cierra una tanda.
 ```
+
+**Si retomas el proyecto en una conversación nueva, empieza por
+`docs/SIGUIENTE.md`.**
 
 Si pasas una skill de diseño por encima (`better-ui` y compañía), **el apartado
 22 de `docs/DISENO.md` ya dice qué de esas reglas no aplica aquí y por qué**:
