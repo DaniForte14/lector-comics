@@ -3609,10 +3609,49 @@ notificar y el trabajo es DIARIO—, asi que se va a un hilo aparte. Va con `KEE
 asi que si el proceso muere antes de programarlo se programa en el siguiente
 arranque y no se pierde nada.
 
-**Y se cronometra, porque esto es la hipotesis y no la conclusion.** La linea
-nueva del rastro es `arranque: canal N ms, trabajo diario N ms`. Si el trabajo
-diario sale en 150-200 ms, era eso. Si sale en 5, la ventana es carga de clases
-de Android y toca Baseline Profile, que es otra tanda entera.
+**Y se cronometro, porque era la hipotesis y no la conclusion. SALIO FALSA:**
+
+```
+16:28:31.811  ── la app arranca ──
+16:28:31.817    arranque: canal 3 ms, trabajo diario 2 ms
+16:28:31.965  ciclo: ON_CREATE
+```
+
+**Cinco milisegundos los dos.** Y la ventana de 154 ms sigue igual de grande, o
+sea que ahi dentro no hay nada nuestro. El motivo es que **WorkManager ya se ha
+inicializado antes de llegar a `Application.onCreate`**, en su propio
+ContentProvider de arranque: para cuando se le pide la instancia, el trabajo caro
+ya esta hecho y no se ve desde aqui.
+
+El hilo aparte **se ha devuelto a su sitio**: cinco milisegundos no pagan un hilo
+suelto. El cronometro se queda, que cuesta dos restas y es lo unico que impide
+volver a sospechar de esto.
+
+### CINCO SOSPECHAS, CINCO FALSAS: se cambia de instrumento (04/09/2026)
+
+SAF, el hilo principal, las cuentas por subcarpeta, las portadas y el trabajo
+diario. **Las cinco descartadas con numeros.** Eso ya no es mala suerte, es un
+fallo de metodo:
+
+> **El rastro cuenta SUCESOS —cuanto tarda leer una carpeta, hacer el indice,
+> sacar una portada— y un tiron NO es un suceso: es un fotograma que no llega a
+> tiempo.** Se estaban midiendo indicios en vez de la queja.
+
+Asi que se mide la queja. `datos/Fluidez.kt` engancha
+`addOnFrameMetricsAvailableListener` y apunta `fluidez: N de 300 fotogramas por
+encima de 32 ms, el peor N ms`. Solo habla cuando ha habido alguno malo: una
+linea cada cinco segundos diciendo que todo va bien es lo que hace que nadie lea
+el rastro el dia que pasa algo.
+
+**No es un contador de FPS de los que se reenganchan al Choreographer.** Aquellos
+fuerzan un fotograma en cada vsync, o sea que mantienen la app dibujando sin
+parar —gastan bateria y **cambian justo lo que se quiere medir**—. Este solo
+habla de fotogramas que el sistema ha pintado de verdad.
+
+Con eso, la proxima vez el rastro dice **cuando** va a tirones y **cuanto**, y
+recorriendo el rastro hacia arriba se ve que estaba pasando en ese momento. Si
+los fotogramas lentos salen todos pegados al arranque, es carga de clases y toca
+Baseline Profile; si salen al entrar en una carpeta grande, es composicion.
 
 **Y EL CRONOMETRO NACIO MUDO, que es un error de metodo y va escrito para no
 repetirlo.** Apuntaba cada 25 portadas. **La raiz de Dani tiene 2 carpetas y

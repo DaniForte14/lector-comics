@@ -27,34 +27,28 @@ class LectorApp : Application() {
         Rastro.instalar(this)
         Rastro.apunta(this, "── la app arranca ──")
 
-        // EL TRABAJO DIARIO NO PUEDE COSTAR EL ARRANQUE, y hasta hoy lo costaba.
+        // EL TRABAJO DIARIO NO CUESTA EL ARRANQUE, Y ESTA MEDIDO: 5 ms LOS DOS.
         //
-        // `WorkManager.getInstance()` monta una base de datos Room la primera
-        // vez que se le llama, y esto estaba aqui a pelo: en `onCreate` de la
-        // Application, o sea **en el hilo principal y antes de que exista
-        // siquiera la Activity**. Todo lo que tarde se lo come el arranque
-        // entero, y en el rastro se veian 147-250 ms entre "la app arranca" y
-        // ON_CREATE que no los explicaba nada mas.
+        // Se sospecho de `WorkManager.getInstance()`, que monta una base de
+        // datos Room la primera vez, porque estaba aqui —hilo principal, antes
+        // de que exista la Activity— y en el rastro habia 147-250 ms sin
+        // explicar entre "la app arranca" y ON_CREATE.
         //
-        // Nada de esto tiene que estar hecho para pintar la primera pantalla:
-        // el canal solo hace falta cuando se notifica, y el trabajo es DIARIO.
-        // Va con KEEP, asi que si el proceso muere antes de programarlo, se
-        // programa en el siguiente arranque y no se pierde nada.
+        // **Falso.** Medido: `canal 3 ms, trabajo diario 2 ms`. Y la razon es
+        // que WorkManager ya se ha inicializado ANTES de llegar aqui, en su
+        // propio ContentProvider de arranque, asi que para cuando se le pide la
+        // instancia el trabajo caro ya esta hecho.
         //
-        // Un Thread suelto y no una corrutina: la Application no tiene ningun
-        // ambito propio, y montar uno para dos llamadas seria mas aparato que
-        // arreglo. Las dos son seguras fuera del hilo principal.
-        //
-        // Se cronometra porque **esto es la hipotesis, no la conclusion**: el
-        // numero del rastro es el que dice si esa ventana era esto.
-        Thread {
-            val t0 = System.currentTimeMillis()
-            Vigilante.crearCanal(this)
-            val tCanal = System.currentTimeMillis()
-            Vigilante.programar(this)
-            Rastro.apunta(this, "  arranque: canal ${tCanal - t0} ms, " +
-                "trabajo diario ${System.currentTimeMillis() - tCanal} ms")
-        }.start()
+        // Se llego a mover a un hilo aparte y **se ha devuelto aqui**: cinco
+        // milisegundos no pagan un hilo suelto ni el riesgo de programar el
+        // trabajo con el proceso muriendose. El cronometro se queda, que cuesta
+        // dos restas y es lo unico que impide volver a sospechar de esto.
+        val t0 = System.currentTimeMillis()
+        Vigilante.crearCanal(this)
+        val tCanal = System.currentTimeMillis()
+        Vigilante.programar(this)
+        Rastro.apunta(this, "  arranque: canal ${tCanal - t0} ms, " +
+            "trabajo diario ${System.currentTimeMillis() - tCanal} ms")
     }
 
     /**

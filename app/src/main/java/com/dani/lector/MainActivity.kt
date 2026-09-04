@@ -120,6 +120,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(b: Bundle?) {
         enableEdgeToEdge()   // Android 15 lo impone; mejor pedirlo y controlarlo
         super.onCreate(b)
+        // Mide los fotogramas que llegan tarde, que es de lo que Dani se queja
+        // de verdad. Ver Fluidez: el rastro cuenta sucesos y un tiron no es un
+        // suceso.
+        com.dani.lector.datos.Fluidez.vigilar(this)
         invitado = deIntent(intent)
         setContent {
             TemaLector {
