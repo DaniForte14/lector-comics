@@ -18,31 +18,37 @@ propósito.
 gh run list --limit 1
 ```
 
-El último commit de código es el de la tanda 23, `BibliotecaIOS`. Si su trabajo
-de iOS está en verde, **la cadena entera de abrir un cómic en el iPad compila**.
-Compilar no es funcionar: ver abajo.
+Desde la tanda 24 el trabajo de iOS **deja un `.ipa` como artefacto**. Si está
+en verde, hay algo instalable. Compilar no es funcionar: nadie lo ha arrancado.
 
 ---
 
-## La tarea siguiente: `iosApp/`, y es un cambio de fase
+## La tarea siguiente: **que Dani instale el `.ipa`**
 
-`ArchivoIOS` (tanda 22) y `BibliotecaIOS` (tanda 23) están hechos, y con ellos
-**la cadena entera de abrir un cómic en el iPad está escrita**: elegir carpeta,
-listarla, abrir el CBZ, sacar una página y decodificarla.
+No es una tanda de código. Es el paso que convierte siete ficheros de
+"compilan" en "funcionan", y **sólo lo puede dar él**.
 
-**Y ninguna de esas seis piezas se ha ejecutado nunca.** Ése es ahora el
-problema principal, por encima de cuánto código falta. Seguir escribiendo
-`PortadasIOS`, `ColorPortadaIOS` y `VigilanteIOS` es **añadir más código ciego
-encima de código ciego**, y cuando por fin arranque algo habrá que depurar seis
-piezas a la vez sin saber cuál falla.
+1. Bajar el artefacto `lector-ipa` de la última ejecución verde del CI
+   (pestaña Actions > la ejecución > Artifacts). Es un zip con `Lector.ipa`.
+2. Sideloadly en el PC, iPad enchufado, su Apple ID. **Con cuenta gratuita la
+   app caduca a los 7 días** y se refresca reconectándola.
+3. En la app Archivos del iPad: *En mi iPad > Lector*, y meter ahí un CBZ.
+4. Abrir la app.
 
-Lo que toca es **el proyecto de Xcode más pequeño que pruebe la cadena**: un
-selector de documentos, guardar el marcador, listar la carpeta y abrir una
-página. Eso convierte cuatro "compila" en "funciona" — o dice cuál de las cuatro
-no.
+**Lo que se está probando es la SONDA, no la app.** Sale una lista de ficheros;
+tocando uno debería verse su primera página. Si esa página aparece,
+`BibliotecaIOS`, `ArchivoIOS`, `ZipIOS` e `ImagenIOS` están bien. Si no:
 
-**Y condiciona cómo se monta:** tiene que ser un proyecto que **el CI pueda
-archivar solo**, porque el `.ipa` sale de ahí (ver abajo).
+| Lo que se ve | Dónde mirar |
+|---|---|
+| "No hay ningún CBZ en Documents" | `UIFileSharingEnabled`, o el fichero no llegó |
+| Sale la lista, pero la página no | `ZipIOS` (descomprimir) o `ImagenIOS` (decodificar) |
+| Un mensaje de error | Es el `Paginas.Error`, y ya dice el motivo |
+| La app se cierra sola | Memoria: iOS mata sin avisar y no hay excepción que ver |
+
+**Después de eso**, y sólo después, van el selector de documentos con marcadores
+—que es la otra mitad del riesgo de iOS y sigue sin ejecutarse nunca— y la
+mudanza de la interfaz de verdad.
 
 **Lo más frágil, y no lo puede ver el compilador:** en iOS la opción
 `withSecurityScope` de los marcadores es de macOS. `BibliotecaIOS` resuelve sin
@@ -70,6 +76,7 @@ Android y 24 llamadas (contadas con `grep`, no de memoria):
 | `Miniaturas` a `Portadas` | HECHO (tanda 18) |
 | `ArchivoIOS` — leer un CBZ en el iPad | HECHO (tanda 22), **compila a la primera** |
 | `BibliotecaIOS` — marcadores y NSFileManager | HECHO (tanda 23) |
+| `iosApp/` + framework + `.ipa` en el CI | HECHO (tanda 24), a la primera |
 | `Rastro` (5 llamadas) | **es una decisión, no una tanda** — ver abajo |
 | `ConversorCarpeta` (3) | pendiente |
 | `Rar5` (2) | pendiente |
@@ -103,22 +110,24 @@ El objetivo es un `.ipa` que entre en el iPad con Sideloadly.
 | `PortadasIOS`, `ColorPortada`, `Vigilante` | ❌ |
 | `Rastro` — **es una decisión, no una tanda** (ver arriba) | ❌ |
 | La interfaz a Compose Multiplatform | ❌ 3.228 líneas de `ui/` + 1.204 de `VistaModelo` + 713 de `MainActivity`, en `:app` |
-| `iosApp/` — proyecto de Xcode | ❌ no existe |
-| Trabajo de CI que archive el `.ipa` | ❌ no existe |
+| `iosApp/` — proyecto de Xcode (XcodeGen) | ✅ |
+| CI que empaqueta el `.ipa` sin firmar | ✅ artefacto `lector-ipa`, 10,1 MB |
+| **Que alguien lo instale y arranque** | ❌ **el paso que falta ahora** |
 
-**~35%.** Por líneas de código sale más, pero el número honesto es más bajo:
+**~45%.** Sube diez de golpe porque la tanda 24 tacha las dos filas que no eran
+código sino tubería, y porque ya existe algo instalable. Sigue siendo más bajo de
+lo que dirían las líneas:
 **lo que queda es donde está todo el riesgo.** La mudanza de la interfaz es la
 mitad del trabajo real y no se ha empezado, el proyecto de Xcode tiene cero
 líneas, y **nada de esto ha arrancado nunca en un iPad**.
 
-Y de ese 35, **la parte de datos ya está entera**: lo que falta es enseñarla y
-empaquetarla.
+Y de ese 45, **la parte de datos y el empaquetado ya están**: lo que falta es la
+interfaz de verdad — y comprobar que lo escrito funciona en un iPad.
 
-**Un `.ipa` no se genera desde Windows** — hace falta Xcode. Pero **no hace falta
-tener un Mac**: el runner de macOS del CI puede archivar un `.ipa` sin firmar y
-Sideloadly lo firma con la cuenta de Apple de Dani al instalarlo (gratis, caduca
-a los siete días). **Eso obliga a que `iosApp/` sea un proyecto de Xcode que el
-CI pueda archivar solo**, no un esqueleto que haya que abrir a mano.
+**Un `.ipa` no se genera desde Windows** — hace falta Xcode. **Y no hace falta
+tener un Mac**: desde la tanda 24 el runner de macOS empaqueta uno sin firmar en
+cada push, y Sideloadly lo firma con la cuenta de Apple de Dani al instalarlo
+(gratis, caduca a los siete días).
 
 ## Pendiente de Android, que sólo puede hacer Dani
 

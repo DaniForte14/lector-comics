@@ -4216,6 +4216,69 @@ Verificado: `comprobar.py` en 0 y Android en verde, sin un solo `w:`.
 alias; el valor es el mismo. **iOS:** lo dice el CI, y ni el CI puede decir si
 funciona.
 
+### Tanda 24: existe una app de iOS, y el CI escupe un `.ipa` (05/09/2026)
+
+**EL SALTO MAS GRANDE DEL PORT, Y SALIO A LA PRIMERA.** Framework estatico,
+XcodeGen, `xcodebuild`, el Swift y el empaquetado del `.ipa`: cinco cosas nuevas
+que nadie podia probar desde Windows, y el CI las paso sin una sola vuelta.
+Cuesta creerlo despues de tres tandas seguidas cayendo por un nombre mal escrito.
+
+**XCODEGEN Y NO UN `.xcodeproj` EN GIT.** Decidido con Dani, y contra el
+principio de "menos dependencias" del proyecto **a proposito**. Un
+`project.pbxproj` son cientos de lineas generadas con UUIDs de 24 caracteres,
+pensado para que lo escriba Xcode. **Aqui nadie puede abrir Xcode** —se trabaja
+en Windows— asi que ese fichero seria codigo que nadie sabe arreglar cuando se
+rompa. `iosApp/project.yml` son 30 lineas legibles y el runner lo convierte en
+proyecto justo antes de compilar.
+
+> El principio de menos dependencias es sobre **lo que viaja DENTRO de la app**
+> —Room, una libreria de red—. XcodeGen no viaja: solo construye. Esa es la
+> linea, y conviene tenerla escrita para no rediscutirla cada vez.
+
+**EL FRAMEWORK, ESTATICO.** Es lo que hacen las plantillas de Compose
+Multiplatform. Uno dinamico hay que firmarlo e incrustarlo aparte, y con un
+`.ipa` **sin firmar** —que es como llega al iPad de Dani— eso es una pieza mas
+que puede fallar por su cuenta.
+
+**EL `.ipa` SE EMPAQUETA A MANO, y no es cutre: es lo unico que se puede hacer.**
+`xcodebuild -exportArchive` pide un perfil de aprovisionamiento, que es
+exactamente lo que no hay. Y un `.ipa` no es mas que **un zip con la app dentro
+de una carpeta `Payload`**, asi que se hace con `mkdir`, `cp` y `zip`. La firma
+la pone Sideloadly con la cuenta de Apple de Dani al instalarlo.
+
+**TODO EL SWIFT DEL PROYECTO SON 15 LINEAS, y la regla es que no crezcan.** Solo
+lo que Apple exige para que exista una app —punto de entrada y ventana— mas la
+costura que enseña Compose. **Si algun dia `App.swift` tiene un `if`, algo se ha
+colado por el sitio equivocado**: lo que decide algo va en Kotlin, donde se puede
+probar.
+
+Un detalle que rompera si alguien renombra un fichero: `PuntoDeEntradaIOSKt` no
+es un nombre elegido. **Kotlin agrupa las funciones sueltas de un fichero en una
+clase que se llama como el fichero mas `Kt`.** Renombrar `PuntoDeEntradaIOS.kt`
+deja el Swift sin compilar, y el error no dira por que.
+
+**Y LA SONDA, QUE ES CODIGO PARA TIRAR.** `PantallaSonda` NO es la interfaz de la
+app: las cuatro pantallas de verdad siguen en `:app`. Son cuarenta lineas con un
+solo objetivo, **convertir cuatro "compila" en "funciona"**: `BibliotecaIOS`
+lista, `ArchivoIOS` abre, `ZipIOS` descomprime e `ImagenIOS` decodifica. Si sale
+una pagina en la pantalla, las cuatro estan bien; si no sale, **el fallo esta
+acotado a cuatro ficheros y no a treinta**. Se borra cuando la biblioteca de
+verdad arranque.
+
+**LEE DE `Documents` Y NO DEL SELECTOR, y esa es la decision que mas importa de
+la sonda.** Los marcadores son la otra mitad del riesgo de iOS, y meterlos aqui
+seria no poder saber **cual de las dos cosas ha fallado**. Con
+`UIFileSharingEnabled` la carpeta de la app sale en Archivos del iPad y los CBZ
+se arrastran ahi. Por eso `BibliotecaIOS` acepta ahora **una ruta normal como
+raiz**, igual que `ArchivoIOS` con su `uri`: cuando exista el selector le llegara
+un marcador y esa linea no se activara.
+
+**Verificado: CI en verde los dos trabajos, y el artefacto `lector-ipa` pesa 10,1
+MB.** Lo que esto NO dice, y hay que decirlo: **que compile y se empaquete no es
+que arranque**. Nadie ha instalado todavia ese `.ipa`, asi que sigue sin haberse
+ejecutado una sola linea de las siete piezas de `iosMain`. Eso lo tiene que hacer
+Dani con Sideloadly, y es el siguiente paso de verdad.
+
 ### Pendiente
 
 - **Pulsar el boton de limpiar la biblioteca sobre una carpeta de verdad**, y

@@ -15,3 +15,6 @@ iosApp/*.xcodeproj/
 iosApp/build/
 iosApp/Payload/
 iosApp/*.ipa
+
+# Salida de graphify: generada, 3 MB. Se regenera cuando haga falta.
+graphify-out/
