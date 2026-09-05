@@ -4,6 +4,23 @@ package com.dani.lector.datos
 data class Contenido(val carpetas: List<Carpeta>, val comics: List<Comic>)
 
 /**
+ * La carpeta que ninguna [Biblioteca] debe enseñar, la lea quien la lea.
+ *
+ * La crea `ConversorCarpeta` al pasar un CBR a CBZ, y guarda dentro el fichero
+ * viejo. Si se escaneara, **verias cada comic dos veces** —el CBZ nuevo y el CBR
+ * guardado— y la siguiente conversion volveria a convertir los originales. Es la
+ * papelera de la app, no biblioteca.
+ *
+ * VIVE AQUI Y NO EN `ConversorCarpeta` PORQUE LA REGLA ES DE QUIEN LEE, NO DE
+ * QUIEN CONVIERTE. El conversor es de Android —en el iPad no hay motor de RAR—
+ * pero la carpeta viaja con los ficheros: si Dani copia la biblioteca al iPad,
+ * `_cbr_originales` va dentro. Dejando la cadena alli, iOS tendria que
+ * repetirla, y **dos copias que hay que acordarse de cambiar a la vez acaban no
+ * cambiandose a la vez**: es exactamente el fallo por el que existe [Imagenes].
+ */
+const val CARPETA_ORIGINALES = "_cbr_originales"
+
+/**
  * Recorrer la biblioteca del usuario. **La pieza mas distinta de todo el port.**
  *
  * En Android es SAF: el usuario elige una carpeta una vez, el sistema da un

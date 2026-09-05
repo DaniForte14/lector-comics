@@ -36,7 +36,14 @@ import kotlinx.coroutines.withContext
  */
 object ConversorCarpeta {
 
-    const val CARPETA_ORIGINALES = "_cbr_originales"
+    /**
+     * El nombre de verdad esta en `Biblioteca.kt`, en `:shared`.
+     *
+     * Se deja este alias para no tocar a los tres que ya lo llamaban asi. La
+     * cadena vive en comun porque **la regla de no enseñar esta carpeta es de
+     * quien lee la biblioteca**, y en el iPad quien lee no es este fichero.
+     */
+    const val CARPETA_ORIGINALES = com.dani.lector.datos.CARPETA_ORIGINALES
 
     data class Resultado(
         val convertidos: Int,

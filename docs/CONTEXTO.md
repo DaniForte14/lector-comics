@@ -4150,6 +4150,72 @@ dias, que se refrescan reconectandolo.
 trabajo del CI pueda archivar sin intervencion. No vale un esqueleto que solo
 abra en un Mac a mano.
 
+### Tanda 23: `BibliotecaIOS`, y el permiso es todo el problema (05/09/2026)
+
+**LEER UNA CARPETA EN iOS ES UNA LINEA. EL PERMISO ES LA TANDA ENTERA.** En
+Android el usuario elige una carpeta una vez y SAF da un permiso persistente
+sobre su arbol; a partir de ahi se consulta y ya esta. En iOS lo que da el
+selector de documentos es **un acceso que se muere al cerrar la app**: para
+volver a entrar mañana hay que guardar un *security-scoped bookmark* y
+resolverlo en cada arranque.
+
+**COMO SE REPARTEN LAS CADENAS OPACAS**, que es lo primero que mirar si algo no
+cuadra:
+
+| | Android | iOS |
+|---|---|---|
+| `raiz` | uri de arbol de SAF | **el marcador, en base64** |
+| `docId` | id de documento | **la ruta absoluta de la carpeta** |
+| `Comic.uri` | uri de documento | **la ruta absoluta del fichero** |
+
+Esa ultima fila **cierra el circulo con la tanda 22**: el `ruta(uri) = uri` que
+`ArchivoIOS` dejo esperando era exactamente esto, una ruta que el sistema pueda
+abrir. Las dos piezas encajan sin tocar ninguna.
+
+**EL ACCESO SE ABRE UNA VEZ Y NO SE CIERRA, Y ES UNA DECISION.**
+`startAccessingSecurityScopedResource` deberia equilibrarse con su `stop`, pero
+**quien lee los bytes de una pagina es `ArchivoIOS` mucho despues** de que la
+biblioteca haya devuelto la lista, y no tiene el `NSURL` de la raiz ni por que
+tenerlo. Cerrar el acceso al salir de `abrir` dejaria la app sin poder abrir ni
+un comic. Se abre en el primer uso y dura lo que la app: **una raiz, un acceso**.
+El dia que haya dos bibliotecas a la vez, esto se repiensa.
+
+**EL MARCADOR RANCIO SE TRATA COMO "NO HAY BIBLIOTECA".** Un marcador que apunta
+a algo que se movio o que se reinstalo **resuelve, y luego no deja leer**: es el
+fallo mas confuso posible, una pantalla llena de comics que no abren. Se mira el
+`bookmarkDataIsStale` y, si esta rancio, se devuelve vacio para que el usuario
+vuelva a elegir la carpeta.
+
+**`marcadorDe` VIVE AQUI AUNQUE LO LLAME `iosApp`.** Quien crea el marcador es el
+selector de documentos, que sera de la app; pero el formato —marcador a `NSData`,
+`NSData` a base64— tiene que ser **el mismo en los dos lados**, y en un solo
+fichero no hay dos formatos que puedan separarse sin que nadie se entere.
+
+**`CARPETA_ORIGINALES` SE MUDA A COMUN.** Estaba en `ConversorCarpeta`, que es de
+Android. Pero **la regla de no enseñar esa carpeta es de quien LEE**, no de quien
+convierte: si Dani copia la biblioteca al iPad, `_cbr_originales` va dentro con
+los ficheros, y sin la regla **veria cada comic dos veces**. Dejando la cadena en
+`:app`, iOS tendria que repetirla — que es el fallo por el que existe `Imagenes`.
+Queda un alias en `ConversorCarpeta` para no tocar a sus tres llamadores.
+
+**LAS FECHAS, EN MILISEGUNDOS.** `timeIntervalSince1970` viene en SEGUNDOS y con
+decimales; SAF da milisegundos. Sin el x1000, "por recientes" ordenaria en dos
+escalas distintas y los ficheros del iPad **parecerian todos de 1970** al lado de
+los de Android.
+
+**Y AQUI HACE FALTA UN AVISO MAS FUERTE DE LO NORMAL: EL CI DIRA SI COMPILA, Y
+COMPILAR NO ES FUNCIONAR.** Hasta ahora eso era una formula; en esta tanda es el
+riesgo principal. Los marcadores son un mecanismo **de tiempo de ejecucion** —se
+resuelven o no, caducan, se quedan rancios— y **eso solo se ve en un iPad de
+verdad**. Que este trabajo salga en verde no significa que la biblioteca se abra.
+Las seis piezas de `iosMain` estan en ese estado: escritas, compiladas, **jamas
+ejecutadas**.
+
+Verificado: `comprobar.py` en 0 y Android en verde, sin un solo `w:`.
+**Android:** solo cambia que `ConversorCarpeta.CARPETA_ORIGINALES` ahora es un
+alias; el valor es el mismo. **iOS:** lo dice el CI, y ni el CI puede decir si
+funciona.
+
 ### Pendiente
 
 - **Pulsar el boton de limpiar la biblioteca sobre una carpeta de verdad**, y

@@ -18,29 +18,36 @@ propósito.
 gh run list --limit 1
 ```
 
-El último commit de código es `f559536`, que arregla una constante de
-CoreGraphics. Si su trabajo de iOS está en verde, **las tres piezas de leer un
-CBZ en el iPad compilan**.
+El último commit de código es el de la tanda 23, `BibliotecaIOS`. Si su trabajo
+de iOS está en verde, **la cadena entera de abrir un cómic en el iPad compila**.
+Compilar no es funcionar: ver abajo.
 
 ---
 
-## La tarea siguiente: `BibliotecaIOS`
+## La tarea siguiente: `iosApp/`, y es un cambio de fase
 
-`ArchivoIOS` está **HECHO (tanda 22, 05/09/2026)** y con él las cuatro piezas de
-leer un CBZ en el iPad están escritas. Lo que falta ahora es **quién le da los
-ficheros**, y eso es `BibliotecaIOS`.
+`ArchivoIOS` (tanda 22) y `BibliotecaIOS` (tanda 23) están hechos, y con ellos
+**la cadena entera de abrir un cómic en el iPad está escrita**: elegir carpeta,
+listarla, abrir el CBZ, sacar una página y decodificarla.
 
-**Lo primero que tiene que resolver ya está esperándolo con nombre.**
-`ArchivoIOS` tiene un `private fun ruta(uri) = uri` que hoy es la identidad y
-acepta rutas normales. En iOS el `uri` será el marcador de un *security-scoped
-bookmark*, porque **una app del iPad no puede guardarse una ruta y volver a
-abrirla mañana**: hay que resolver el marcador, pedir el acceso, y soltarlo al
-terminar. Quien sabe de eso es `BibliotecaIOS`; `ArchivoIOS` solo tendrá que
-llamarle desde esa línea.
+**Y ninguna de esas seis piezas se ha ejecutado nunca.** Ése es ahora el
+problema principal, por encima de cuánto código falta. Seguir escribiendo
+`PortadasIOS`, `ColorPortadaIOS` y `VigilanteIOS` es **añadir más código ciego
+encima de código ciego**, y cuando por fin arranque algo habrá que depurar seis
+piezas a la vez sin saber cuál falla.
 
-Lo demás de la tanda es lo mismo que hace `Escaner` en Android: recorrer una
-carpeta elegida por el usuario y devolver los cómics que hay. La parte que
-decide (qué es un cómic, el número, el orden) ya es común y tiene pruebas.
+Lo que toca es **el proyecto de Xcode más pequeño que pruebe la cadena**: un
+selector de documentos, guardar el marcador, listar la carpeta y abrir una
+página. Eso convierte cuatro "compila" en "funciona" — o dice cuál de las cuatro
+no.
+
+**Y condiciona cómo se monta:** tiene que ser un proyecto que **el CI pueda
+archivar solo**, porque el `.ipa` sale de ahí (ver abajo).
+
+**Lo más frágil, y no lo puede ver el compilador:** en iOS la opción
+`withSecurityScope` de los marcadores es de macOS. `BibliotecaIOS` resuelve sin
+opciones y pide el acceso después, que es como funciona en el iPad. **Si al
+probarlo no deja abrir los ficheros, ése es el primer sitio donde mirar.**
 
 **Y una cosa que `ArchivoIOS` dejó a medias a propósito:** el parámetro
 `recortar` se ignora. `Recorte` decide el recuadro y es común, pero necesita los
@@ -61,7 +68,8 @@ Android y 24 llamadas (contadas con `grep`, no de memoria):
 | `ComicZip` a `Archivo` | HECHO (tanda 16) |
 | `Escaner` a `Biblioteca` | HECHO (tanda 17) |
 | `Miniaturas` a `Portadas` | HECHO (tanda 18) |
-| `ArchivoIOS` — leer un CBZ en el iPad | HECHO (tanda 22), sin compilar |
+| `ArchivoIOS` — leer un CBZ en el iPad | HECHO (tanda 22), **compila a la primera** |
+| `BibliotecaIOS` — marcadores y NSFileManager | HECHO (tanda 23) |
 | `Rastro` (5 llamadas) | **es una decisión, no una tanda** — ver abajo |
 | `ConversorCarpeta` (3) | pendiente |
 | `Rar5` (2) | pendiente |
@@ -91,17 +99,20 @@ El objetivo es un `.ipa` que entre en el iPad con Sideloadly.
 | | |
 |---|---|
 | Lógica portable en `commonMain` | ✅ 4.425 líneas, con pruebas |
-| Piezas de plataforma: `Disco`, `Zip`, `Imagen`, `Archivo` | ✅ escritas, las juzga el CI |
-| `BibliotecaIOS`, `PortadasIOS`, `ColorPortada`, `Vigilante` | ❌ |
+| Piezas de plataforma: `Disco`, `Zip`, `Imagen`, `Archivo`, `Biblioteca` | ✅ escritas, **ninguna ejecutada nunca** |
+| `PortadasIOS`, `ColorPortada`, `Vigilante` | ❌ |
 | `Rastro` — **es una decisión, no una tanda** (ver arriba) | ❌ |
 | La interfaz a Compose Multiplatform | ❌ 3.228 líneas de `ui/` + 1.204 de `VistaModelo` + 713 de `MainActivity`, en `:app` |
 | `iosApp/` — proyecto de Xcode | ❌ no existe |
 | Trabajo de CI que archive el `.ipa` | ❌ no existe |
 
-**~30%.** Por líneas de código sale el 45%, pero el número honesto es más bajo:
+**~35%.** Por líneas de código sale más, pero el número honesto es más bajo:
 **lo que queda es donde está todo el riesgo.** La mudanza de la interfaz es la
 mitad del trabajo real y no se ha empezado, el proyecto de Xcode tiene cero
 líneas, y **nada de esto ha arrancado nunca en un iPad**.
+
+Y de ese 35, **la parte de datos ya está entera**: lo que falta es enseñarla y
+empaquetarla.
 
 **Un `.ipa` no se genera desde Windows** — hace falta Xcode. Pero **no hace falta
 tener un Mac**: el runner de macOS del CI puede archivar un `.ipa` sin firmar y
