@@ -4279,6 +4279,51 @@ que arranque**. Nadie ha instalado todavia ese `.ipa`, asi que sigue sin haberse
 ejecutado una sola linea de las siete piezas de `iosMain`. Eso lo tiene que hacer
 Dani con Sideloadly, y es el siguiente paso de verdad.
 
+### La primera instalacion en el iPad: se mataba sola (05/09/2026)
+
+**LA PRIMERA VEZ QUE SE EJECUTA UNA LINEA DE `iosMain`, Y NO LLEGO A EJECUTARSE
+NINGUNA.** Dani instalo el `.ipa` con Sideloadly —Modo Desarrollador, confiar en
+el certificado, todo bien— y la app abria y se cerraba a los tres segundos.
+
+**No se adivino: se leyo el log.** `Ajustes > Privacidad y seguridad > Analisis y
+mejoras > Datos de analisis > Lector-2026-09-05-034316.ips`. La pila lo dijo en
+una linea:
+
+```
+kfun:androidx.compose.ui.uikit.PlistSanityCheck.performIfNeeded...
+  -> ThrowException
+  -> terminateWithUnhandledException
+  -> abort()            SIGABRT, "Abort trap: 6"
+```
+
+**No era el codigo del proyecto.** Ninguna de las seis piezas de `iosMain` llego
+a correr: `BibliotecaIOS`, `ArchivoIOS`, `ZipIOS` e `ImagenIOS` siguen sin
+haberse ejecutado jamas. Es **Compose Multiplatform**, que desde la version 1.7
+mira el `Info.plist` al nacer y llama a `abort()` si falta
+`CADisableMinimumFrameDurationOnPhone`.
+
+**Y lo hacen a proposito.** Sin esa clave la interfaz se queda clavada a 60 fps en
+las pantallas de alta frecuencia; JetBrains decidio que era mejor romper en el
+arranque que dejar que la app fuera a medio gas sin que nadie supiera por que.
+
+**LA CAUSA DE VERDAD, que es lo que hay que aprender:** el `Info.plist` de la
+tanda 24 se escribio **a mano, desde cero**, en vez de partir del de la plantilla
+de Compose Multiplatform. Esa clave solo aparece en la plantilla. Escribir un
+fichero de configuracion de Apple a mano desde Windows es exactamente igual de
+ciego que escribir `iosMain`, **pero sin un CI que lo mire**: el proyecto compilo
+y se empaqueto en verde, y aun asi la app no arrancaba.
+
+> **QUE COMPILE Y SE EMPAQUETE NO ES QUE ARRANQUE.** Estaba escrito en la tanda
+> 24 como formula de precaucion y resulto ser literal, a la primera instalacion.
+
+**Lo que NO se hizo:** existe `ComposeUIViewControllerConfiguration.enforceStrictPlistSanityCheck = false`
+para apagar la comprobacion. Apagar un aviso que tiene razon es cambiarlo por un
+problema mas callado —la interfaz a 60 fps en un iPad que puede dar mas— asi que
+se pone la clave, que es lo que la comprobacion pide.
+
+Verificado: el CI en verde con el `.ipa` nuevo. **Que arranque lo dira el iPad**,
+que es el unico que puede.
+
 ### Pendiente
 
 - **Pulsar el boton de limpiar la biblioteca sobre una carpeta de verdad**, y

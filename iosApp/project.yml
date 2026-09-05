@@ -31,6 +31,20 @@ targets:
         CFBundleDisplayName: Lector
         CFBundleShortVersionString: "0.1"
         CFBundleVersion: "1"
+        # SIN ESTO LA APP SE MATA SOLA AL ARRANCAR, y no es un fallo de Apple:
+        # es Compose Multiplatform, que desde la 1.7 comprueba el Info.plist al
+        # nacer (`PlistSanityCheck`) y llama a abort() si esta clave falta.
+        #
+        # Lo hacen a proposito: sin ella la interfaz se queda clavada a 60 fps en
+        # las pantallas de alta frecuencia, y JetBrains prefirio romper en el
+        # arranque a que nadie se enterara de por que va a medio gas.
+        #
+        # Costo la primera instalacion en el iPad de Dani (05/09/2026): la app
+        # abria y se cerraba a los 3 segundos, con SIGABRT y esta pila:
+        #   PlistSanityCheck.performIfNeeded -> ThrowException -> abort
+        # El Info.plist de este proyecto se escribio a mano en vez de copiar el
+        # de la plantilla de CMP, que es el unico sitio donde aparece la clave.
+        CADisableMinimumFrameDurationOnPhone: true
         # LOS DOS QUE HACEN QUE SE PUEDAN METER COMICS SIN SELECTOR. Con esto,
         # la carpeta Documents de la app sale en Archivos del iPad (En mi iPad >
         # Lector) y se pueden arrastrar CBZ ahi. Es lo que lee la sonda.
