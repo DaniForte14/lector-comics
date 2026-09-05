@@ -4086,6 +4086,70 @@ mira.
 Verificado tras el arreglo: `comprobar.py` en 0 y Android en verde. **Android:**
 no lo usa nadie. **iOS:** lo dice el CI.
 
+### Tanda 22: `ArchivoIOS`, y con el se puede leer un CBZ en el iPad (05/09/2026)
+
+**ATAR, NO INVENTAR.** Las tres piezas ya estaban y cada una habia pasado por el
+CI: `Zip` entiende el indice y tiene seis pruebas, `ZipIOS` lee el fichero y
+descomprime, `ImagenIOS` decodifica ya reducida. Lo que faltaba era un
+`class ArchivoIOS : Archivo` que dijera en que orden se llaman y que se hace
+cuando algo falla. Es un envoltorio fino, igual que `ArchivoAndroid`.
+
+**LAS DOS DECISIONES QUE `SIGUIENTE.md` DEJABA ABIERTAS, resueltas asi:**
+
+- **La ruta.** `Archivo` recibe un `uri` que es una cadena opaca —en Android una
+  uri de SAF, en iOS sera el marcador de un *security-scoped bookmark*, porque
+  una app del iPad no puede guardarse una ruta y volver a abrirla mañana—. Quien
+  sabra resolverlo es `BibliotecaIOS`, **que todavia no existe**. Se ha dejado un
+  `private fun ruta(uri) = uri`: hoy es la identidad y acepta rutas normales, que
+  es lo que hace falta para que las otras tres piezas se prueben de una vez en el
+  CI. **El sitio por donde entrara el marcador ya tiene nombre**, que era el
+  objetivo de no dejarlo repartido por tres llamadas.
+- **La cache: ninguna de las tres de `ComicZip`.** Sus numeros costaron cierres de
+  la app y **ninguno vale aqui**: en iOS una imagen va en RGBA8888 y ocupa el
+  doble que la de Android en 565, y `Runtime.maxMemory()` no existe fuera de la
+  JVM, asi que el techo tendria que ser una cifra inventada. Mejor que se note
+  lento a que arrastre una cache mal dimensionada: **lo lento se mide, lo otro
+  mata la app sin dejar rastro.**
+
+**LO QUE SI SE GUARDA ES EL INDICE DEL ULTIMO ARCHIVO, y no es una de esas.** Son
+unas decenas de `EntradaZip`, sin un solo pixel. Sin el, **cada pasada de pagina
+volveria a leer la cola del fichero y a remontar el indice entero**, que es justo
+el trabajo que `Zip` hace una vez. Se guarda uno y no un mapa porque se lee un
+comic a la vez. Se recuerda **tambien el fallo**: si un archivo no se ha podido
+leer, reintentarlo por cada pagina es repetir el mismo error caro.
+
+**TRES COSAS QUE NO HACE, Y NINGUNA ES UN OLVIDO:**
+
+| | Por que |
+|---|---|
+| **No abre CBR** | No hay motor de RAR en Kotlin/Native: junrar es Java, 7-Zip-JBinding es JVM mas una libreria nativa. Se devuelve un `Paginas.Error` que **dice lo que pasa** en vez de fallar con un error de ZIP que no se entiende |
+| **No recorta bordes** | `Recorte` decide el recuadro y es comun, pero necesita los pixeles: en Android los saca `RecorteAndroid` de un `Bitmap`, y aqui harian falta los de `ImagenIOS` antes de envolverlos en Skia. Otro fichero y otra vuelta de CI; **sin recorte la pagina se ve entera y bien** |
+| **`precargar` no hace nada** | Precargar es dejar un trabajo hecho para que alguien lo encuentre hecho. **Sin sitio donde dejarlo**, decodificar las de alrededor es gastar procesador y memoria para tirar el resultado, y ademas en el hilo de quien llama. El dia que haya cache, esto se llena |
+
+Que el CBR se conteste con una frase y no con un fallo tecnico importa mas de lo
+que parece: **es el unico sitio de la app donde una funcion existe en un aparato
+y no en el otro**, y el usuario que lo encuentre tiene que saber que hacer
+—convertirlo desde el movil— y no pensar que el fichero esta roto.
+
+**Verificado:** `comprobar.py` en 0 y `:app:assembleDebug` + `:shared:testDebugUnitTest`
+en verde. **Android:** no lo usa nadie, no cambia nada. **iOS: escrito y sin
+compilar**, lo dice el CI de macOS.
+
+### Para el `.ipa` hace falta macOS, y la salida ya existe (05/09/2026)
+
+Dicho aqui porque **condiciona como se monta `iosApp/`**, y es mejor saberlo
+antes de montarlo que despues:
+
+**Un `.ipa` no se genera desde Windows.** Hace falta Xcode. Pero **no hace falta
+tener un Mac**: el runner de macOS del CI —el mismo que ya juzga `iosMain`—
+puede compilar y archivar un `.ipa` **sin firmar**, y Sideloadly lo firma con la
+cuenta de Apple de Dani al instalarlo en el iPad. Es gratis y caduca a los siete
+dias, que se refrescan reconectandolo.
+
+**Lo que esto exige:** que `iosApp/` sea un proyecto de Xcode de verdad, que un
+trabajo del CI pueda archivar sin intervencion. No vale un esqueleto que solo
+abra en un Mac a mano.
+
 ### Pendiente
 
 - **Pulsar el boton de limpiar la biblioteca sobre una carpeta de verdad**, y
