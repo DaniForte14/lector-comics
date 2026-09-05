@@ -119,9 +119,22 @@ class BibliotecaIOS : Biblioteca {
         url.bookmarkDataWithOptions(0u, null, null, null)
             ?.base64EncodedStringWithOptions(0u)
 
+    /**
+     * `Default` Y NO `IO`, Y NO ES UNA PREFERENCIA: con kotlinx-coroutines 1.9.0
+     * **`Dispatchers.IO` es `internal` en Kotlin/Native**. Existe en la JVM y por
+     * eso el reflejo es escribirlo —lo hace `Escaner` en Android, y esta clase lo
+     * llevaba— pero aqui no compila:
+     *
+     *     e: Cannot access 'val IO: CoroutineDispatcher':
+     *        it is internal in 'kotlinx/coroutines/Dispatchers'
+     *
+     * Fuera de la JVM no hay una reserva de hilos aparte para esperar a disco, y
+     * `Default` es la que hay. **Se cazo en el CI, como todas las de esta serie:
+     * desde Windows el mismo codigo compila sin rechistar.**
+     */
     override suspend fun abrir(
         raiz: String, docId: String?, ruta: String
-    ): Contenido = withContext(Dispatchers.IO) {
+    ): Contenido = withContext(Dispatchers.Default) {
         val base = rutaRaiz(raiz) ?: return@withContext Contenido(emptyList(), emptyList())
         val dentro = docId ?: base
 
@@ -159,7 +172,7 @@ class BibliotecaIOS : Biblioteca {
 
     override suspend fun todosBajo(
         raiz: String, docId: String?, ruta: String
-    ): List<Comic> = withContext(Dispatchers.IO) {
+    ): List<Comic> = withContext(Dispatchers.Default) {
         val out = mutableListOf<Comic>()
         val base = rutaRaiz(raiz) ?: return@withContext out
         val pendientes = ArrayDeque<Pair<String, String>>()

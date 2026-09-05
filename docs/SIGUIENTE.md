@@ -138,7 +138,7 @@ Todo lo demás de Android está confirmado por él hasta el 04/09/2026 inclusive
 ## Las trampas de Kotlin/Native que ya han costado vueltas de CI
 
 **Lo difícil compila; lo que falla es cómo se escribe el nombre de algo del
-sistema.** Dos tandas seguidas igual:
+sistema.** Tres tandas seguidas igual:
 
 - zlib, `inflateInit2_`, `ZLIB_VERSION` y la ventana `-15`: a la primera.
   Falló **un `import`**: los métodos de una *category* de Objective-C son
@@ -148,6 +148,10 @@ sistema.** Dos tandas seguidas igual:
   `toComposeImageBitmap`: a la primera. Falló **una constante**: las de
   CoreGraphics viven dentro de su enumeración y hay que pedirles `.value`
   (`CGImageAlphaInfo.kCGImageAlphaPremultipliedLast.value`).
+- `BibliotecaIOS`: marcadores, `NSFileManager` y los punteros de salida, a la
+  primera. Falló **un dispatcher**: con coroutines 1.9.0 `Dispatchers.IO` es
+  **`internal` en Kotlin/Native**. Se escribe por reflejo porque en la JVM existe
+  y `Escaner` lo usa. Fuera de la JVM va `Dispatchers.Default`.
 
 Y de antes: `toSortedSet`, `String.format`, `android.net.Uri.decode` y los
 nombres de prueba con coma. **Nada de esto lo coge Windows.** `comprobar.py` sólo
