@@ -65,9 +65,38 @@ jobs:
       - name: Pruebas comunes sobre el simulador
         run: ./gradlew :shared:iosSimulatorArm64Test --stacktrace
 
-      # Y que compila para el iPad de verdad (arm64), que es otro objetivo
-      # distinto del simulador. No se ENLAZA un framework porque el modulo no
-      # declara ninguno todavia: no hay app de iOS que lo consuma, y declararlo
-      # ahora seria andamiaje. Se añade en la tanda que porte la interfaz.
-      - name: Compilar para el iPad
-        run: ./gradlew :shared:compileKotlinIosArm64 --stacktrace
+      # EL FRAMEWORK PARA EL IPAD DE VERDAD (arm64), que es otro objetivo
+      # distinto del simulador. Desde la tanda 24 se ENLAZA —ya hay `iosApp/`
+      # que lo consume— y es lo que busca el proyecto de Xcode en
+      # FRAMEWORK_SEARCH_PATHS. Antes esto era solo `compileKotlinIosArm64`.
+      - name: El framework para el iPad
+        run: ./gradlew :shared:linkReleaseFrameworkIosArm64 --stacktrace
+
+      # XCODEGEN ESCRIBE EL .xcodeproj DESDE iosApp/project.yml. En git solo
+      # esta el YAML: ver el porque en su cabecera.
+      - name: Generar el proyecto de Xcode
+        run: brew install xcodegen && cd iosApp && xcodegen generate
+
+      # SIN FIRMAR, Y ES LO QUE SE QUIERE. Firmar exige una cuenta de
+      # desarrollador de Apple metida como secret; el .ipa sin firma lo firma
+      # Sideloadly con la cuenta de Dani al instalarlo en el iPad.
+      - name: Compilar la app
+        run: |
+          cd iosApp
+          xcodebuild -project Lector.xcodeproj -scheme Lector             -configuration Release -sdk iphoneos -derivedDataPath build             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""             build
+
+      # UN .ipa NO ES MAS QUE UN ZIP CON LA APP DENTRO DE UNA CARPETA `Payload`.
+      # Se hace a mano porque `xcodebuild -exportArchive` pide un perfil de
+      # aprovisionamiento, que es justo lo que no hay.
+      - name: Empaquetar el .ipa
+        run: |
+          cd iosApp
+          mkdir -p Payload
+          cp -r build/Build/Products/Release-iphoneos/Lector.app Payload/
+          zip -qry Lector.ipa Payload
+
+      - name: Guardar el .ipa
+        uses: actions/upload-artifact@v4
+        with:
+          name: lector-ipa
+          path: iosApp/Lector.ipa

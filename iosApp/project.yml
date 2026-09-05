@@ -1,0 +1,63 @@
+# El proyecto de Xcode del iPad, en 30 lineas que se pueden leer.
+#
+# POR QUE ESTO Y NO UN .xcodeproj EN GIT. Un proyecto de Xcode es un
+# `project.pbxproj`: cientos de lineas generadas, con UUIDs de 24 caracteres,
+# pensado para que lo escriba Xcode y no una persona. Aqui NADIE puede abrir
+# Xcode —se trabaja en Windows— asi que ese fichero seria codigo que nadie sabe
+# arreglar cuando se rompa. XcodeGen lo genera desde este YAML en el runner de
+# macOS, justo antes de compilar.
+#
+# Decidido con Dani el 05/09/2026, y contra el principio de "menos dependencias"
+# del proyecto a proposito: ese principio es sobre lo que viaja DENTRO de la app
+# —Room, una libreria de red—, y XcodeGen no viaja: solo construye.
+
+name: Lector
+
+options:
+  bundleIdPrefix: com.dani
+  deploymentTarget:
+    iOS: "15.0"
+  createIntermediateGroups: true
+
+targets:
+  Lector:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources
+    info:
+      path: Info.plist
+      properties:
+        CFBundleDisplayName: Lector
+        CFBundleShortVersionString: "0.1"
+        CFBundleVersion: "1"
+        # LOS DOS QUE HACEN QUE SE PUEDAN METER COMICS SIN SELECTOR. Con esto,
+        # la carpeta Documents de la app sale en Archivos del iPad (En mi iPad >
+        # Lector) y se pueden arrastrar CBZ ahi. Es lo que lee la sonda.
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dani.lector
+        # Sin equipo de desarrollo y sin firmar: el .ipa sale sin firma y lo
+        # firma Sideloadly con la cuenta de Dani al instalarlo. Ver el workflow.
+        CODE_SIGNING_REQUIRED: "NO"
+        CODE_SIGNING_ALLOWED: "NO"
+        CODE_SIGN_IDENTITY: ""
+        # Donde esta el framework que ha dejado Gradle. La ruta es relativa al
+        # .xcodeproj, que XcodeGen escribe en esta misma carpeta.
+        FRAMEWORK_SEARCH_PATHS:
+          - $(inherited)
+          - $(SRCROOT)/../shared/build/bin/iosArm64/releaseFramework
+        # Kotlin/Native genera un framework estatico; hay que enlazarlo y
+        # ademas arrastrar libresolv, que usan sus bindings de Foundation.
+        OTHER_LDFLAGS:
+          - $(inherited)
+          - -framework
+          - Compartido
+          - -lresolv

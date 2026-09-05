@@ -24,8 +24,21 @@ kotlin {
     // codigo de commonMain es el mismo en los dos sitios; lo unico que cambia es
     // quien puede compilarlo.
     if (System.getProperty("os.name").startsWith("Mac")) {
-        iosArm64()            // el iPad de verdad
-        iosSimulatorArm64()   // el simulador, en los Mac con chip de Apple
+        // EL FRAMEWORK YA SE DECLARA (05/09/2026). Hasta la tanda 23 no se
+        // enlazaba ninguno porque no habia app de iOS que lo consumiera, y
+        // declararlo entonces era andamiaje. Ahora existe `iosApp/` y esto es
+        // lo que consume.
+        //
+        // ESTATICO Y NO DINAMICO: es lo que hacen las plantillas de Compose
+        // Multiplatform. Un framework dinamico hay que firmarlo e incrustarlo
+        // aparte, y con `.ipa` sin firmar —que es como llega al iPad de Dani—
+        // eso es una pieza mas que puede fallar por su cuenta.
+        listOf(iosArm64(), iosSimulatorArm64()).forEach { objetivo ->
+            objetivo.binaries.framework {
+                baseName = "Compartido"
+                isStatic = true
+            }
+        }
     }
 
     sourceSets {

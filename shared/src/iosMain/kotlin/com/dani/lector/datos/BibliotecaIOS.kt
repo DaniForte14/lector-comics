@@ -85,6 +85,14 @@ class BibliotecaIOS : Biblioteca {
      * verdad no deja abrir los ficheros, este es el primer sitio que mirar.
      */
     private fun rutaRaiz(marcador: String): String? {
+        // UNA RUTA NORMAL SE ACEPTA TAL CUAL, igual que hace `ArchivoIOS` con su
+        // `ruta(uri)`. No es un atajo: es lo que permite probar la cadena entera
+        // —listar, abrir, decodificar— contra la carpeta Documents de la app,
+        // **sin meter todavia el selector ni los marcadores**, que son la parte
+        // que solo se puede juzgar en un iPad de verdad. Cuando el selector
+        // exista, le llegara un marcador y esta linea no se activara.
+        if (esCarpeta(marcador)) return marcador
+
         raizCache?.let { if (it.first == marcador) return it.second }
 
         val datos = NSData.create(base64EncodedString = marcador, options = 0u) ?: return null
