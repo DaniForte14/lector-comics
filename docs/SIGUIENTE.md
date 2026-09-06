@@ -9,6 +9,42 @@ propósito.
 
 ---
 
+## Donde se paro el 06/09/2026
+
+**Se trabajo con dos sesiones que escriben —Paco y Lucia— y una que reparte,
+revisa y commitea.** Reparto por ficheros disjuntos, cero colisiones. Si se
+repite, lo que hay que saber esta en la tanda 25 de `docs/CONTEXTO.md`; lo mas
+importante: **leer un fichero mientras el agente lo edita da una foto a medio
+editar**, y por poco se le acusa en falso a Paco. Se compila antes de decirle a
+nadie que su codigo esta mal.
+
+| Commit | Que |
+|---|---|
+| `b7f53d8` | `ColorPortada` a `commonMain`. **Pusheado, CI verde** |
+| `e70d3b7` | `PortadasIOS` + el `@Volatile` que faltaba + los documentos de la 25 |
+| `9024ae0` | `comprobar.py` ya no es ciego a los comentarios descuadrados |
+
+**SIN PUSHEAR: `e70d3b7` y `9024ae0`.** Estaba pendiente de decidirlo con Dani.
+Hasta que no se pusheen, **el `.ipa` del CI no lleva `PortadasIOS`**.
+
+**A MEDIO HACER EN EL ARBOL DE TRABAJO, de Lucia, sin commitear:** la particion
+de `dominante` en dos —una funcion pura `dominante(ancho, alto, pixel)` y un
+envoltorio que saca los pixeles del `ImageBitmap`, patron de `Recorte`— y su
+`ColorPortadaTest.kt`. **No se deshace, se retoma.** Comprobado que con eso
+dentro `comprobar.py` sigue en PROBLEMAS: 0.
+
+**Por que se parte:** en `commonTest` **no se puede crear un `ImageBitmap`** —
+comprobado ejecutandolo: `Method createBitmap in android.graphics.Bitmap not
+mocked`. Y aunque en el simulador de iOS si funcionaria, `commonTest` corre en
+las dos piernas: la prueba quedaria roja en Windows para siempre, que es donde
+se trabaja a diario.
+
+**Pendiente de decidir contigo:** la frase de `CLAUDE.md` sobre `comprobar.py`
+se queda corta. No es la lista de lo que mira lo que hay que ampliar, es el
+limite: **`PROBLEMAS: 0` es "no hay estas cuatro roturas", no es "compila".**
+
+---
+
 ## Lo primero, en cuanto entres
 
 **Mirar el CI del último commit.** Todo el trabajo de iOS se escribe a ciegas
