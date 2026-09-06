@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.graphics.toArgb
 import com.dani.lector.ui.Colores
+import kotlin.concurrent.Volatile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -47,11 +48,14 @@ object ColorPortada {
      * no el que se uso hace mas tiempo. En el comun no hay un mapa con orden de
      * acceso, y da igual: perder una entrada cuesta volver a contar los pixeles
      * de una miniatura que ya esta en cache, no una lectura de disco.
+     *
+     * `@Volatile` porque [olvidar] cambia la referencia desde otro hilo. Ver
+     * alli: sin el, el hilo de fondo puede seguir leyendo el mapa viejo.
      */
-    private var cache = LinkedHashMap<String, Int>()
+    @Volatile private var cache = LinkedHashMap<String, Int>()
 
-    /** Los que ya se sabe que no tienen portada legible. */
-    private var fallidos = HashSet<String>()
+    /** Los que ya se sabe que no tienen portada legible. Volatil por lo mismo. */
+    @Volatile private var fallidos = HashSet<String>()
 
     /**
      * El cerrojo de los dos de arriba.
@@ -181,12 +185,21 @@ object ColorPortada {
      * Se llama al vaciar la cache de portadas, porque los colores salen de las
      * miniaturas: si desaparecen ellas, lo que se recuerda de ellas tambien.
      *
-     * NO suspende —la llama un boton de Ajustes— asi que **no puede coger el
-     * [cerrojo]**, y por eso no hace `clear()`: vaciar un mapa mientras otro
-     * hilo escribe en el es la clase de carrera que corrompe la tabla, no un
-     * dato de mas. Se cambia la referencia, que es una escritura atomica; una
-     * carga a medio vuelo termina de escribir en el mapa viejo, que ya no lee
-     * nadie, y se lo lleva el recolector.
+     * NO suspende —la llama un boton de Ajustes, o sea que corre en el hilo de
+     * interfaz— asi que **no puede coger el [cerrojo]**, que [de] si coge desde
+     * un hilo de fondo. De ahi las DOS cosas de abajo, que son distintas y
+     * hacen falta las dos:
+     *
+     *  1. **No hace `clear()`, cambia la referencia.** Vaciar un mapa mientras
+     *     otro hilo escribe en el es la clase de carrera que corrompe la tabla,
+     *     no un dato de mas. Cambiar la referencia es una escritura atomica: la
+     *     carga a medio vuelo termina de escribir en el mapa viejo, que ya no
+     *     lee nadie, y se lo lleva el recolector. Esto evita el DESGARRO.
+     *  2. **Los campos son `@Volatile`.** Lo de arriba no dice nada sobre
+     *     cuando el otro hilo VE la referencia nueva: sin `@Volatile` puede
+     *     seguir leyendo la vieja durante un rato. Y eso no es teorico —
+     *     se pulsa "vaciar portadas" y los colores siguen saliendo de la cache
+     *     que se acaba de tirar. Esto asegura la VISIBILIDAD.
      */
     fun olvidar() {
         cache = LinkedHashMap()

@@ -81,7 +81,7 @@ Android y 24 llamadas (contadas con `grep`, no de memoria):
 | `ConversorCarpeta` (3) | pendiente |
 | `Rar5` (2) | pendiente |
 | `Vigilante` (1) | pendiente |
-| `ColorPortada` (1) | pendiente |
+| `ColorPortada` (1) | HECHO (tanda 25) |
 | `AndroidViewModel(Application)` | pendiente |
 
 **`Rastro` no es "otro envoltorio".** Sus llamadas no están sólo en
@@ -107,21 +107,22 @@ El objetivo es un `.ipa` que entre en el iPad con Sideloadly.
 |---|---|
 | Lógica portable en `commonMain` | ✅ 4.425 líneas, con pruebas |
 | Piezas de plataforma: `Disco`, `Zip`, `Imagen`, `Archivo`, `Biblioteca` | ✅ escritas, **ninguna ejecutada nunca** |
-| `PortadasIOS`, `ColorPortada`, `Vigilante` | ❌ |
+| `PortadasIOS`, `ColorPortada`, `Vigilante` | ⏳ dos de tres (tanda 25). Falta `Vigilante`, y **es una decisión**: en iOS no hay trabajo periódico en segundo plano garantizado |
 | `Rastro` — **es una decisión, no una tanda** (ver arriba) | ❌ |
 | La interfaz a Compose Multiplatform | ❌ 3.228 líneas de `ui/` + 1.204 de `VistaModelo` + 713 de `MainActivity`, en `:app` |
 | `iosApp/` — proyecto de Xcode (XcodeGen) | ✅ |
 | CI que empaqueta el `.ipa` sin firmar | ✅ artefacto `lector-ipa`, 10,1 MB |
 | **Que alguien lo instale y arranque** | ❌ **el paso que falta ahora** |
 
-**~45%.** Sube diez de golpe porque la tanda 24 tacha las dos filas que no eran
-código sino tubería, y porque ya existe algo instalable. Sigue siendo más bajo de
-lo que dirían las líneas:
+**~47%.** La tanda 24 subió diez de golpe porque tachó las dos filas que no eran
+código sino tubería, y porque ya existe algo instalable. La 25 sube **dos, y no
+más**: `ColorPortada` y `PortadasIOS` son piezas pequeñas al lado de lo que
+queda. Sigue siendo más bajo de lo que dirían las líneas:
 **lo que queda es donde está todo el riesgo.** La mudanza de la interfaz es la
-mitad del trabajo real y no se ha empezado, el proyecto de Xcode tiene cero
-líneas, y **nada de esto ha arrancado nunca en un iPad**.
+mitad del trabajo real y no se ha empezado, y **nada de esto ha arrancado nunca
+en un iPad**.
 
-Y de ese 45, **la parte de datos y el empaquetado ya están**: lo que falta es la
+Y de ese 47, **la parte de datos y el empaquetado ya están**: lo que falta es la
 interfaz de verdad — y comprobar que lo escrito funciona en un iPad.
 
 **Un `.ipa` no se genera desde Windows** — hace falta Xcode. **Y no hace falta

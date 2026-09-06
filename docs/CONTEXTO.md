@@ -4324,8 +4324,157 @@ se pone la clave, que es lo que la comprobacion pide.
 Verificado: el CI en verde con el `.ipa` nuevo. **Que arranque lo dira el iPad**,
 que es el unico que puede.
 
+### Tanda 25: `ColorPortada` a comun y `PortadasIOS`, con dos agentes (06/09/2026)
+
+**LA FORMA DE TRABAJAR CAMBIO EN ESTA TANDA, y conviene dejarlo escrito.** Dani
+puso **dos sesiones de Claude que escriben** —las bautizo el, Paco y Lucia— y
+una tercera que reparte, revisa y commitea. El reparto se hizo por **ficheros
+disjuntos**: Paco en `commonMain`, Lucia en `iosMain`, los documentos y el git
+para el coordinador. Cero colisiones.
+
+**Lo que hay que saber si se repite:**
+
+- **Leer un fichero mientras el agente lo edita da una foto a medio editar.**
+  Aqui se cogio un `ColorPortada.kt` con un `*/` de mas y el `import` sin poner,
+  y parecia codigo roto. No lo era: eran dos ediciones consecutivas. **Casi se
+  le acusa en falso.** Se compila antes de decirle a nadie que su codigo esta
+  mal.
+- **Y `comprobar.py` dio `PROBLEMAS: 0` sobre ese estado intermedio roto.** Con
+  basura fuera de comentario y un `*/` suelto, no lo vio. No sirve de juez
+  unico: **el juez es el compilador.**
+
+  **EL MECANISMO, que es peor que el sintoma** (`comprobar.py:61`):
+
+  ```python
+  if not s or s.startswith("//") or s.startswith("*"): continue
+  ```
+
+  Una linea suelta `*/` **empieza por `*`**, asi que la salta entera: no la
+  mira, no cuenta nada en ella, sigue. Y no es solo ese caso — **cualquier kdoc
+  mal cerrado es invisible** para el guardia, porque su maquina de estados de
+  comentarios es por lineas y trata todo lo que empiece por `*` como
+  continuacion. Un `/**` que no cierra nunca, tambien.
+
+  **No es un fallo del script, es su alcance**: esta escrito para llaves,
+  parentesis y cuerpos huerfanos, y su cabecera lo dice. Pero `CLAUDE.md` lo
+  presenta como *la* comprobacion de antes de dar algo por terminado, y eso es
+  lo que hay que corregir al leerlo. Si algun dia se amplia, es un contador de
+  `/**` contra `*/` por fichero.
+- **Un encargo a un agente tiene que ser autocontenido**: no tiene el contexto
+  de la conversacion. Los dos encargos llevaban dentro las trampas conocidas
+  (`Dispatchers.IO` es `internal` en Native, los nombres de fichero de Apple,
+  que iOS no se puede compilar desde Windows) y por eso ninguno cayo en ellas.
+
+#### `ColorPortada` a `commonMain` (Paco)
+
+El fichero ya estaba **casi portable sin que nadie lo hubiera planeado**:
+`dominante` era pura y usaba `toPixelMap()` de Compose, y `Colores` ya vivia en
+`:shared`. De Android solo quedaban cuatro cosas — y **el encargo decia tres**:
+
+| Era | Es |
+|---|---|
+| `de(ctx: Context, uri)` + `Miniaturas.obtener` | `de(portadas: Portadas, uri)` |
+| `android.util.LruCache` | `LinkedHashMap` podado a mano |
+| `Dispatchers.IO` | `Dispatchers.Default` |
+| `Collections.synchronizedSet` | **la cuarta, que se escapo al repartir** |
+
+**La cuarta la cazo Paco, no el encargo.** `java.util.Collections` no existe en
+Kotlin/Native: habria muerto en el CI de macOS igual que `Dispatchers.IO`.
+
+**Y al quitarla se iba la sincronizacion, que es el detalle que importa.**
+`LruCache` y `synchronizedSet` se sincronizan solos; un `LinkedHashMap` pelado,
+no. Y `de()` la llaman tres composables a la vez. Entra un `Mutex` de
+corrutinas —ya era dependencia— **solo alrededor de los toques al mapa**:
+`portadas.obtener()` queda fuera a proposito, porque meterlo dentro
+serializaria la carga de todas las portadas.
+
+**`olvidar()` no puede coger ese cerrojo**, porque no suspende: la llama un
+boton de Ajustes. En vez de `clear()` **cambia la referencia**, que es una
+escritura atomica; una carga a medio vuelo termina de escribir en el mapa viejo,
+que ya no lee nadie. Por eso los dos campos pasaron de `val` a `var`.
+
+**Y ahi faltaba la mitad del razonamiento, que es la correccion de la revision.**
+Cambiar la referencia evita el **desgarro**; no promete la **visibilidad**. Son
+dos propiedades distintas: sin `@Volatile`, el hilo de fondo puede seguir
+leyendo la referencia vieja, y el sintoma es que **se pulsa "vaciar portadas" y
+los colores siguen saliendo de la cache vieja**. Ahora los dos campos van con
+`@Volatile`.
+
+> **`kotlin.concurrent.Volatile` en `commonMain` con Kotlin 2.0.21 compila
+> limpio, sin opt-in y sin aviso.** Se comprobo con un fichero desechable antes
+> de pedirselo a nadie, porque la regla de cero `w:` no admite sorpresas.
+
+**Lo que se pierde y esta escrito en el comentario:** la cache deja de ser LRU y
+pasa a ser **FIFO** — en el comun no hay mapa con orden de acceso. Da igual:
+perder una entrada cuesta recontar los pixeles de una miniatura que ya esta en
+cache, no una lectura de disco.
+
+Los tres llamadores (`MainActivity`, `Lector`, `PantallaBiblioteca`) pierden su
+`LocalContext.current` y pasan por **`VistaModelo.colorDe(uri)`**, que va al
+lado de `portada()` y `portadaYa()`: `portadas` es privado a proposito y la
+pantalla no tiene por que saber de miniaturas.
+
+#### `PortadasIOS`, y es **solo cache de memoria** (Lucia)
+
+`Disco` solo sabe de `String`, y una portada son bytes de un JPEG. Meterlos por
+base64 seria inflarlos un tercio y colocar imagenes donde viven el progreso y
+los marcadores. **La cache de disco es su propia tanda, con `NSFileManager`.**
+Mientras tanto `tamano()` devuelve 0 y `limpiar()` vacia la memoria.
+
+**El techo es un numero fijo de portadas —60— y no una fraccion de la memoria**,
+porque `Runtime.maxMemory()` no existe fuera de la JVM. La cuenta: 220x330 a
+cuatro bytes por pixel (RGBA8888; `ImagenIOS` no hace 565) son ~290 KB, y
+sesenta son **17 MB**, menos de la mitad del techo de 48 MB de Android. Corto a
+proposito: en Android pasarse es un tiron del recolector, **aqui se cierra la
+app sin excepcion que atrapar**.
+
+Tres decisiones que no estaban en el encargo y son correctas:
+
+- **Mapas inmutables reemplazados enteros**, no un `HashMap` que se toca, con
+  `@Volatile` por lo mismo que arriba. `enMemoria` no suspende y se lee desde el
+  hilo de interfaz mientras `obtener` escribe desde otro.
+- **Una portada cada vez** (`Mutex`), no tres como Android: tres JPEG
+  descomprimiendose a la vez son tres picos que nadie esta contando.
+- **Su propio `ArchivoIOS`**, no el del lector: `ArchivoIOS` recuerda el indice
+  del ultimo archivo y la rejilla salta de comic en comic.
+
+**AVISO PARA CUANDO ARRANQUE EN EL IPAD:** la primera entrada en la biblioteca
+ira mas lenta que en Android y **no sera un fallo**. Sin cache de disco, cada
+arranque vuelve a sacar todas las portadas del comic; y el `Mutex` las hace de
+una en una. Doce cartas visibles, doce descompresiones en fila. Lo arregla la
+cache de disco.
+
+#### Que se comprobo y que no
+
+- **`:app:assembleDebug` y `:shared:testDebugUnitTest` con `--rerun-tasks`**:
+  BUILD SUCCESSFUL, 62 de 62 tareas ejecutadas, **cero `w:` de codigo**. El
+  unico `w:` es el de compatibilidad KMP<->AGP, del plugin, anterior a esto.
+  Se fuerza el `--rerun-tasks` a proposito: sin el sale todo UP-TO-DATE y el
+  "cero avisos" no significa nada.
+- **`ColorPortada` en comun compila para Kotlin/Native**: el CI de `b7f53d8`
+  salio verde (run 34062463184), y ahi entra el trabajo de macOS.
+- **`PortadasIOS` NO lo ha compilado nadie todavia**, y **nada lo construye**:
+  no esta enganchado a `PuntoDeEntradaIOS` a proposito, para no enturbiar el
+  diagnostico de la sonda. Es codigo compilado, no codigo probado.
+- **`dominante` no tiene ni una prueba**, y es la funcion que decide el color
+  con el que se tiñe media interfaz. Se comprobo con `grep`: no aparece ni en
+  `commonTest/` ni en `app/src/test/`. Queda abierto abajo.
+- El `@Volatile` de `PortadasIOS` (`iosMain`) **lo dira el CI**.
+
 ### Pendiente
 
+- **`dominante` no tiene ni una prueba** (visto el 06/09/2026 con `grep`: no
+  aparece ni en `shared/src/commonTest/` ni en `app/src/test/`). Es pura y
+  decide el color con el que se tiñe media interfaz, o sea que cae de lleno en
+  la regla del proyecto. **La pega:** `commonTest` corre en la JVM, y ahi no se
+  puede crear un `ImageBitmap` sin Robolectric. Si no se puede, la salida no es
+  forzar la prueba sino **partirla como ya se partieron `Zip` y `Recorte`**: la
+  parte que cuenta pixeles recibe un accesor o un `IntArray` y se vuelve
+  probable desde Windows; el envoltorio que saca los pixeles se queda fuera.
+- **Enganchar `PortadasIOS`**, que hoy no lo construye nadie. Va con la mudanza
+  de la interfaz, no antes: metida en la sonda solo enturbiaria el diagnostico.
+- **La cache de disco de las portadas en iOS**, con `NSFileManager`. Mientras no
+  este, cada arranque vuelve a sacar todas las portadas del comic.
 - **Pulsar el boton de limpiar la biblioteca sobre una carpeta de verdad**, y
   **que sea una de la que haya copia**. Las reglas tienen catorce pruebas desde
   la tanda 11, pero el camino entero —contar paginas, renombrar y borrar con
