@@ -12,12 +12,26 @@ Gradle dice "Expecting a top level declaration" cincuenta veces.
 Paso el 02/09/2026 dos veces en la misma sesion, con Velo y con
 BarraDesplazamiento. La segunda llego al movil de Dani.
 
+Y el 07/09/2026 otra vez, con la misma forma pero en un COMENTARIO: un
+reemplazo partio un kdoc y dejo dos `*/` seguidos. Este script dijo
+PROBLEMAS: 0 sobre un fichero que no compilaba, porque saltaba entera
+cualquier linea que empezara por `*`. De ahi el punto 3.
+
 QUE MIRA
   1. Llaves y parentesis sin cerrar, por fichero.
   2. Lineas sangradas cuando no hay nada abierto: eso es un cuerpo huerfano.
+  3. Bloques de comentario descuadrados, por los dos lados: un `*/` que no
+     cierra nada, y un `/*` que no se cierra nunca y se come el resto del
+     fichero. Ninguno de los dos descuadra una llave.
+  4. Imports de Android o de la JVM dentro de commonMain.
 
-QUE NO MIRA: cualquier otra cosa. No es un compilador, es la red que se puede
-tender en tres minutos desde un sitio donde no hay compilador.
+QUE NO MIRA, y conviene tenerlo presente:
+  - Un bloque de comentario que empieza a MEDIA linea (`val x = 1 /* nota`).
+    Solo se detectan los que abren al principio de la linea, que es como se
+    escriben en este proyecto.
+  - Cualquier otra cosa. No es un compilador, es la red que se puede tender en
+    tres minutos desde un sitio donde no hay compilador. Que diga PROBLEMAS: 0
+    no es que compile: eso lo dice Gradle.
 
     python3 comprobar.py
 """
@@ -49,6 +63,7 @@ FUENTES = sorted(glob.glob("app/src/**/*.kt", recursive=True)
 for f in FUENTES:
     llaves = parens = 0
     comentario = False
+    abierto = 0
     anterior = ""
     for n, cruda in enumerate(io.open(f, encoding="utf-8").read().split("\n"), 1):
         s = cruda.strip()
@@ -56,9 +71,27 @@ for f in FUENTES:
             if "*/" in s: comentario = False
             continue
         if s.startswith("/*"):
-            if "*/" not in s: comentario = True
+            if "*/" not in s: comentario, abierto = True, n
             continue
-        if not s or s.startswith("//") or s.startswith("*"): continue
+        if not s or s.startswith("//") or s.startswith("*"):
+            # UN `*/` AQUI ES UN CIERRE HUERFANO. Si llega a esta linea es que
+            # `comentario` esta a False, o sea que no hay ningun bloque abierto
+            # que cerrar. Pasa al partir un kdoc por la mitad con un reemplazo
+            # de texto: queda el `*/` viejo y el nuevo, uno debajo del otro.
+            #
+            # SE MIRA AQUI Y NO EN UN CONTADOR APARTE a proposito: aqui la
+            # maquina de estados de arriba YA ha decidido que esta linea es un
+            # comentario, asi que un `*/` dentro de una cadena de texto no llega
+            # nunca. Un contador suelto de `/*` contra `*/` por fichero cantaria
+            # con `val marca = "*/"`, y un guardia que grita por codigo bueno se
+            # acaba ignorando.
+            #
+            # `startswith("*")` y no solo `"*/" in s` porque si no salta con
+            # cualquier `// ... */ ...`, que es texto y no cierra nada.
+            if s.startswith("*") and "*/" in s:
+                print(f"{f}:{n}  CIERRE DE COMENTARIO HUERFANO -> {s[:70]}")
+                problemas += 1
+            continue
 
         if (llaves == 0 and parens == 0 and cruda.startswith((" ", "\t"))
                 and not continuacion(anterior)
@@ -73,6 +106,12 @@ for f in FUENTES:
 
     if llaves: print(f"{f}  LLAVES SIN CERRAR: {llaves}"); problemas += 1
     if parens: print(f"{f}  PARENTESIS SIN CERRAR: {parens}"); problemas += 1
+    # El otro lado del mismo fallo: un `/**` que se queda abierto se COME el
+    # resto del fichero. No descuadra ninguna llave —van dentro del comentario—
+    # asi que las dos comprobaciones de arriba lo dan por bueno.
+    if comentario:
+        print(f"{f}:{abierto}  COMENTARIO SIN CERRAR: se come el resto del fichero")
+        problemas += 1
 
 # ─────────────── QUE commonMain SEA DE VERDAD COMUN ───────────────
 #

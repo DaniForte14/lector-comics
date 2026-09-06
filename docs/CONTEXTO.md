@@ -4357,9 +4357,37 @@ para el coordinador. Cero colisiones.
 
   **No es un fallo del script, es su alcance**: esta escrito para llaves,
   parentesis y cuerpos huerfanos, y su cabecera lo dice. Pero `CLAUDE.md` lo
-  presenta como *la* comprobacion de antes de dar algo por terminado, y eso es
-  lo que hay que corregir al leerlo. Si algun dia se amplia, es un contador de
-  `/**` contra `*/` por fichero.
+  presenta como *la* comprobacion de antes de dar algo por terminado.
+
+  **TAPADO EL MISMO DIA, y la solucion buena NO era el contador que se penso
+  primero.** Un contador suelto de `/**` contra `*/` por fichero **cantaria con
+  `val marca = "*/"`** — y un guardia que grita por codigo bueno se acaba
+  ignorando, o sea que es peor que no tenerlo. Los dos casos los coge **la
+  maquina de estados que ya habia**:
+
+  - **Cierre huerfano**: se mira dentro de la rama que antes saltaba estas
+    lineas. Si el flujo llega ahi, `comentario` esta a `False` — no hay bloque
+    abierto que cerrar. Y como la maquina **ya ha decidido que la linea es un
+    comentario**, un `*/` dentro de una cadena no llega nunca. La condicion es
+    `s.startswith("*") and "*/" in s`, no `"*/" in s` a secas: con lo segundo
+    salta cualquier `// ... */ ...`, que es texto y no cierra nada.
+  - **Abierto y nunca cerrado**: `comentario` sigue a `True` al acabar el
+    fichero. El bucle ya lo sabia, solo habia que preguntarlo. Se guarda la
+    linea de apertura para señalarla, porque un `/**` sin cerrar **se come el
+    resto del fichero** y no descuadra ninguna llave.
+
+  **Comprobado en las dos direcciones, que es lo que faltaba la primera vez:**
+  sobre el proyecto entero da `PROBLEMAS: 0` —cero falsos positivos en ~200
+  `.kt` llenos de kdoc—, y sobre un arbol falso con un `*/` suelto y un `/**`
+  sin cerrar **los caza los dos, con su numero de linea**. El control del mismo
+  arbol —`val marca = "*/"`, `val otra = "/*"`, un `// ... */ ... /* ...` y un
+  `return 1 * 2`— **calla del todo**. El script anterior daba por bueno el `*/`
+  huerfano.
+
+  **Y el limite, que importa mas que la lista:** `PROBLEMAS: 0` significa "no
+  hay estas cuatro roturas", **no significa "compila"**. Sigue sin ver un
+  bloque que abra a media linea (`val x = 1 /* nota`); solo los que abren al
+  principio, que es como se escriben aqui.
 - **Un encargo a un agente tiene que ser autocontenido**: no tiene el contexto
   de la conversacion. Los dos encargos llevaban dentro las trampas conocidas
   (`Dispatchers.IO` es `internal` en Native, los nombres de fichero de Apple,
