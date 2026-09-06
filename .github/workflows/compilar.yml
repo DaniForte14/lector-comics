@@ -48,6 +48,9 @@ jobs:
   ios:
     name: iOS (compila y CORRE las pruebas comunes en Kotlin/Native)
     runs-on: macos-latest
+    # Para poder crear y sobrescribir el release con el .ipa.
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -100,3 +103,30 @@ jobs:
         with:
           name: lector-ipa
           path: iosApp/Lector.ipa
+
+      # Y ADEMAS COMO RELEASE, POR DOS MOTIVOS.
+      #
+      # 1. UN ENLACE FIJO. Los artefactos viven dentro de su ejecucion, asi que
+      #    cada vez hay que entrar en Actions y encontrar la ultima — y el
+      #    05/09/2026 Dani se bajo por error la penultima, que era justo la que
+      #    se cerraba sola. Con esto la direccion es siempre la misma:
+      #      .../releases/latest/download/Lector.ipa
+      #
+      # 2. Y EL DE VERDAD: los artefactos NO SE LE DESCARGAN. Fallan siempre
+      #    contra el mismo servidor (20.209.226.129, el almacen de artefactos)
+      #    con "connection forcibly closed", desde dos IPs suyas distintas y
+      #    tanto por navegador como por linea de ordenes. Los releases se sirven
+      #    desde otro sitio, y ademas es el .ipa suelto y no un zip.
+      #
+      # Un solo release que se va sobrescribiendo: no interesa el historial de
+      # compilaciones, interesa la ultima. Se usa `gh`, que ya viene en el
+      # runner, en vez de una accion de terceros.
+      - name: Publicar el .ipa como release
+        if: github.ref == 'refs/heads/master'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd iosApp
+          gh release create ultima --title "Última compilación"             --notes "Se sobrescribe en cada push a master." || true
+          gh release upload ultima Lector.ipa --clobber
+          gh release edit ultima --notes "Compilado de ${{ github.sha }} — $(date -u '+%Y-%m-%d %H:%M UTC')"
