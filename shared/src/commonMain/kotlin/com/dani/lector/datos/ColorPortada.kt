@@ -103,7 +103,18 @@ object ColorPortada {
         }
 
     /**
-     * El color que manda en un bitmap. Funcion pura.
+     * El color que manda en un bitmap. El envoltorio: saca los pixeles y
+     * delega. **Toda la decision esta en la sobrecarga de abajo, que es la que
+     * tiene las pruebas.**
+     */
+    fun dominante(bmp: ImageBitmap): Color {
+        // toPixelMap() es de Compose y vale en las dos plataformas.
+        val mapa = bmp.toPixelMap()
+        return dominante(bmp.width, bmp.height) { x, y -> mapa[x, y] }
+    }
+
+    /**
+     * El color que manda, recibiendo los pixeles en vez del bitmap. Pura.
      *
      * Como se decide, y por que asi:
      *
@@ -123,18 +134,32 @@ object ColorPortada {
      * Si no queda ningun pixel con color —una portada en blanco y negro, que
      * las hay— se devuelve un gris del brillo medio de la imagen y ya esta. No
      * se inventa un tono que no existe.
+     *
+     * POR QUE RECIBE UN ACCESOR Y NO EL `ImageBitmap`, que es lo que va a
+     * querer volver a poner el siguiente que pase por aqui: **un `ImageBitmap`
+     * no se puede construir en `commonTest`**. Se probo, y en la JVM sale
+     * `Method createBitmap in android.graphics.Bitmap not mocked` —
+     * `ImageBitmap(w, h)` acaba en `android.graphics`, y ahi no hay Robolectric
+     * ni lo va a haber. Y aunque en el simulador de iOS si funcionaria,
+     * `commonTest` corre en las DOS piernas: una prueba asi se quedaria roja en
+     * Windows para siempre, que es donde se trabaja todos los dias.
+     *
+     * Es el mismo reparto que [Recorte] y `RecorteAndroid`: la parte que decide
+     * recibe accesores y se prueba, y el envoltorio que saca los pixeles del
+     * bitmap se queda sin prueba, que es donde no hay nada que decidir. **Lo
+     * que se copia de alli es el reparto, no la firma**: aqui el accesor
+     * devuelve [Color] y no un `IntArray` en ARGB, porque `Colores.aHsv` ya
+     * toma `Color` y asi no hay una conversion de por medio donde meter un
+     * fallo al portar.
      */
-    fun dominante(bmp: ImageBitmap): Color {
+    fun dominante(ancho: Int, alto: Int, pixel: (Int, Int) -> Color): Color {
         // MUESTREAR CON SALTO, y no reescalar a MUESTRA x MUESTRA.
         //
         // Antes se hacia `Bitmap.createScaledBitmap` y `getPixels`, que son de
         // Android. Coger uno de cada N pixeles hace lo mismo para lo que se
         // busca aqui —que casilla de tono pesa mas— y ademas se ahorra crear y
         // reciclar un bitmap por cada portada.
-        //
-        // toPixelMap() es de Compose y vale en las dos plataformas.
-        val mapa = bmp.toPixelMap()
-        val salto = maxOf(1, minOf(bmp.width, bmp.height) / MUESTRA)
+        val salto = maxOf(1, minOf(ancho, alto) / MUESTRA)
 
         val peso = DoubleArray(24)
         val sumaS = DoubleArray(24)
@@ -143,10 +168,10 @@ object ColorPortada {
         var cuantos = 0
 
         var y = 0
-        while (y < bmp.height) {
+        while (y < alto) {
             var x = 0
-            while (x < bmp.width) {
-                val (h0, s, v) = Colores.aHsv(mapa[x, y])
+            while (x < ancho) {
+                val (h0, s, v) = Colores.aHsv(pixel(x, y))
                 brilloTotal += v
                 cuantos++
                 x += salto
