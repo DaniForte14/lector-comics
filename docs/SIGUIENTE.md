@@ -27,11 +27,10 @@ nadie que su codigo esta mal.
 **SIN PUSHEAR: `e70d3b7` y `9024ae0`.** Estaba pendiente de decidirlo con Dani.
 Hasta que no se pusheen, **el `.ipa` del CI no lleva `PortadasIOS`**.
 
-**A MEDIO HACER EN EL ARBOL DE TRABAJO, de Lucia, sin commitear:** la particion
-de `dominante` en dos —una funcion pura `dominante(ancho, alto, pixel)` y un
-envoltorio que saca los pixeles del `ImageBitmap`, patron de `Recorte`— y su
-`ColorPortadaTest.kt`. **No se deshace, se retoma.** Comprobado que con eso
-dentro `comprobar.py` sigue en PROBLEMAS: 0.
+**`dominante` PARTIDA EN DOS Y CON OCHO PRUEBAS** (`d1fdbd7`): una funcion pura
+`dominante(ancho, alto, pixel)` y un envoltorio de tres lineas que saca los
+pixeles del `ImageBitmap`, patron de `Recorte`. El cuerpo del algoritmo no
+cambio ni una linea.
 
 **Por que se parte:** en `commonTest` **no se puede crear un `ImageBitmap`** —
 comprobado ejecutandolo: `Method createBitmap in android.graphics.Bitmap not
