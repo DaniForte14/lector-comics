@@ -45,7 +45,6 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.dani.lector.VistaModelo
-import com.dani.lector.datos.ColorPortada
 import com.dani.lector.datos.Comic
 import com.dani.lector.datos.Rastro
 import com.dani.lector.datos.Exportar
@@ -154,9 +153,8 @@ private fun Visor(
     // que en el caso normal no cuesta ni una lectura de disco. Empieza en null
     // y entonces todo se ve como siempre: si tarda o no hay portada legible,
     // no se nota nada raro, solo no hay tinte.
-    val ctxColor = LocalContext.current
     val ambiente by produceState<Color?>(null, uri) {
-        value = ColorPortada.de(ctxColor, uri)
+        value = vm.colorDe(uri)
     }
 
     /*

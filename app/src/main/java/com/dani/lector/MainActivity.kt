@@ -32,7 +32,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -549,9 +548,8 @@ private fun BarraSeguirLeyendo(
     comic: com.dani.lector.datos.Comic,
     onLeer: (com.dani.lector.datos.Comic) -> Unit
 ) {
-    val ctx = LocalContext.current
     val ambiente by produceState<Color?>(null, comic.uri) {
-        value = com.dani.lector.datos.ColorPortada.de(ctx, comic.uri)
+        value = vm.colorDe(comic.uri)
     }
     val estado by vm.estado.collectAsState()
     val marca = remember(comic.uri, estado.sello) { vm.marcas.de(comic.uri) }

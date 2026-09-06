@@ -327,6 +327,15 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
     fun portadaYa(uri: String) = portadas.enMemoria(uri)
 
     /**
+     * El color con el que se tiñe la interfaz, sacado de la portada.
+     *
+     * Va aqui y no se llama a [ColorPortada] desde la pantalla porque lo que
+     * necesita es [portadas], que es privado a proposito: la pantalla no tiene
+     * por que saber de donde salen las miniaturas.
+     */
+    suspend fun colorDe(uri: String) = ColorPortada.de(portadas, uri)
+
+    /**
      * Lo que ocupan los comics convertidos que se guardan en la cache.
      *
      * Se enseña en Ajustes porque son TOMOS ENTEROS y se acumulan sin que se

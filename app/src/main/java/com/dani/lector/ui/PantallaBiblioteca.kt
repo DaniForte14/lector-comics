@@ -189,9 +189,8 @@ fun PantallaCarpeta(
     // El degradado se apaga en el 38% de la altura: teñir la pantalla entera
     // pone de color hasta la barra de pestañas y deja de parecer un ambiente
     // para parecer un tema mal elegido.
-    val ctxColor = LocalContext.current
     val ambiente by produceState<Color?>(null, seguir?.uri) {
-        value = seguir?.uri?.let { ColorPortada.de(ctxColor, it) }
+        value = seguir?.uri?.let { vm.colorDe(it) }
     }
     // Se pide SIEMPRE, no solo en la raiz. El banner grande sigue saliendo solo
     // en la raiz (lo comprueba mas abajo), pero la barra flotante de abajo esta

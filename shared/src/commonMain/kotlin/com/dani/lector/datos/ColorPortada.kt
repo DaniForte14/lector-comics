@@ -1,13 +1,13 @@
 package com.dani.lector.datos
 
-import android.content.Context
-import android.util.LruCache
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.graphics.toArgb
 import com.dani.lector.ui.Colores
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 /**
@@ -20,11 +20,10 @@ import kotlinx.coroutines.withContext
  *
  * DOS PARTES A PROPOSITO, y la separacion importa:
  *
- *  - [dominante] es una funcion PURA: bitmap entra, color sale. Sin Context,
- *    sin cache, sin Compose. Se puede ejecutar fuera de Android con una imagen
- *    guardada y comprobar que da lo que tiene que dar. Es la misma regla que ya
- *    se sigue con Wiki.interpretar o elegirVolumen.
- *  - [de] es la parte sucia: cache, disco y corrutinas.
+ *  - [dominante] es una funcion PURA: bitmap entra, color sale. Sin cache, sin
+ *    disco. Se puede ejecutar con una imagen guardada y comprobar que da lo que
+ *    tiene que dar. Es la misma regla que ya se sigue con elegirVolumen.
+ *  - [de] es la parte sucia: cache y corrutinas.
  *
  * NO se usa androidx.palette. Habria que meter una dependencia entera para
  * esto, y esto son cuarenta lineas que ademas hacen justo lo que queremos:
@@ -36,32 +35,68 @@ object ColorPortada {
     /** Cuadricula a la que se reduce la portada antes de contar. */
     private const val MUESTRA = 40
 
-    /** argb por uri. Cabe de sobra: es un entero por comic. */
-    private val cache = LruCache<String, Int>(400)
+    /** Cuantos colores se recuerdan. Cabe de sobra: es un entero por comic. */
+    private const val TOPE = 400
+
+    /**
+     * argb por uri.
+     *
+     * ERA UN `android.util.LruCache`, que no existe fuera de la JVM. El
+     * sustituto es un `LinkedHashMap` podado a mano, y con eso **deja de ser
+     * LRU y pasa a ser FIFO**: al pasar de [TOPE] se tira el que entro primero,
+     * no el que se uso hace mas tiempo. En el comun no hay un mapa con orden de
+     * acceso, y da igual: perder una entrada cuesta volver a contar los pixeles
+     * de una miniatura que ya esta en cache, no una lectura de disco.
+     */
+    private var cache = LinkedHashMap<String, Int>()
 
     /** Los que ya se sabe que no tienen portada legible. */
-    private val fallidos = java.util.Collections.synchronizedSet(HashSet<String>())
+    private var fallidos = HashSet<String>()
+
+    /**
+     * El cerrojo de los dos de arriba.
+     *
+     * `LruCache` y `Collections.synchronizedSet` se sincronizaban solos, y aqui
+     * hay que hacerlo a mano: [de] la llaman tres composables a la vez y su
+     * cuerpo corre en un hilo de fondo, asi que dos escrituras simultaneas en el
+     * mapa son posibles de verdad. **Fuera del cerrojo queda [Portadas.obtener]
+     * a proposito**: es la parte que toca disco, y meterla dentro serializaria
+     * la carga de todas las portadas.
+     */
+    private val cerrojo = Mutex()
 
     /**
      * El color de la portada de un comic, o null si no se puede sacar.
      *
-     * Se apoya en [Miniaturas], asi que no abre el fichero grande: reutiliza la
+     * Se apoya en [Portadas], asi que no abre el fichero grande: reutiliza la
      * miniatura de 220 px que ya esta en cache para pintar el catalogo. Sacar
      * el color no cuesta ni una lectura de disco extra en el caso normal.
      */
-    suspend fun de(ctx: Context, uri: String): Color? = withContext(Dispatchers.IO) {
-        cache.get(uri)?.let { return@withContext Color(it) }
-        if (uri in fallidos) return@withContext null
+    suspend fun de(portadas: Portadas, uri: String): Color? =
+        // Dispatchers.Default, NO Dispatchers.IO: con coroutines 1.9.0 IO es
+        // `internal` en Kotlin/Native y este fichero ya es comun.
+        withContext(Dispatchers.Default) {
+            cerrojo.withLock {
+                cache[uri]?.let { return@withContext Color(it) }
+                if (uri in fallidos) return@withContext null
+            }
 
-        val bmp = Miniaturas.obtener(ctx, uri)
-        if (bmp == null) { fallidos.add(uri); return@withContext null }
+            val bmp = portadas.obtener(uri)
+            if (bmp == null) {
+                cerrojo.withLock { fallidos.add(uri) }
+                return@withContext null
+            }
 
-        val c = dominante(bmp)
-        // toArgb, NO value.toInt(): Color.value es un ULong con el espacio de
-        // color dentro, y truncarlo a Int da un color que no es el que era.
-        cache.put(uri, c.toArgb())
-        c
-    }
+            val c = dominante(bmp)
+            cerrojo.withLock {
+                // toArgb, NO value.toInt(): Color.value es un ULong con el
+                // espacio de color dentro, y truncarlo a Int da un color que no
+                // es el que era.
+                cache[uri] = c.toArgb()
+                if (cache.size > TOPE) cache.remove(cache.keys.first())
+            }
+            c
+        }
 
     /**
      * El color que manda en un bitmap. Funcion pura.
@@ -138,13 +173,23 @@ object ColorPortada {
         return Colores.desdeHsv(h, s, v)
     }
 
-    // `oscurecer` y la conversion HSV se fueron a ui/Colores en :shared, que es
-    // donde tienen que estar: las usa el tema, que ahora es comun, y estaban
-    // escritas con android.graphics.Color, que no existe en iOS. Aqui se queda
-    // solo lo que de verdad es de Android: leer un Bitmap.
+    // `oscurecer` y la conversion HSV se fueron a ui/Colores, que es donde
+    // tienen que estar: las usa el tema, y estaban escritas con
+    // android.graphics.Color, que no existe en iOS.
 
+    /**
+     * Se llama al vaciar la cache de portadas, porque los colores salen de las
+     * miniaturas: si desaparecen ellas, lo que se recuerda de ellas tambien.
+     *
+     * NO suspende —la llama un boton de Ajustes— asi que **no puede coger el
+     * [cerrojo]**, y por eso no hace `clear()`: vaciar un mapa mientras otro
+     * hilo escribe en el es la clase de carrera que corrompe la tabla, no un
+     * dato de mas. Se cambia la referencia, que es una escritura atomica; una
+     * carga a medio vuelo termina de escribir en el mapa viejo, que ya no lee
+     * nadie, y se lo lleva el recolector.
+     */
     fun olvidar() {
-        cache.evictAll()
-        fallidos.clear()
+        cache = LinkedHashMap()
+        fallidos = HashSet()
     }
 }
