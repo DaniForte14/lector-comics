@@ -4489,16 +4489,68 @@ cache de disco.
   `commonTest/` ni en `app/src/test/`. Queda abierto abajo.
 - El `@Volatile` de `PortadasIOS` (`iosMain`) **lo dira el CI**.
 
+### Tanda 26: las pruebas de `dominante`, y `CLAUDE.md` a la mitad (07/09/2026)
+
+**`dominante` partida en dos**, que era la salida escrita en Pendiente y no una
+idea nueva:
+
+```kotlin
+fun dominante(bmp: ImageBitmap): Color                              // envoltorio, 3 lineas
+fun dominante(ancho: Int, alto: Int, pixel: (Int, Int) -> Color)    // pura, probable
+```
+
+El envoltorio saca el `PixelMap` y se queda sin prueba; la parte que cuenta
+pixeles recibe un accesor y se prueba desde Windows. **La razon no es de estilo:
+`commonTest` corre en la JVM y ahi `ImageBitmap` no existe** — la sonda lo dejo
+por escrito con `Method createBitmap in android.graphics.Bitmap not mocked`.
+
+**Ocho pruebas, no las cinco del encargo.** Yo dije que el caso de "la mancha
+grande apagada le gana al detalle chillon" era el que se pondria rojo si alguien
+simplifica el peso, y **me corrigieron con razon**: 85% contra 15% gana igual
+contando pixeles a pelo, asi que ese caso pasa con peso y sin el. Los que sujetan
+el peso son otros dos: *a igualdad de area gana el mas saturado* y *a igualdad de
+saturacion gana el mas cercano al brillo medio*.
+
+**La trampa del sRGB, y costo siete pruebas en rojo de ocho.** `Color` guarda 8
+bits por canal, asi que `desdeHsv(217.5f)` vuelve como **217.377**. La salida no
+fue ampliar el margen —eso habria tapado el problema— sino **comparar casillas de
+15 grados**, que es la resolucion con la que la funcion decide de verdad. Ni una
+linea del algoritmo se toco.
+
+**Y la trampa de `--tests`, comprobada por los dos lados.** Que
+`--tests "*ColorPortadaTest*"` diga `BUILD SUCCESSFUL` no demuestra que ejecute
+nada. Se rompio una asercion a proposito y salio `8 tests completed, 1 failed`:
+esa es la unica prueba de que corre las ocho.
+
+**`CLAUDE.md` de 314 lineas a 179**, para que quepa al empezar cada sesion. Se
+fueron las ~122 lineas de "Estado (3 de septiembre)", que eran un diario
+duplicado de este documento — se comprobo dato a dato con `grep` antes de
+borrarlo, incluidas las dos tareas pendientes que llevaba dentro (forzar el
+trabajo de notificaciones y mirar `DESFASE_ESPANA`), que siguen vivas abajo.
+
+Tres arreglos de contenido, no solo de tijera:
+
+- **La frase de `comprobar.py` era la mitad de la verdad.** Decia lo que mira,
+  no su limite. Ahora dice que **`PROBLEMAS: 0` no significa "compila"** sino
+  "no estan esas cuatro roturas", con el caso del 07/09 de testigo, y manda
+  pasar el `gradlew` tambien.
+- **"Trece ficheros de test en `app/src/test/`" era falso y hacia dano**: hoy
+  son **21 en `shared/src/commonTest/`** y en `app/src/test/` solo queda
+  `ExportarTest`. Quien lo leyera pondria la prueba nueva en el modulo que no
+  es.
+- **Las reglas de Paco y Lucia entran en el fichero.** Estaban solo en los
+  encargos, o sea que se perdian al abrir sesion nueva: paran al terminar, no
+  commitean, no tocan `docs/`, no tocan el fichero del otro, y ante un choque
+  de instrucciones preguntan en vez de elegir.
+
+**Verificado:** `comprobar.py` en 0 y `:app:assembleDebug` +
+`:shared:testDebugUnitTest` en verde. **Sin verificar:** el simulador de iOS —
+`commonTest` corre en las dos piernas y aqui solo se ha visto la de Android.
+
 ### Pendiente
 
-- **`dominante` no tiene ni una prueba** (visto el 06/09/2026 con `grep`: no
-  aparece ni en `shared/src/commonTest/` ni en `app/src/test/`). Es pura y
-  decide el color con el que se tiñe media interfaz, o sea que cae de lleno en
-  la regla del proyecto. **La pega:** `commonTest` corre en la JVM, y ahi no se
-  puede crear un `ImageBitmap` sin Robolectric. Si no se puede, la salida no es
-  forzar la prueba sino **partirla como ya se partieron `Zip` y `Recorte`**: la
-  parte que cuenta pixeles recibe un accesor o un `IntArray` y se vuelve
-  probable desde Windows; el envoltorio que saca los pixeles se queda fuera.
+- ~~**`dominante` no tiene ni una prueba**~~ **HECHO (tanda 26)**, y por la
+  salida que se habia previsto aqui: partida como `Zip` y `Recorte`.
 - **Enganchar `PortadasIOS`**, que hoy no lo construye nadie. Va con la mudanza
   de la interfaz, no antes: metida en la sonda solo enturbiaria el diagnostico.
 - **La cache de disco de las portadas en iOS**, con `NSFileManager`. Mientras no

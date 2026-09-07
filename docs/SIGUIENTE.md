@@ -9,7 +9,7 @@ propósito.
 
 ---
 
-## Donde se paro el 06/09/2026
+## Donde se paro el 07/09/2026
 
 **Se trabajo con dos sesiones que escriben —Paco y Lucia— y una que reparte,
 revisa y commitea.** Reparto por ficheros disjuntos, cero colisiones. Si se
@@ -23,9 +23,13 @@ nadie que su codigo esta mal.
 | `b7f53d8` | `ColorPortada` a `commonMain`. **Pusheado, CI verde** |
 | `e70d3b7` | `PortadasIOS` + el `@Volatile` que faltaba + los documentos de la 25 |
 | `9024ae0` | `comprobar.py` ya no es ciego a los comentarios descuadrados |
+| `d1fdbd7` | `dominante` partida en dos y ocho pruebas que la sujetan |
+| `e481859` | los documentos de esa tanda |
 
-**SIN PUSHEAR: `e70d3b7` y `9024ae0`.** Estaba pendiente de decidirlo con Dani.
-Hasta que no se pusheen, **el `.ipa` del CI no lleva `PortadasIOS`**.
+**TODO PUSHEADO** el 07/09/2026 (`b7f53d8..e481859`). O sea que **el `.ipa` del
+CI ya lleva `PortadasIOS`** — y que el runner de macOS ya ha tenido ocasion de
+decir si `iosMain` compila. **Mirar Actions es lo primero**: desde Windows eso
+no se ve.
 
 **`dominante` PARTIDA EN DOS Y CON OCHO PRUEBAS** (`d1fdbd7`): una funcion pura
 `dominante(ancho, alto, pixel)` y un envoltorio de tres lineas que saca los
@@ -38,9 +42,14 @@ mocked`. Y aunque en el simulador de iOS si funcionaria, `commonTest` corre en
 las dos piernas: la prueba quedaria roja en Windows para siempre, que es donde
 se trabaja a diario.
 
-**Pendiente de decidir contigo:** la frase de `CLAUDE.md` sobre `comprobar.py`
-se queda corta. No es la lista de lo que mira lo que hay que ampliar, es el
-limite: **`PROBLEMAS: 0` es "no hay estas cuatro roturas", no es "compila".**
+**`CLAUDE.md` esta a la mitad (314 lineas -> 179)**, para que quepa al empezar
+cada sesion. Se fue el diario de "Estado (3 de septiembre)", duplicado de
+`docs/CONTEXTO.md` y comprobado dato a dato antes de borrarlo. Y con tres
+arreglos que no eran de tijera: la frase de `comprobar.py` ahora dice su
+**limite** (`PROBLEMAS: 0` no es "compila"), las pruebas ya no dicen que vivan
+en `app/src/test/` cuando son 21 en `shared/src/commonTest/`, y **las reglas de
+Paco y Lucia estan dentro**, que antes solo vivian en los encargos y se perdian
+al abrir sesion nueva.
 
 ---
 
