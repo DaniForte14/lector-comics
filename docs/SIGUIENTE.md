@@ -255,6 +255,10 @@ sistema.** Tres tandas seguidas igual:
   **`internal` en Kotlin/Native**. Se escribe por reflejo porque en la JVM existe
   y `Escaner` lo usa. Fuera de la JVM va `Dispatchers.Default`.
 
+Y **`@Volatile` sin `import kotlin.concurrent.Volatile`**, que ya ha pasado
+DOS veces (`PortadasIOS` en la 25, `Rastro` en la 27): en la JVM se resuelve
+solo, por el import implicito de `kotlin.jvm`, y en Kotlin/Native no.
+
 Y de antes: `toSortedSet`, `String.format`, `android.net.Uri.decode` y los
 nombres de prueba con coma. **Nada de esto lo coge Windows.** `comprobar.py` sólo
 vigila los *imports* de `commonMain`; lo que se cuela por nombre completo o por

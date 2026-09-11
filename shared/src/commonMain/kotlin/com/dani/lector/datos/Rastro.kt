@@ -1,5 +1,6 @@
 package com.dani.lector.datos
 
+import kotlin.concurrent.Volatile
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime

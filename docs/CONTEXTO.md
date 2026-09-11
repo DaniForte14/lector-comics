@@ -4617,6 +4617,16 @@ pisarse. Era asi con `File.appendText` y no se ha cambiado por cuenta propia:
 `apunta` no suspende, asi que un `Mutex` no es gratis. Si algun dia el rastro
 sale cortado por en medio, este es el sitio.
 
+**EL CI LO CAZO, Y NO ERA LO DE iOS.** El primer push (`c83e773`) salio rojo
+en la pierna de iOS por **`@Volatile` sin su import** en `Rastro.kt`, que es de
+`commonMain`: en la JVM se resuelve solo, por el import implicito de
+`kotlin.jvm`, asi que Windows compilo en verde con `--rerun-tasks`. En Kotlin/Native
+hay que escribir `import kotlin.concurrent.Volatile`, como ya hacen `ColorPortada`
+y `ComicVine`. **Es la segunda vez**: `PortadasIOS` cayo en lo mismo en la 25.
+Lo bueno: el compilador de iOS solo dio esos dos errores, asi que
+`DiscoIOS.anadir` y `RecorteIOS`, que eran lo que se temia, **pasaron su
+analisis**.
+
 ### El motor de RAR para iOS: hay via, y se aplaza (07/09/2026)
 
 Dani eligio **buscar un motor de RAR nativo** en vez de dejar el CBR fuera del
