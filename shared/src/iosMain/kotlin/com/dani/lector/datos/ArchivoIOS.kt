@@ -10,19 +10,14 @@ import androidx.compose.ui.graphics.ImageBitmap
  * solo se decide el orden en que se llaman y que se hace cuando algo falla.
  * Casi toda la logica de verdad esta en `commonMain` y ya tiene pruebas.
  *
- * TRES COSAS QUE **NO** HACE, y estan puestas a proposito. Ninguna es un olvido:
+ * DOS COSAS QUE **NO** HACE, y estan puestas a proposito. Ninguna es un olvido:
  *
  *  1. **No abre CBR.** En el iPad no hay motor de RAR: junrar es Java y
  *     7-Zip-JBinding es JVM mas una libreria nativa, y ninguno cruza a
  *     Kotlin/Native. En vez de fallar con un mensaje raro de ZIP, se dice lo
  *     que pasa. Si algun dia hay CBR en el iPad sera por otra via —convertirlos
  *     antes, o un motor nuevo— y sera otra decision, no un parche aqui.
- *  2. **No recorta bordes.** El parametro [Archivo.pagina] lo pide y aqui se
- *     ignora. `Recorte` decide el recuadro y es comun, pero necesita los
- *     pixeles: en Android los saca `RecorteAndroid` de un `Bitmap`, y aqui
- *     harian falta los de [ImagenIOS] antes de envolverlos en Skia. Es otro
- *     fichero y otra vuelta de CI, y sin recorte la pagina se ve entera y bien.
- *  3. **No cachea paginas.** `ComicZip` tiene tres caches cuyos numeros
+ *  2. **No cachea paginas.** `ComicZip` tiene tres caches cuyos numeros
  *     costaron cierres de la app, y ninguno de esos numeros vale aqui: en iOS
  *     una imagen va en RGBA8888 y ocupa **el doble** que la de Android en 565,
  *     y `Runtime.maxMemory()` no existe fuera de la JVM, asi que el techo
@@ -87,7 +82,11 @@ class ArchivoIOS : Archivo {
     ): ImageBitmap? {
         val entrada = entradasDe(uri)?.firstOrNull { it.nombre == nombre } ?: return null
         val datos = ZipIOS.datos(ruta(uri), entrada) ?: return null
-        return ImagenIOS.decodificar(datos, anchoMax)
+        val img = ImagenIOS.decodificar(datos, anchoMax) ?: return null
+        // El recorte va DESPUES de decodificar y no antes: [ImagenIOS] ya deja la
+        // pagina reducida, asi que [RecorteIOS] mira los bordes de la miniatura y
+        // no de los 2000x3000 originales.
+        return if (recortar) RecorteIOS.aplicar(img) else img
     }
 
     /**
