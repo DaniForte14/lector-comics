@@ -167,6 +167,24 @@ de las dos:
    encargo te obliga a pisarlo, avisa en vez de hacerlo.
 5. Si un encargo choca con algo que te dijo Dani, **pregunta**, no elijas.
 
+## Si eres el que coordina
+
+Las sesiones que escriben se ven con `ListAgents` y cambian de nombre en cada
+arranque (`lector-32`, `lector-e9`...): el primer mensaje les dice quien es Paco
+y quien Lucia, con las reglas de arriba. Despues:
+
+- **Encargos autocontenidos**: el agente no tiene tu contexto. Fichero exacto,
+  el porque de las decisiones ya tomadas, y que NO tocar.
+- **Ficheros disjuntos.** Si uno toca `:app` entero, el otro va a `iosMain` o
+  hace un sondeo de solo lectura que responde por mensaje.
+- `SendMessage` con `notify_when_idle: true` para saber cuando para, sin
+  preguntar "¿ya?".
+- **No se revisa un fichero mientras el agente lo edita**: sale una foto a
+  medias. Antes de dar nada por bueno o por malo,
+  `./gradlew :app:assembleDebug :shared:testDebugUnitTest --rerun-tasks`.
+- Revisas, actualizas `docs/`, `graphify update .`, commiteas, y le enseñas el
+  mensaje a Dani **con el % de `SIGUIENTE.md`**. El push, preguntando.
+
 ## graphify
 
 Grafo de conocimiento en `graphify-out/`.

@@ -4547,8 +4547,129 @@ Tres arreglos de contenido, no solo de tijera:
 `:shared:testDebugUnitTest` en verde. **Sin verificar:** el simulador de iOS —
 `commonTest` corre en las dos piernas y aqui solo se ha visto la de Android.
 
+### Tanda 27: `Rastro` a comun y `RecorteIOS`, con dos agentes (07/09/2026)
+
+**Dani decidio portar la app ENTERA a iOS antes de instalar el `.ipa`.** Lo dijo
+asi: primero se adapta todo, luego se instala, y solo si no va se toquetea. Esta
+tanda es el primer paso de ese plan, y el reparto vuelve a ser el de la 25: Paco
+en `:app`, Lucia en `iosMain`, sin un solo fichero compartido.
+
+**`Rastro` se queda GLOBAL, con un `Disco` dentro.** Era la decision que
+`SIGUIENTE.md` llevaba marcada como "no es una tanda"; Dani la delego. Sus 26
+llamadas —contadas con `grep`, no las ~40 que decia el documento— viven en nueve
+ficheros, y **cuatro de ellos son las pantallas**. Pasarlo a instancia obligaba a
+cambiar sus firmas justo en la tanda en que ademas se van a mudar a Compose
+Multiplatform: dos cambios grandes cruzados en los mismos ficheros. El porque
+esta escrito dentro de `Rastro`, incluido lo que cuesta: si nadie llama a
+`arranca`, el disco es null y `apunta` **se calla en vez de reventar**.
+
+**`Disco` gana un cuarto metodo, `anadir`.** No es comodidad: `Rastro` apunta una
+linea cada pocos segundos y con solo `leer` + `escribir` habria que traerse el
+fichero entero a memoria por cada miga, que es exactamente lo que el comentario
+original prohibe. En Android es `appendText`; en iOS es `NSFileHandle`, y **si el
+fichero no existe `fileHandleForWritingAtPath` devuelve null** —no lo crea, al
+reves que Java—, asi que la primera miga cae en `escribir`.
+
+**El tamaño del rastro se lleva en memoria, y `arranca` lee el fichero una vez.**
+No estaba en el encargo y es correcto: sin esa lectura inicial, un rastro que
+crece poco por sesion no llegaria nunca al tope y **no se podaria jamas**. Fuga
+lenta, la misma forma de bug que la cache de convertidos.
+
+**`instalar` se queda en Android, en `RastroAndroid`**, porque
+`Thread.setDefaultUncaughtExceptionHandler` es de la JVM. En iOS un fallo de
+Kotlin/Native no pasa por ahi y ademas el sistema mata el proceso sin dar ocasion
+a escribir nada: cuando toque sera otra pieza, no la misma.
+
+**`RecorteIOS`, y con un desvio aceptado.** El plan escrito decia sacar los
+pixeles de `ImagenIOS` **antes** de que Skia los envuelva. Se puede, pero abre un
+tercer fichero y mete mas `cinterop` — de donde han salido las tres vueltas de CI
+de este puerto, siempre por el nombre de algo del sistema. Lo que se hizo es el
+gemelo exacto de `RecorteAndroid` pasando por `toPixelMap`, **el mismo camino que
+`ColorPortada.dominante` desde la tanda 25**: buffers por fila y por columna
+reutilizados, `Recorte.util` decidiendo, y `Canvas.drawImageRect` cortando.
+**El precio es una copia de mas**, y como `ImagenIOS` ya entrega la pagina
+reducida al ancho pedido, la copia es de la miniatura y no de los 2000x3000.
+
+**Lo unico que se puede verificar de `iosMain` desde Windows son las firmas.**
+Lucia copio el cuerpo de `RecorteIOS.aplicar` a un fichero temporal de
+`commonMain`, compilo la pierna de Android y lo borro: eso demuestra que
+`toPixelMap`, `ImageBitmap(w,h)`, `Canvas`, `drawImageRect` y `Paint` existen y
+encajan. **No demuestra que Kotlin/Native lo compile ni que el recorte se vea
+bien.** Eso lo dicen el CI y el iPad.
+
+**Verificado:** `comprobar.py` en 0, y `:app:assembleDebug` +
+`:shared:testDebugUnitTest` con `--rerun-tasks` en verde, 62 de 62 tareas, con un
+solo `w:` —el de compatibilidad KMP<->AGP del plugin— que ya estaba antes. La
+prueba nueva por los dos lados: `--tests "*NoExisteTest*"` da
+`No tests found for given includes`, y rompiendo una asercion a proposito da
+`6 tests completed, 1 failed`.
+
+**Sin verificar:** `DiscoIOS.anadir` y `RecorteIOS` son **escritos, sin
+compilar** — el riesgo conocido esta en los imports de *category* de
+Objective-C, que es justo lo que fallo del CI en la tanda de `ZipIOS`. El
+simulador de iOS tampoco ha corrido `commonTest` aqui. Y **nadie ha visto el
+rastro funcionando en el movil con esto puesto**: que las migas sigan saliendo en
+Ajustes > Diagnostico lo tiene que decir Dani, y es de ANDROID.
+
+**La poda sigue sin cerrojo, y a proposito.** `apunta` se llama desde el hilo del
+visor, el de fotogramas y las corrutinas del indice, y dos podas a la vez pueden
+pisarse. Era asi con `File.appendText` y no se ha cambiado por cuenta propia:
+`apunta` no suspende, asi que un `Mutex` no es gratis. Si algun dia el rastro
+sale cortado por en medio, este es el sitio.
+
+### El motor de RAR para iOS: hay via, y se aplaza (07/09/2026)
+
+Dani eligio **buscar un motor de RAR nativo** en vez de dejar el CBR fuera del
+iPad, con un caso de uso concreto: *si meto un CBR en la carpeta de la nube y lo
+abro primero con el iPad, tendre que convertirlo*. Se sondeo antes de gastar la
+tanda, y el sondeo cambio el **cuando**, no el **si**.
+
+- **`Rar5.kt` no se salva ni una linea.** junrar, cinco imports de
+  7-Zip-JBinding, `File`, `RandomAccessFile`, `ZipOutputStream`, `MessageDigest`.
+  Lo portable es el planteamiento —convertir a un `.cbz` en cache, con `.parcial`
+  y clave por hash—, no el codigo.
+- **El candidato es libunrar de RARLAB.** Es de los propios autores: RAR4 y RAR5
+  al 100%, solidos incluidos. Es C++ y `cinterop` no traga C++, **pero trae su
+  API en `extern "C"`** (`RAROpenArchiveEx`, `RARReadHeaderEx`,
+  `RARProcessFile`), que si se envuelve con un `.def`; el C++ queda dentro del
+  `.a` y se enlaza con `-lc++`. La licencia permite usarlo para MANEJAR archivos
+  RAR y solo prohibe recrear el compresor: para una app personal que no se
+  distribuye, vale.
+- **`libarchive` es el candidato comodo y malo**: C puro y BSD, pero su RAR5 es
+  una reimplementacion con fallos conocidos sin arreglar —contenido a ceros con
+  metadatos correctos— y los solidos son su punto flojo. Fallaria en un
+  subconjunto de los CBR y no sabriamos cual hasta probarlos uno a uno.
+- **El andamiaje real**: compilar unrar DOS veces (`iosArm64` y
+  `iosSimulatorArm64`; no vale un `.a` gordo, las dos son arm64 y chocan), un
+  `cinterop` por objetivo dentro del `if` de anfitrion Mac, y el makefile de
+  unrar **no trae iOS**: `SDKROOT`, `-arch arm64` y los `-min` a mano. El `.a`
+  tiene que existir antes de que Gradle enlace, o sea un paso nuevo del workflow.
+  El framework estatico `Compartido` **si** puede empotrarla con
+  `staticLibraries`.
+
+**Son tres tandas y la primera es a ciegas**, asi que se aplaza: primero la
+interfaz, luego el `.ipa` arrancando, y **entonces** libunrar. Y cuando toque, el
+caso de Dani se resuelve **leyendo el CBR directamente en el iPad**, no
+convirtiendolo — lo segundo obligaria ademas a **escribir ZIP, que hoy no
+existe**: `ZipIOS` solo lee. Lo malo de leer directo es que en un RAR solido
+saltar de pagina obliga a descomprimir desde el principio.
+
 ### Pendiente
 
+- **Portar la interfaz entera antes de instalar el `.ipa`**, decidido por Dani
+  el 07/09/2026. Las fases, el mapa de los siete agujeros de plataforma y la
+  unica dependencia nueva (`lifecycle-viewmodel-compose:2.8.4` de JetBrains)
+  estan en `SIGUIENTE.md`. Siguiente: **fase 2**, `Vigilante` detras de una
+  interfaz de avisos con notificacion local en iOS.
+- **La navegacion se quita, no se muda**: un `when` sobre una pila en el modelo
+  en vez de `navigation-compose` alpha. El porque, en `SIGUIENTE.md`. Lo que se
+  pierde es el gesto de volver desde el borde en iOS.
+- **`BackHandler` comun exige CMP 1.8.0 y Kotlin 2.1.0.** No se cuela dentro del
+  port: mientras, un `expect/actual` de diez lineas.
+- **El motor de RAR para iOS, despues del `.ipa`**: libunrar, tres tandas. Ver
+  arriba.
+- **La poda de `Rastro` sin cerrojo**: si algun dia el rastro sale cortado por
+  en medio, es aqui.
 - ~~**`dominante` no tiene ni una prueba**~~ **HECHO (tanda 26)**, y por la
   salida que se habia previsto aqui: partida como `Zip` y `Recorte`.
 - **Enganchar `PortadasIOS`**, que hoy no lo construye nadie. Va con la mudanza

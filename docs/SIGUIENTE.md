@@ -11,47 +11,37 @@ propósito.
 
 ## Donde se paro el 07/09/2026
 
-**Se trabajo con dos sesiones que escriben —Paco y Lucia— y una que reparte,
-revisa y commitea.** Reparto por ficheros disjuntos, cero colisiones. Si se
-repite, lo que hay que saber esta en la tanda 25 de `docs/CONTEXTO.md`; lo mas
-importante: **leer un fichero mientras el agente lo edita da una foto a medio
-editar**, y por poco se le acusa en falso a Paco. Se compila antes de decirle a
-nadie que su codigo esta mal.
+**DANI HA DECIDIDO PORTAR LA APP ENTERA A iOS ANTES DE INSTALAR NADA.** Lo dijo
+asi: se adapta todo, luego se instala el `.ipa`, y **solo si no va** se empieza a
+toquetear. Eso cambia el orden que tenia escrito este documento: la sonda del
+`.ipa` deja de ser el siguiente paso y pasa a ser el examen final.
+
+**Se trabaja con dos sesiones que escriben —Paco y Lucia— y una que reparte,
+revisa y commitea.** Reparto por ficheros disjuntos, cero colisiones. Lo que hay
+que saber esta en las tandas 25 y 27 de `docs/CONTEXTO.md`; lo mas importante:
+**leer un fichero mientras el agente lo edita da una foto a medio editar**, y por
+poco se le acusa en falso a Paco. Se compila antes de decirle a nadie que su
+codigo esta mal.
 
 | Commit | Que |
 |---|---|
-| `b7f53d8` | `ColorPortada` a `commonMain`. **Pusheado, CI verde** |
-| `e70d3b7` | `PortadasIOS` + el `@Volatile` que faltaba + los documentos de la 25 |
 | `9024ae0` | `comprobar.py` ya no es ciego a los comentarios descuadrados |
 | `d1fdbd7` | `dominante` partida en dos y ocho pruebas que la sujetan |
-| `e481859` | los documentos de esa tanda |
+| `e4f4609` | `CLAUDE.md` a la mitad. **CI verde** |
+| tanda 27 | `Rastro` a `commonMain` + `Disco.anadir` + `RecorteIOS` |
 
-**TODO PUSHEADO** el 07/09/2026 (`b7f53d8..e481859`). O sea que **el `.ipa` del
-CI ya lleva `PortadasIOS`** — y que el runner de macOS ya ha tenido ocasion de
-decir si `iosMain` compila. **Mirar Actions es lo primero**: desde Windows eso
-no se ve.
+**Tres decisiones que estaban abiertas, ya cerradas por Dani:**
 
-**`dominante` PARTIDA EN DOS Y CON OCHO PRUEBAS** (`d1fdbd7`): una funcion pura
-`dominante(ancho, alto, pixel)` y un envoltorio de tres lineas que saca los
-pixeles del `ImageBitmap`, patron de `Recorte`. El cuerpo del algoritmo no
-cambio ni una linea.
-
-**Por que se parte:** en `commonTest` **no se puede crear un `ImageBitmap`** —
-comprobado ejecutandolo: `Method createBitmap in android.graphics.Bitmap not
-mocked`. Y aunque en el simulador de iOS si funcionaria, `commonTest` corre en
-las dos piernas: la prueba quedaria roja en Windows para siempre, que es donde
-se trabaja a diario.
-
-**`CLAUDE.md` esta a la mitad (314 lineas -> 179)**, para que quepa al empezar
-cada sesion. Se fue el diario de "Estado (3 de septiembre)", duplicado de
-`docs/CONTEXTO.md` y comprobado dato a dato antes de borrarlo. Y con tres
-arreglos que no eran de tijera: la frase de `comprobar.py` ahora dice su
-**limite** (`PROBLEMAS: 0` no es "compila"), las pruebas ya no dicen que vivan
-en `app/src/test/` cuando son 21 en `shared/src/commonTest/`, y **las reglas de
-Paco y Lucia estan dentro**, que antes solo vivian en los encargos y se perdian
-al abrir sesion nueva.
-
----
+- **`Rastro`: global con un `Disco` dentro**, no instancia. Hecho en la tanda 27,
+  con el porque dentro del propio fichero.
+- **El motor de RAR para iOS: SI, pero DESPUES.** Hay via (libunrar de RARLAB,
+  licencia aceptable), son tres tandas y la primera es a ciegas. El informe
+  entero esta en `CONTEXTO.md`. Su caso —*"si meto un CBR en la carpeta de la
+  nube y lo abro primero con el iPad"*— se resolvera **leyendo el CBR directo**,
+  no convirtiendolo: convertir obligaria ademas a escribir ZIP, que hoy no
+  existe.
+- **`Vigilante` en iOS: notificacion local** con `UNUserNotificationCenter`, no
+  "solo Android". Pendiente, va en la fase 2.
 
 ## Lo primero, en cuanto entres
 
@@ -67,50 +57,74 @@ en verde, hay algo instalable. Compilar no es funcionar: nadie lo ha arrancado.
 
 ---
 
-## La tarea siguiente: **que Dani instale el `.ipa`**
+## La tarea siguiente: **portar la interfaz**
 
-No es una tanda de código. Es el paso que convierte siete ficheros de
-"compilan" en "funcionan", y **sólo lo puede dar él**.
+Es la mitad del trabajo real y no se ha empezado: 3.228 lineas de `ui/` + 1.204
+de `VistaModelo` + 713 de `MainActivity`, todas en `:app`.
 
-1. Bajar el artefacto `lector-ipa` de la última ejecución verde del CI
-   (pestaña Actions > la ejecución > Artifacts). Es un zip con `Lector.ipa`.
+**La buena noticia, medida y no supuesta:** `shared/` ya tiene Compose
+Multiplatform montado y ya viven ahi `ui/Tema`, `Colores`, `Componentes` y
+`Portada`. Y de todos los imports de `ui/`, **casi todos son `androidx.compose.*`,
+que en CMP son los mismos**. Lo que ata a Android es poco y esta localizado:
+
+| Fichero | Lo que ata a Android |
+|---|---|
+| `PantallaMarcadores` (92) | nada, ya es portable |
+| `PantallaEstadisticas` (498) | solo `BackHandler` |
+| `PantallaAjustes` (350) | selector SAF + `LocalContext` |
+| `PantallaBiblioteca` (1.306) | permiso de notificaciones + `LocalContext` |
+| `Lector` (979) | `Intent` de compartir, `asAndroidBitmap`, `WindowCompat` |
+| `MainActivity` (711) | cascara + navegacion + `BackHandler` |
+| `VistaModelo` (1.213) | `AndroidViewModel(Application)` y cuatro piezas |
+
+**Las fases, en este orden y una por tanda:**
+
+1. ~~`Rastro` a comun~~ **HECHO (tanda 27)**, y `RecorteIOS` con el.
+2. `Vigilante` detras de una interfaz de avisos + la notificacion local de iOS, y
+   `ConversorCarpeta`/`Rar5` detras de otra.
+3. **`VistaModelo` a `commonMain`. Es EL tapon**: las cuatro pantallas lo reciben
+   por parametro, asi que mientras siga en `:app` no se puede mudar ninguna.
+4. Las pantallas, de menor a mayor riesgo: `Marcadores` -> `Estadisticas` ->
+   `Ajustes` -> `Biblioteca` -> `Lector`.
+5. `MainActivity` se parte: raiz Compose comun + cascara de Android +
+   `PuntoDeEntradaIOS`.
+6. **Entonces** se instala el `.ipa` (abajo esta como se hace), y despues el
+   motor de RAR.
+
+**La pega, dicha ahora y no cuando se descubra:** todo lo de iOS de las fases
+1-5 se escribe a ciegas desde Windows y solo lo juzga el CI de macOS. Compilar no
+es funcionar. Portar entero antes de instalar significa acumular mucho sin
+ejecutar, asi que **cada fase tiene que dejar el CI en verde** para no acabar
+depurando diez cosas a la vez.
+
+## Cuando toque instalar: el `.ipa` en el iPad
+
+No es una tanda de codigo. Es el paso que convierte "compilan" en "funcionan", y
+**solo lo puede dar Dani**.
+
+1. Bajar el artefacto `lector-ipa` de la ultima ejecucion verde del CI
+   (pestaña Actions > la ejecucion > Artifacts). Es un zip con `Lector.ipa`.
 2. Sideloadly en el PC, iPad enchufado, su Apple ID. **Con cuenta gratuita la
-   app caduca a los 7 días** y se refresca reconectándola.
-3. En la app Archivos del iPad: *En mi iPad > Lector*, y meter ahí un CBZ.
+   app caduca a los 7 dias** y se refresca reconectandola.
+3. En la app Archivos del iPad: *En mi iPad > Lector*, y meter ahi un CBZ.
 4. Abrir la app.
 
-**Lo que se está probando es la SONDA, no la app.** Sale una lista de ficheros;
-tocando uno debería verse su primera página. Si esa página aparece,
-`BibliotecaIOS`, `ArchivoIOS`, `ZipIOS` e `ImagenIOS` están bien. Si no:
-
-| Lo que se ve | Dónde mirar |
+| Lo que se ve | Donde mirar |
 |---|---|
-| "No hay ningún CBZ en Documents" | `UIFileSharingEnabled`, o el fichero no llegó |
-| Sale la lista, pero la página no | `ZipIOS` (descomprimir) o `ImagenIOS` (decodificar) |
+| "No hay ningun CBZ en Documents" | `UIFileSharingEnabled`, o el fichero no llego |
+| Sale la lista, pero la pagina no | `ZipIOS` (descomprimir) o `ImagenIOS` (decodificar) |
 | Un mensaje de error | Es el `Paginas.Error`, y ya dice el motivo |
-| La app se cierra sola | Memoria: iOS mata sin avisar y no hay excepción que ver |
+| La app se cierra sola | Memoria: iOS mata sin avisar y no hay excepcion que ver |
 
-**Después de eso**, y sólo después, van el selector de documentos con marcadores
-—que es la otra mitad del riesgo de iOS y sigue sin ejecutarse nunca— y la
-mudanza de la interfaz de verdad.
-
-**Lo más frágil, y no lo puede ver el compilador:** en iOS la opción
+**Lo mas fragil, y no lo puede ver el compilador:** en iOS la opcion
 `withSecurityScope` de los marcadores es de macOS. `BibliotecaIOS` resuelve sin
-opciones y pide el acceso después, que es como funciona en el iPad. **Si al
-probarlo no deja abrir los ficheros, ése es el primer sitio donde mirar.**
-
-**Y una cosa que `ArchivoIOS` dejó a medias a propósito:** el parámetro
-`recortar` se ignora. `Recorte` decide el recuadro y es común, pero necesita los
-píxeles, y en iOS hay que sacarlos de `ImagenIOS` antes de que Skia los envuelva.
-Es un `RecorteIOS` de unas pocas líneas cuando toque, no un problema abierto.
-
----
+opciones y pide el acceso despues, que es como funciona en el iPad. **Si al
+probarlo no deja abrir los ficheros, ese es el primer sitio donde mirar.**
 
 ## El mapa del port, con el marcador de verdad
 
-El tapón es `VistaModelo`: **las cuatro pantallas lo reciben por parámetro**, así
-que mientras siga en `:app` no se puede mudar ninguna. Tenía ocho objetos de
-Android y 24 llamadas (contadas con `grep`, no de memoria):
+El tapon es `VistaModelo`: **las cuatro pantallas lo reciben por parametro**, asi
+que mientras siga en `:app` no se puede mudar ninguna.
 
 | | Estado |
 |---|---|
@@ -121,24 +135,57 @@ Android y 24 llamadas (contadas con `grep`, no de memoria):
 | `ArchivoIOS` — leer un CBZ en el iPad | HECHO (tanda 22), **compila a la primera** |
 | `BibliotecaIOS` — marcadores y NSFileManager | HECHO (tanda 23) |
 | `iosApp/` + framework + `.ipa` en el CI | HECHO (tanda 24), a la primera |
-| `Rastro` (5 llamadas) | **es una decisión, no una tanda** — ver abajo |
-| `ConversorCarpeta` (3) | pendiente |
-| `Rar5` (2) | pendiente |
-| `Vigilante` (1) | pendiente |
-| `ColorPortada` (1) | HECHO (tanda 25) |
-| `AndroidViewModel(Application)` | pendiente |
+| `ColorPortada` | HECHO (tanda 25) |
+| `Rastro` (26 llamadas en 9 ficheros) | HECHO (tanda 27), global con `Disco` dentro |
+| `RecorteIOS` | HECHO (tanda 27), escrito sin compilar |
+| `Vigilante` (1) | **decidido**: notificacion local de iOS. Pendiente, fase 2 |
+| `ConversorCarpeta` (3) y `Rar5` (2) | **aplazados a despues del `.ipa`** — libunrar, tres tandas |
+| `AndroidViewModel(Application)` | pendiente, fase 3. Son **16 usos de `ctx`**, y 6 son piezas que ya estan detras de interfaz |
 
-**`Rastro` no es "otro envoltorio".** Sus llamadas no están sólo en
-`VistaModelo`: hay unas cuarenta repartidas por `MainActivity`, el visor, las
-cuatro pantallas, `Escaner` y `Miniaturas`, todas como `Rastro.apunta(ctx, ...)`.
-Pasarlo a instancia obliga a tocarlas todas; dejarlo como objeto global con un
-`Disco` dentro es **el patrón que este proyecto rechazó al escribir `Disco`**.
-Hay que plantearle las dos opciones a Dani, no colarlo dentro de otra tanda.
+## Lo que hace falta para mudar la interfaz (sondeado el 07/09/2026)
 
-**`ConversorCarpeta` y `Rar5` son la conversión de CBR**, y en iOS **no hay motor
-de RAR** (junrar es Java, 7-Zip-JBinding es JVM más una librería nativa). Puede
-que la respuesta correcta no sea una interfaz sino que **esa función no exista en
-el iPad de momento**. También hay que hablarlo.
+Contado sobre el codigo, no de memoria. Base de hoy: **Kotlin 2.0.21, Compose
+Multiplatform 1.7.3, AGP 8.7.2, lifecycle (JB) 2.8.4, coroutines 1.9.0**, y no
+hay catalogo de versiones: todo va a pelo en los `build.gradle.kts`.
+
+**Una sola dependencia nueva, y ninguna mas:**
+`org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4` — la misma
+version que el `lifecycle-runtime-compose` que ya esta. Trae `ViewModel`,
+`viewModelScope` y el `viewModel()` de Compose en `commonMain`. **Se prefiere a
+una clase con su propio `CoroutineScope`** porque `viewModelScope` sale 17 veces
+en `VistaModelo` —esas 17 no se tocan— y porque en Android un `ViewModel`
+sobrevive a la rotacion y una clase recordada en la composicion no: cambiarlo
+seria una regresion de Android para ahorrar una linea de Gradle.
+
+**La navegacion se QUITA, no se muda.** Existe
+`org.jetbrains.androidx.navigation:navigation-compose:2.8.0-alpha10` para CMP
+1.7.x y no choca, pero son **tres destinos**, y este proyecto ya se peleo dos
+veces con esa pila: la pantalla negra del 03/09 salia de dejar el `NavHost` sin
+destinos, y el remedio fueron los dos cerrojos `enPie()` e `ir()`. Con un `when`
+sobre una pila en el modelo, esa clase de fallo desaparece y se van esas tres
+funciones. Ademas el deslizamiento entre pestañas ya no es navegacion desde la
+tanda 18: es un `HorizontalPager`. **Lo que se pierde es el gesto de volver
+deslizando desde el borde**, que en iOS se da por hecho; si se quiere desde el
+dia uno, entonces si vale la alpha10.
+
+**Los siete agujeros de plataforma**, ninguno es Compose: todos son el sistema
+operativo, que es justo donde este proyecto ya pone interfaces.
+
+| Que | Usos | Que hay que escribir |
+|---|---|---|
+| `BackHandler` | 6 | `expect/actual`. **En iOS no hay boton ni gesto de sistema**, asi que el `actual` no hace nada y los dos casos (salir del zoom, subir de carpeta) necesitan control en pantalla |
+| `LocalContext` | 7 | Casi todos se van solos al inyectar las piezas |
+| `asAndroidBitmap` + guardar en galeria + compartir | 6, en `ui/Lector.kt` | Interfaz nueva. En iOS: `Image.encodeToData` de Skia + `UIImageWriteToSavedPhotosAlbum` y `UIActivityViewController`. **Y `NSPhotoLibraryAddUsageDescription` en el Info.plist, o iOS mata la app al guardar** |
+| Barras del sistema (`WindowCompat`) | 6, en `ui/Lector.kt` | En iOS no es de Compose: `prefersStatusBarHidden` del `UIViewController`, expuesto desde `iosApp/` |
+| Selector SAF | 8 | `UIDocumentPickerViewController` + marcador. `BibliotecaIOS` ya resuelve marcadores, **pero el selector no existe**: es lo que mas bulto tiene de la lista |
+| Permiso de notificaciones | 1 | `UNUserNotificationCenter.requestAuthorization` |
+| `viewModel()` / `Application` | 1 | Lo cubre la dependencia de arriba |
+
+**EL UNICO CHOQUE DE VERSIONES DE VERDAD:** el `BackHandler` comun
+(`androidx.compose.ui.backhandler`) llega en **CMP 1.8.0**, y CMP 1.8.0 exige
+**Kotlin 2.1.0 como minimo**. Eso es una tanda propia con su vuelta de CI y **no
+se cuela dentro del port**: con 1.7.3 se tapa con un `expect/actual` de diez
+lineas.
 
 ---
 
@@ -151,22 +198,23 @@ El objetivo es un `.ipa` que entre en el iPad con Sideloadly.
 |---|---|
 | Lógica portable en `commonMain` | ✅ 4.425 líneas, con pruebas |
 | Piezas de plataforma: `Disco`, `Zip`, `Imagen`, `Archivo`, `Biblioteca` | ✅ escritas, **ninguna ejecutada nunca** |
-| `PortadasIOS`, `ColorPortada`, `Vigilante` | ⏳ dos de tres (tanda 25). Falta `Vigilante`, y **es una decisión**: en iOS no hay trabajo periódico en segundo plano garantizado |
-| `Rastro` — **es una decisión, no una tanda** (ver arriba) | ❌ |
+| `PortadasIOS`, `ColorPortada`, `Vigilante` | ⏳ dos de tres (tanda 25). Falta `Vigilante`: **decidido**, notificación local de iOS, va en la fase 2 |
+| `Rastro` y `RecorteIOS` | ✅ tanda 27. `Rastro` global con `Disco` dentro; `RecorteIOS` escrito sin compilar |
+| Motor de RAR en iOS | ⏸ **aplazado a después del `.ipa`**, decidido por Dani. No cuenta para este % |
 | La interfaz a Compose Multiplatform | ❌ 3.228 líneas de `ui/` + 1.204 de `VistaModelo` + 713 de `MainActivity`, en `:app` |
 | `iosApp/` — proyecto de Xcode (XcodeGen) | ✅ |
 | CI que empaqueta el `.ipa` sin firmar | ✅ artefacto `lector-ipa`, 10,1 MB |
 | **Que alguien lo instale y arranque** | ❌ **el paso que falta ahora** |
 
-**~47%.** La tanda 24 subió diez de golpe porque tachó las dos filas que no eran
-código sino tubería, y porque ya existe algo instalable. La 25 sube **dos, y no
-más**: `ColorPortada` y `PortadasIOS` son piezas pequeñas al lado de lo que
-queda. Sigue siendo más bajo de lo que dirían las líneas:
+**~49%.** La tanda 24 subió diez de golpe porque tachó las dos filas que no eran
+código sino tubería. La 25 subió dos (`ColorPortada`, `PortadasIOS`) y la 27
+**otras dos, y no más**: tacha `Rastro`, que era una fila entera, y `RecorteIOS`,
+pero ninguna de las dos es la interfaz, que sigue a cero. Sigue siendo más bajo de lo que dirían las líneas:
 **lo que queda es donde está todo el riesgo.** La mudanza de la interfaz es la
 mitad del trabajo real y no se ha empezado, y **nada de esto ha arrancado nunca
 en un iPad**.
 
-Y de ese 47, **la parte de datos y el empaquetado ya están**: lo que falta es la
+Y de ese 49, **la parte de datos y el empaquetado ya están**: lo que falta es la
 interfaz de verdad — y comprobar que lo escrito funciona en un iPad.
 
 **Un `.ipa` no se genera desde Windows** — hace falta Xcode. **Y no hace falta
