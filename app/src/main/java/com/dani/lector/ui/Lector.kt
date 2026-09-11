@@ -3,6 +3,7 @@ package com.dani.lector.ui
 import android.app.Activity
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -28,6 +29,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.layout.ContentScale
@@ -40,6 +44,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -141,6 +146,9 @@ private fun Visor(
     var modo by remember { mutableStateOf(Modo.PAGINA) }
     var controles by remember { mutableStateOf(false) }
     var tira by remember { mutableStateOf(false) }
+    // Leido una vez y escrito a la vez en el estado y en los ajustes: asi el
+    // interruptor responde en el mismo fotograma sin esperar al sello.
+    var bocadillos by remember { mutableStateOf(vm.bocadillos) }
 
     // El indice de la pagina que se esta guardando o compartiendo, si hay
     // alguna. La pulsacion larga en el visor no hacia nada hasta ahora, asi que
@@ -290,6 +298,7 @@ private fun Visor(
                         if (hoja.size > 1) ancho else ancho * 2,
                         hoja.first() + 1,
                         llenar = vm.llenar,
+                        bocadillos = bocadillos,
                         onZoom = { ampliada = it },
                         onToque = { fraccionX ->
                             // tercios: los lados pasan pagina, el centro saca
@@ -344,7 +353,9 @@ private fun Visor(
                     onMarcar = {
                         val p = hojas.getOrNull(estado.currentPage)?.last() ?: 0
                         vm.alternarMarcador(uri, p)
-                    }
+                    },
+                    bocadillos = bocadillos,
+                    onBocadillos = { bocadillos = it; vm.bocadillos = it }
                 )
             }
             Modo.TIRA -> {
@@ -586,6 +597,7 @@ private fun TarjetaSiguiente(
 private fun PaginaConZoom(
     vm: VistaModelo, uri: String, nombres: List<String>, anchoPx: Int, num: Int,
     llenar: Boolean = false,
+    bocadillos: Boolean = false,
     onZoom: (Boolean) -> Unit = {},
     onToque: (Float) -> Unit,
     // ANTES de `transicion`, que ya tenia valor por defecto, y las dos antes de
@@ -733,8 +745,59 @@ private fun PaginaConZoom(
                     Contenido(vm, uri, n, if (detalle) anchoPx * 3 else anchoPx,
                         num + i, Modifier.fillMaxWidth(),
                         onProporcion = { if (i == 0) proporcionPagina = it })
+                    // Dentro del Row con el graphicsLayer del zoom, asi que los
+                    // recuadros se amplian y se mueven con la pagina sin hacer
+                    // cuentas. Solo con UNA pagina: en dobles no hay globo a globo.
+                    if (bocadillos && nombres.size == 1)
+                        SondaGlobos(vm, uri, n, num + i, Modifier.matchParentSize())
                 }
             }
+        }
+    }
+}
+
+/**
+ * La sonda de los bocadillos (tanda 28): lo que ve el detector, pintado encima
+ * de la pagina. Las LINEAS del OCR en cian y finas; los GLOBOS en el acento,
+ * gruesos y con su numero de orden. Es para que Dani vea en el movil si falla
+ * el OCR (no hay lineas sobre la rotulacion) o el contorno (hay lineas y no hay
+ * globo), que es lo que decide la tanda siguiente.
+ */
+@Composable
+private fun SondaGlobos(vm: VistaModelo, uri: String, nombre: String, num: Int, mod: Modifier) {
+    var datos by remember(nombre) { mutableStateOf<VistaModelo.Globos?>(null) }
+    LaunchedEffect(nombre) { datos = vm.globosDe(uri, nombre, num) }
+    var tam by remember { mutableStateOf(IntSize.Zero) }
+    val d = datos ?: return
+    if (d.ancho <= 0 || d.alto <= 0) return
+
+    // Contenido pinta con ContentScale.Fit: la pagina va ENCAJADA y CENTRADA
+    // en su caja. Con la pagina a lo ancho sobra la cuenta y la escala es
+    // ancho pintado / ancho detectado; pero si la pagina es mas alargada que
+    // el hueco (en horizontal, sin dobles) quedan bandas a los lados, y sin el
+    // desplazamiento los recuadros saldrian corridos.
+    val escala = minOf(tam.width.toFloat() / d.ancho, tam.height.toFloat() / d.alto)
+    val x0 = (tam.width - d.ancho * escala) / 2
+    val y0 = (tam.height - d.alto * escala) / 2
+
+    Box(mod.onSizeChanged { tam = it }) {
+        Canvas(Modifier.matchParentSize()) {
+            val fina = 1.dp.toPx()
+            val gruesa = 2.dp.toPx()
+            d.lineas.forEach { r ->
+                drawRect(Cian, Offset(x0 + r.izq * escala, y0 + r.arriba * escala),
+                    Size(r.ancho * escala, r.alto * escala), style = Stroke(fina))
+            }
+            d.globos.forEach { r ->
+                drawRect(Acento, Offset(x0 + r.izq * escala, y0 + r.arriba * escala),
+                    Size(r.ancho * escala, r.alto * escala), style = Stroke(gruesa))
+            }
+        }
+        d.globos.forEachIndexed { i, r ->
+            Text("${i + 1}", style = Tipo.pie, color = SobreAcento,
+                modifier = Modifier
+                    .offset { IntOffset((x0 + r.izq * escala).toInt(), (y0 + r.arriba * escala).toInt()) }
+                    .background(Acento).padding(horizontal = 3.dp))
         }
     }
 }
@@ -791,7 +854,10 @@ private fun Controles(
     vm: VistaModelo, uri: String, paginas: List<String>, onIr: (Int) -> Unit,
     tira: Boolean, onTira: (Boolean) -> Unit,
     marcadas: Set<Int>, onMarcar: () -> Unit,
-    ambiente: Color? = null
+    ambiente: Color? = null,
+    // null = no se enseña. Solo lo pasa el modo pagina.
+    bocadillos: Boolean = false,
+    onBocadillos: ((Boolean) -> Unit)? = null
 ) {
     // Lo escrito en "ir a la pagina", o null si el dialogo no esta abierto.
     // Va aqui y no en el Visor porque los dos modos —pagina y tira— pintan este
@@ -840,6 +906,14 @@ private fun Controles(
             Text(if (estrella) "\u2605" else "\u2606", fontSize = 21.sp,
                 color = if (estrella) Acento else Tenue,
                 modifier = Modifier.padding(end = 18.dp).clickableSimple(accion = onMarcar))
+
+            // Texto que cambia de color y no un Interruptor: el de Componentes
+            // es una fila de ajustes a todo el ancho y aqui no cabe. Acento
+            // encendido y Tenue apagado, igual que la estrella.
+            if (onBocadillos != null) Text("Bocadillos", style = Tipo.secundario,
+                color = if (bocadillos) Acento else Tenue,
+                modifier = Modifier.padding(end = 18.dp)
+                    .clickableSimple { onBocadillos(!bocadillos) })
 
             Text(if (modo == Modo.PAGINA) "Página" else "Tira",
                 style = Tipo.secundario, color = Acento,

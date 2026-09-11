@@ -21,6 +21,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import androidx.compose.ui.graphics.asAndroidBitmap
 
 data class Estado(
     val cargando: Boolean = false,
@@ -90,6 +92,9 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
 
     /** UNICO sitio del que salen los datos de fuera. Lo decide LectorApp. */
     private val fuente: FuenteComics get() = (ctx as LectorApp).fuente
+
+    /** Y el OCR de los bocadillos, igual. */
+    private val detector: DetectorTexto get() = (ctx as LectorApp).detector
 
     private val _estado = MutableStateFlow(Estado())
     val estado = _estado.asStateFlow()
@@ -318,9 +323,49 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
             _estado.update { it.copy(sello = it.sello + 1) }
         }
 
+    /**
+     * La sonda de los bocadillos (tanda 28): las lineas del OCR y los globos
+     * pintados encima de la pagina, para ver en el movil si aciertan antes de
+     * montar el zoom de verdad. Ver docs/DISENO.md §24.
+     */
+    var bocadillos: Boolean
+        get() = ajustes.si("bocadillos", false)
+        set(v) {
+            ajustes.ponSi("bocadillos", v)
+            _estado.update { it.copy(sello = it.sello + 1) }
+        }
+
     fun paginas(uri: String) = archivo.paginas(uri)
     fun pagina(uri: String, nombre: String, ancho: Int) =
         archivo.pagina(uri, nombre, ancho, recortar)
+
+    /** Lo que ve la sonda en una pagina, en pixeles de la imagen analizada. */
+    class Globos(val ancho: Int, val alto: Int, val lineas: List<Recuadro>, val globos: List<Recuadro>)
+
+    /**
+     * Las lineas y los globos de una pagina. Sin cache todavia: es de la 29.
+     *
+     * A 1600 y por [pagina], la misma funcion que pinta: asi el recorte es el
+     * mismo y las cajas casan con lo que se ve POR PROPORCION, aunque la
+     * pantalla la haya decodificado a otro ancho.
+     */
+    suspend fun globosDe(uri: String, nombre: String, num: Int): Globos? =
+        withContext(Dispatchers.IO) {
+            val img = pagina(uri, nombre, 1600) ?: return@withContext null
+            val t0 = System.currentTimeMillis()
+            val lineas = detector.lineas(img)
+            val t1 = System.currentTimeMillis()
+            // getPixel sobre el Bitmap, NO la pagina copiada a un IntArray:
+            // 1600x2400 son 15 MB de enteros para mirar unos cientos de pixeles.
+            val bmp = img.asAndroidBitmap()
+            val globos = Bocadillos.globos(lineas, bmp.width, bmp.height) { x, y ->
+                bmp.getPixel(x, y)
+            }
+            Rastro.apunta("  globos: pág $num, OCR ${t1 - t0} ms, globos " +
+                "${System.currentTimeMillis() - t1} ms, ${lineas.size} líneas, " +
+                "${globos.size} globos")
+            Globos(bmp.width, bmp.height, lineas, globos)
+        }
     suspend fun portada(uri: String) = portadas.obtener(uri)
 
     /** La portada solo si ya esta en memoria. Para pintar sin esperar al scroll. */

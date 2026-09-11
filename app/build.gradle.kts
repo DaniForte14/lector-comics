@@ -142,4 +142,15 @@ dependencies {
     // de JitPack en vez de esta. Es lo unico que no se ha podido comprobar
     // antes de escribirlo, porque desde donde se edito no habia red a Maven.
     implementation("com.sorrowblue.sevenzipjbinding:7-Zip-JBinding-4Android:16.02-2.4")
+
+    // El OCR de los bocadillos: solo se usan las CAJAS de las lineas, no el
+    // texto. Ver datos/DetectorAndroid.kt y docs/DISENO.md §24.
+    //
+    // EMPAQUETADO y no la variante de Play services (`play-services-mlkit-
+    // text-recognition`). Aquella baja el modelo la primera vez que se usa, y
+    // hasta que termina el OCR falla en silencio: la sonda diria "cero lineas"
+    // y no se sabria si es que no pilla la rotulacion o que el modelo aun no
+    // ha llegado. Empaquetado cuesta megas pero funciona desde el primer toque.
+    // La libreria nativa va por arquitectura, y abiFilters ya deja solo arm64.
+    implementation("com.google.mlkit:text-recognition:16.0.1")
 }

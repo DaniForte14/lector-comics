@@ -5,6 +5,8 @@ import android.content.Context
 import com.dani.lector.red.ComicVine
 import com.dani.lector.red.FuenteComics
 import com.dani.lector.red.FuenteVacia
+import com.dani.lector.datos.DetectorAndroid
+import com.dani.lector.datos.DetectorTexto
 import com.dani.lector.datos.DiscoAndroid
 import com.dani.lector.datos.Rastro
 import com.dani.lector.datos.RastroAndroid
@@ -61,6 +63,13 @@ class LectorApp : Application() {
      * Nunca se escriben aqui ni acaban en git.
      */
     @Volatile private var cacheFuente: FuenteComics? = null
+
+    /**
+     * Y de aqui sale el OCR de los bocadillos, por lo mismo que la fuente: si
+     * ML Kit no pilla la rotulacion a mano, se cambia por otro detector tocando
+     * esta linea y nada mas. El cliente se crea al primer uso, no al arrancar.
+     */
+    val detector: DetectorTexto = DetectorAndroid()
 
     val fuente: FuenteComics get() = cacheFuente ?: crearFuente().also { cacheFuente = it }
 
