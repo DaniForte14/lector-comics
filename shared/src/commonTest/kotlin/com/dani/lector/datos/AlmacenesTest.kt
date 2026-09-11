@@ -28,6 +28,9 @@ class AlmacenesTest {
         override fun escribir(nombre: String, texto: String) {
             escrituras++; ficheros[nombre] = texto
         }
+        override fun anadir(nombre: String, texto: String) {
+            escrituras++; ficheros[nombre] = ficheros[nombre].orEmpty() + texto
+        }
         override fun borrar(nombre: String) { ficheros.remove(nombre) }
     }
 

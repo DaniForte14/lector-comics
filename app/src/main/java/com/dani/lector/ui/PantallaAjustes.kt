@@ -316,7 +316,7 @@ fun PantallaAjustes(
 
                         var rastro by remember { mutableStateOf("") }
                         LaunchedEffect(estado.sello) {
-                            rastro = com.dani.lector.datos.Rastro.leer(ctxAjustes)
+                            rastro = com.dani.lector.datos.Rastro.leer()
                         }
                         // Las ultimas de todas: son las de justo antes del
                         // fallo, que es lo unico que importa mirando a mano.
@@ -335,7 +335,7 @@ fun PantallaAjustes(
                             }
                             Spacer(Modifier.width(10.dp))
                             Boton("Borrar", Modifier.weight(1f), relleno = false) {
-                                com.dani.lector.datos.Rastro.limpiar(ctxAjustes)
+                                com.dani.lector.datos.Rastro.limpiar()
                                 rastro = ""
                             }
                         }

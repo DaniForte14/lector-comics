@@ -108,10 +108,10 @@ object Miniaturas {
     private var msGenerar = 0L
 
     @Synchronized
-    private fun apunta(ctx: Context, disco: Boolean, ms: Long) {
+    private fun apunta(disco: Boolean, ms: Long) {
         if (disco) { deDisco++; msDisco += ms } else { generadas++; msGenerar += ms }
         val n = deDisco + generadas
-        if (n == 1 || n % 10 == 0) Rastro.apunta(ctx,
+        if (n == 1 || n % 10 == 0) Rastro.apunta(
             "  portadas: $deDisco de cache ($msDisco ms), " +
             "$generadas generadas ($msGenerar ms)")
     }
@@ -155,7 +155,7 @@ object Miniaturas {
             decodificar(f)?.let {
                 val img = it.asImageBitmap()
                 memoria.put(uri, img)
-                apunta(ctx, disco = true, ms = System.currentTimeMillis() - t0)
+                apunta(disco = true, ms = System.currentTimeMillis() - t0)
                 return@withContext img
             }
         }
@@ -216,7 +216,7 @@ object Miniaturas {
 
         val img = guardada
         memoria.put(uri, img)
-        apunta(ctx, disco = false, ms = System.currentTimeMillis() - tGenerar)
+        apunta(disco = false, ms = System.currentTimeMillis() - tGenerar)
         img
     }
 

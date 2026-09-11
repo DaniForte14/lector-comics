@@ -47,7 +47,6 @@ object Fluidez {
         if (puesto) return
         puesto = true
 
-        val app = actividad.applicationContext
         val hilo = HandlerThread("fluidez").apply { start() }
 
         actividad.window.addOnFrameMetricsAvailableListener({ _, metricas, _ ->
@@ -66,7 +65,7 @@ object Fluidez {
                 // Solo se apunta si ha habido alguno malo. Una linea cada cinco
                 // segundos diciendo que todo va bien es justo lo que hace que
                 // nadie lea el rastro cuando pasa algo.
-                if (lentos > 0) Rastro.apunta(app,
+                if (lentos > 0) Rastro.apunta(
                     "  fluidez: $lentos de $vistos fotogramas por encima de " +
                     "$LENTO_MS ms, el peor $peor ms")
                 vistos = 0

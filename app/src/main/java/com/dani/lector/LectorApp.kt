@@ -5,7 +5,9 @@ import android.content.Context
 import com.dani.lector.red.ComicVine
 import com.dani.lector.red.FuenteComics
 import com.dani.lector.red.FuenteVacia
+import com.dani.lector.datos.DiscoAndroid
 import com.dani.lector.datos.Rastro
+import com.dani.lector.datos.RastroAndroid
 import com.dani.lector.datos.Vigilante
 
 class LectorApp : Application() {
@@ -23,9 +25,11 @@ class LectorApp : Application() {
     override fun onCreate() {
         super.onCreate()
         // Lo PRIMERO, antes que nada: si algo revienta al arrancar, queremos
-        // que quede apuntado.
-        Rastro.instalar(this)
-        Rastro.apunta(this, "── la app arranca ──")
+        // que quede apuntado. Y el disco va antes que el manejador de petadas,
+        // porque sin el una petada del arranque no se apuntaria en ningun lado.
+        Rastro.arranca(DiscoAndroid(this))
+        RastroAndroid.instalar()
+        Rastro.apunta("── la app arranca ──")
 
         // EL TRABAJO DIARIO NO CUESTA EL ARRANQUE, Y ESTA MEDIDO: 5 ms LOS DOS.
         //
@@ -47,7 +51,7 @@ class LectorApp : Application() {
         Vigilante.crearCanal(this)
         val tCanal = System.currentTimeMillis()
         Vigilante.programar(this)
-        Rastro.apunta(this, "  arranque: canal ${tCanal - t0} ms, " +
+        Rastro.apunta("  arranque: canal ${tCanal - t0} ms, " +
             "trabajo diario ${System.currentTimeMillis() - tCanal} ms")
     }
 

@@ -23,6 +23,16 @@ interface Disco {
     /** Escribe el fichero entero, creandolo si hacia falta. */
     fun escribir(nombre: String, texto: String)
 
+    /**
+     * Añade al final, creando el fichero si no estaba. Nunca lanza.
+     *
+     * ES EL CUARTO METODO Y NO SOBRA: lo pide [Rastro], que apunta una linea
+     * cada pocos segundos. Con solo `leer` + `escribir` habria que traerse el
+     * fichero entero a memoria y volver a escribirlo por cada miga, que es
+     * exactamente lo que su comentario dice que no se hace.
+     */
+    fun anadir(nombre: String, texto: String)
+
     fun borrar(nombre: String)
 }
 
@@ -37,5 +47,8 @@ interface Disco {
 class DiscoEnMemoria(private val ficheros: MutableMap<String, String> = mutableMapOf()) : Disco {
     override fun leer(nombre: String): String? = ficheros[nombre]
     override fun escribir(nombre: String, texto: String) { ficheros[nombre] = texto }
+    override fun anadir(nombre: String, texto: String) {
+        ficheros[nombre] = ficheros[nombre].orEmpty() + texto
+    }
     override fun borrar(nombre: String) { ficheros.remove(nombre) }
 }

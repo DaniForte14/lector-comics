@@ -125,7 +125,7 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             val t0 = System.currentTimeMillis()
             marcas.todas(); sesiones.todas(); seriesRemotas.todas()
-            Rastro.apunta(ctx, "  fichas precargadas en " +
+            Rastro.apunta("  fichas precargadas en " +
                 "${System.currentTimeMillis() - t0} ms")
         }
     }
@@ -173,10 +173,10 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
                 // Con hora de EMPIEZA y no solo de acabado: hace falta para ver
                 // si una lectura lenta de carpeta cae DENTRO de un recorrido del
                 // arbol, que es la hipotesis de los ~720 ms.
-                Rastro.apunta(ctx, "  índice: empieza")
+                Rastro.apunta("  índice: empieza")
                 val t0 = System.currentTimeMillis()
                 comicsBajo(null).also {
-                    Rastro.apunta(ctx, "  índice: ${it.size} cómics en " +
+                    Rastro.apunta("  índice: ${it.size} cómics en " +
                         "${System.currentTimeMillis() - t0} ms")
                 }
             }.also { trabajoIndice = it }
@@ -224,7 +224,7 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
         private set
 
     fun abrir(c: Comic) {
-        Rastro.apunta(ctx, "abrir cómic: ${c.nombre} (en ${c.carpeta})")
+        Rastro.apunta("abrir cómic: ${c.nombre} (en ${c.carpeta})")
         leyendo = c; arranque = null; techoMarcador = -1
     }
 
@@ -247,7 +247,7 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
     private var arranque: Int? = null
 
     fun abrirEn(c: Comic, pagina: Int) {
-        Rastro.apunta(ctx, "abrir cómic por marcapáginas: ${c.nombre}, página $pagina")
+        Rastro.apunta("abrir cómic por marcapáginas: ${c.nombre}, página $pagina")
         leyendo = c
         arranque = pagina
         // Se lee ANTES de abrir, porque en cuanto el visor pinte la primera

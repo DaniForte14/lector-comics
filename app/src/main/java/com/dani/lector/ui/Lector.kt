@@ -70,8 +70,7 @@ fun PantallaLector(vm: VistaModelo, comic: Comic?, onAtras: () -> Unit) {
 
     // El visor es el sitio con mas formas de acabar en negro: fondo negro puro,
     // barras del sistema ocultas y varios caminos que pueden no pintar nada.
-    val ctxRastro = LocalContext.current
-    LaunchedEffect(uri) { Rastro.apunta(ctxRastro, "visor: abre ${c.nombre}") }
+    LaunchedEffect(uri) { Rastro.apunta("visor: abre ${c.nombre}") }
 
     var resultado by remember(uri) { mutableStateOf<Paginas?>(null) }
     LaunchedEffect(uri) { resultado = withContext(Dispatchers.IO) { vm.paginas(uri) } }
@@ -104,7 +103,7 @@ fun PantallaLector(vm: VistaModelo, comic: Comic?, onAtras: () -> Unit) {
             CircularProgressIndicator()
         }
         is Paginas.Error -> {
-            LaunchedEffect(r) { Rastro.apunta(ctxRastro, "visor: NO ABRE — ${r.motivo}") }
+            LaunchedEffect(r) { Rastro.apunta("visor: NO ABRE — ${r.motivo}") }
             Fallo(r.motivo, onAtras)
         }
         is Paginas.Ok -> Visor(vm, c, r.nombres, onAtras) { siguiente ->
@@ -232,9 +231,8 @@ private fun Visor(
     // colgada. Aqui se dice el motivo con numeros, que es lo que este proyecto
     // lleva escrito desde el primer dia: "los mensajes de fallo llevan NUMEROS
     // Y NOMBRES, no adjetivos".
-    val ctxRastro = LocalContext.current
     LaunchedEffect(paginas, hojas, inicio) {
-        Rastro.apunta(ctxRastro,
+        Rastro.apunta(
             "visor: ${paginas.size} páginas, ${hojas.size} hojas, empieza en $inicio")
     }
     if (paginas.isEmpty() || hojas.isEmpty()) {

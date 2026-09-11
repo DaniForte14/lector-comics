@@ -139,7 +139,7 @@ class MainActivity : ComponentActivity() {
                 val duenio = androidx.lifecycle.compose.LocalLifecycleOwner.current
                 DisposableEffect(duenio) {
                     val ojo = androidx.lifecycle.LifecycleEventObserver { _, evento ->
-                        com.dani.lector.datos.Rastro.apunta(this@MainActivity, "ciclo: $evento")
+                        com.dani.lector.datos.Rastro.apunta("ciclo: $evento")
                         if (evento == androidx.lifecycle.Lifecycle.Event.ON_STOP)
                             vm.copiaAlSalirSiToca()
                     }
@@ -160,8 +160,7 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(invitado) {
                     val uri = invitado ?: return@LaunchedEffect
                     val nombre = nombreDe(uri)
-                    com.dani.lector.datos.Rastro.apunta(
-                        this@MainActivity, "de fuera: $nombre")
+                    com.dani.lector.datos.Rastro.apunta("de fuera: $nombre")
                     vm.abrir(com.dani.lector.datos.Comic(
                         uri = uri.toString(),
                         nombre = nombre,
@@ -184,7 +183,7 @@ class MainActivity : ComponentActivity() {
                     while (!nav.enPie() && vueltas < 120) {
                         kotlinx.coroutines.delay(16); vueltas++
                     }
-                    nav.ir(this@MainActivity, "leer")
+                    nav.ir("leer")
                 }
 
                 val elegirCarpeta = rememberLauncherForActivityResult(
@@ -224,8 +223,7 @@ class MainActivity : ComponentActivity() {
                 // que saber es en que destino estaba.
                 LaunchedEffect(nav) {
                     nav.currentBackStackEntryFlow.collect { entrada ->
-                        com.dani.lector.datos.Rastro.apunta(
-                            this@MainActivity, "pantalla: ${entrada.destination.route}")
+                        com.dani.lector.datos.Rastro.apunta("pantalla: ${entrada.destination.route}")
                     }
                 }
 
@@ -289,8 +287,7 @@ class MainActivity : ComponentActivity() {
                             }
 
                             LaunchedEffect(paginas.currentPage) {
-                                com.dani.lector.datos.Rastro.apunta(this@MainActivity,
-                                    "pestaña: ${paginas.currentPage}")
+                                com.dani.lector.datos.Rastro.apunta("pestaña: ${paginas.currentPage}")
                             }
 
                             // LAS TRES PAGINAS SE QUEDAN VIVAS, y esto es el
@@ -327,7 +324,7 @@ class MainActivity : ComponentActivity() {
                                                 pila.add(Triple(id, ruta, nombre))
                                             },
                                             onLeer = {
-                                                vm.abrir(it); nav.ir(this@MainActivity, "leer")
+                                                vm.abrir(it); nav.ir("leer")
                                             },
                                             onMenu = { menu = it },
                                             onAtras = if (pila.size > 1) {
@@ -337,10 +334,10 @@ class MainActivity : ComponentActivity() {
                                     }
                                     1 -> PantallaEstadisticas(vm,
                                         onMarcadores = {
-                                            nav.ir(this@MainActivity, "marcadores")
+                                            nav.ir("marcadores")
                                         },
                                         onLeer = {
-                                            vm.abrir(it); nav.ir(this@MainActivity, "leer")
+                                            vm.abrir(it); nav.ir("leer")
                                         },
                                         // Sin "Atras": ahora es una pestaña y no
                                         // una pantalla apilada, asi que la flecha
@@ -396,7 +393,7 @@ class MainActivity : ComponentActivity() {
                                 // biblioteca diria lo mismo que la tarjeta.
                                 seguir = if (pila.size > 1 || paginas.currentPage != 0)
                                              seguirBarra else null,
-                                onLeer = { vm.abrir(it); nav.ir(this@MainActivity, "leer") },
+                                onLeer = { vm.abrir(it); nav.ir("leer") },
                                 pagina = paginas.currentPage,
                                 // TOCAR "BIBLIOTECA" ESTANDO YA EN ELLA SUBE A
                                 // LA RAIZ. Es lo que hacen las barras de
@@ -435,7 +432,7 @@ class MainActivity : ComponentActivity() {
                             menu?.let { c ->
                                 MenuComic(vm, c,
                                     onLeer = {
-                                        vm.abrir(it); nav.ir(this@MainActivity, "leer")
+                                        vm.abrir(it); nav.ir("leer")
                                     },
                                     onCerrar = { menu = null })
                             }
@@ -443,15 +440,15 @@ class MainActivity : ComponentActivity() {
                     }
 
                     composable("leer") {
-                        PantallaLector(vm, vm.leyendo, onAtras = { nav.atras(this@MainActivity) })
+                        PantallaLector(vm, vm.leyendo, onAtras = { nav.atras() })
                     }
 
                     composable("marcadores") {
                         PantallaMarcadores(vm,
                             onLeer = { comic, pagina ->
-                                vm.abrirEn(comic, pagina); nav.ir(this@MainActivity, "leer")
+                                vm.abrirEn(comic, pagina); nav.ir("leer")
                             },
-                            onAtras = { nav.atras(this@MainActivity) })
+                            onAtras = { nav.atras() })
                     }
                 }
             }
@@ -690,7 +687,7 @@ private fun NavHostController.enPie(): Boolean =
     currentBackStackEntry?.lifecycle?.currentState
         ?.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED) == true
 
-private fun NavHostController.atras(ctx: android.content.Context) {
+private fun NavHostController.atras() {
     // DOS CERROJOS, Y HACEN FALTA LOS DOS.
     //
     // El de arriba pilla el toque repetido durante la transicion, pero depende
@@ -698,14 +695,14 @@ private fun NavHostController.atras(ctx: android.content.Context) {
     // del actual, sacar el actual deja el NavHost sin nada que pintar. Da igual
     // por que se llame ni cuantas veces: la pila no se puede vaciar.
     if (previousBackStackEntry == null) {
-        com.dani.lector.datos.Rastro.apunta(ctx, "  (atrás ignorado: ya no hay a dónde volver)")
+        com.dani.lector.datos.Rastro.apunta("  (atrás ignorado: ya no hay a dónde volver)")
         return
     }
     if (enPie()) popBackStack()
-    else com.dani.lector.datos.Rastro.apunta(ctx, "  (atrás ignorado: toque repetido)")
+    else com.dani.lector.datos.Rastro.apunta("  (atrás ignorado: toque repetido)")
 }
 
-private fun NavHostController.ir(ctx: android.content.Context, ruta: String) {
+private fun NavHostController.ir(ruta: String) {
     if (enPie()) navigate(ruta)
-    else com.dani.lector.datos.Rastro.apunta(ctx, "  (ir a $ruta ignorado: toque repetido)")
+    else com.dani.lector.datos.Rastro.apunta("  (ir a $ruta ignorado: toque repetido)")
 }

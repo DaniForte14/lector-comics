@@ -166,9 +166,8 @@ fun PantallaCarpeta(
     val estadoLista = rememberLazyListState()
     LaunchedEffect(docId) { estadoLista.scrollToItem(0) }
 
-    val ctxRastro = LocalContext.current
     LaunchedEffect(docId) {
-        Rastro.apunta(ctxRastro, "carpeta: «${ruta.ifBlank { "raíz" }}»")
+        Rastro.apunta("carpeta: «${ruta.ifBlank { "raíz" }}»")
     }
 
     // STARTED y no RESUMED: aqui interesa leer en cuanto la pantalla se ve, no
@@ -177,7 +176,7 @@ fun PantallaCarpeta(
     LaunchedEffect(docId, estado.catalogo, delante) {
         if (delante) {
             contenido = vm.abrirCarpeta(docId, ruta)
-            Rastro.apunta(ctxRastro, "  leída: ${contenido?.carpetas?.size} carpetas, " +
+            Rastro.apunta("  leída: ${contenido?.carpetas?.size} carpetas, " +
                 "${contenido?.comics?.size} cómics")
         }
     }

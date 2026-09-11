@@ -124,7 +124,7 @@ object Escaner {
             OrdenCarpeta.de(comics, Orden.NUMERO)
         ).also {
             val total = System.currentTimeMillis() - t0
-            if (total >= LENTO_MS) Rastro.apunta(ctx,
+            if (total >= LENTO_MS) Rastro.apunta(
                 "  LENTA «${ruta.ifBlank { "raíz" }}»: $total ms " +
                 "(cursor ${tCursor - msContar}, contar $msContar, " +
                 "${carpetas.size} subcarpetas, ${comics.size} cómics)")

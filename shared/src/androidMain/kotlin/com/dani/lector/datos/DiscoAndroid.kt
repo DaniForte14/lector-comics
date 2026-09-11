@@ -22,5 +22,9 @@ class DiscoAndroid(private val ctx: Context) : Disco {
         runCatching { f(nombre).writeText(texto) }
     }
 
+    override fun anadir(nombre: String, texto: String) {
+        runCatching { f(nombre).appendText(texto) }
+    }
+
     override fun borrar(nombre: String) { runCatching { f(nombre).delete() } }
 }
