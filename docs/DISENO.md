@@ -1333,3 +1333,53 @@ pestañas de siempre.
 cambia de pestaña y te deja donde estabas —que es lo que se espera— y al inicio
 se va con el segundo. La pila se vacía de golpe hasta la raíz, que es el primer
 elemento y no se puede quitar.
+
+## 24. Bocadillo a bocadillo, como Play Books (11/09/2026)
+
+Dani quiere **la función exacta del Bubble Zoom de Google Play Libros**, y que
+sirva también en el iPad. Llegó con una conversación de Gemini en PDF; se usó
+como mapa, **no como dato**: sus cifras ("5-20 MB", "<30 ms") no están
+comprobadas y el ejemplo de TFLite se inventa la forma de la salida.
+
+**Lo que se ve, cuando esté entero:**
+
+- Interruptor "Bocadillos" en los controles del lector, guardado como `llenar`.
+- Tercio derecho o volumen abajo: siguiente globo. Tercio izquierdo o volumen
+  arriba: el anterior. Tras el último, pasa de página; una página sin globos
+  pasa directa.
+- El globo sale **ampliado encima de la página, en su sitio**, con la página
+  oscurecida alrededor. Se recorta de la decodificación al triple, la del zoom,
+  para que no pixele.
+- El centro sigue sacando los controles y el doble toque sigue siendo el zoom.
+- **Fuera a propósito:** modo tira, doble página en horizontal y manga (derecha
+  a izquierda). Dani lee Marvel y DC.
+
+**Cómo está hecho, y por qué así (camino A de tres):**
+
+- **El OCR del sistema da cajas de texto**: ML Kit empaquetado en Android (~4 MB
+  por arquitectura según Google, y aquí solo hay una: `arm64-v8a`), `Vision` en
+  iOS (del sistema, 0 MB; `platform.Vision` viene ya en Kotlin/Native,
+  comprobado en su repositorio). Detrás de `DetectorTexto`.
+- **Lo que decide va en `commonMain/Bocadillos.kt` con pruebas**: juntar líneas
+  en grupos, sacar el contorno **rellenando desde el texto hasta el borde
+  oscuro**, descartar el texto cuyo relleno se escapa (onomatopeyas, carteles
+  del dibujo) y ordenar para leer. El OCR no sabe lo que es un globo; el relleno
+  sí lo distingue.
+- **Descartado B, `comic-text-detector`** (el del PDF): GPL-3.0, sin versión
+  publicada (el modelo está en Google Drive, tamaño sin comprobar), ONNX Runtime
+  en Android y CocoaPods o CoreML en iOS —`cinterop`, de donde salen todas las
+  vueltas del CI—, **y tampoco da el contorno del globo**: detecta texto,
+  entrenado un tercio con manga, un tercio con cómic de los 40 y un tercio
+  sintético. Si ML Kit no pilla la rotulación, B entra por la misma interfaz y
+  lo común se aprovecha entero.
+- **Descartado C**, solo relleno sin OCR: confunde cielos y fondos blancos con
+  globos.
+
+**Las tandas:** 28, sonda de diagnóstico (recuadros numerados pintados encima de
+la página, las líneas del OCR en otro color, para ver si falla el OCR o el
+contorno); 29, el zoom de verdad, la secuencia, el volumen, la caché por página
+y la forma exacta del globo en vez del recuadro; 30, `DetectorIOS` con `Vision`,
+escrito sin compilar.
+
+**Lo que nadie ha comprobado todavía:** que ML Kit detecte la rotulación a mano
+de un cómic. Para eso existe la tanda 28, y lo dice el móvil de Dani.

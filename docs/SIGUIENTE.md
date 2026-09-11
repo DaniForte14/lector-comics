@@ -9,6 +9,34 @@ propósito.
 
 ---
 
+## Donde se paro el 11/09/2026
+
+**Coordinador nuevo.** La tanda 27 quedo cerrada con el CI en verde (`0d0f437`).
+Dani **paro la fase 2 del port** para meter antes una cosa de Android: **el
+Bubble Zoom de Google Play Libros**, globo a globo. Diseño en `DISENO.md` §24,
+detalle en la tanda 28 de `CONTEXTO.md`.
+
+**LO QUE TOCA AHORA LO HACE DANI, Y ES DE ANDROID:** instalar, abrir un comic,
+tocar el centro y encender **"Bocadillos"** en la barra, y pasar unas veinte
+paginas de series distintas.
+
+| Lo que se ve | Que quiere decir |
+|---|---|
+| Cajas cian finas sobre la rotulacion | el OCR pilla las letras |
+| Ninguna cian sobre un globo con texto | falla el OCR: se cambia de detector (camino B) |
+| Cian, pero sin recuadro grueso numerado | falla el contorno: se tocan los numeros de `Bocadillos` |
+| Recuadro grueso sobre algo que no es globo | contorno demasiado generoso (`LINEAS_DE_MARGEN`, `TOLERANCIA`) |
+| Numeros en mal orden | el `ponytail:` de `Bocadillos.ordenar` |
+
+Y pegar el rastro (Ajustes > Diagnostico): las lineas `globos: pag N, OCR X ms,
+...` dicen el coste, y si aparece **`OCR falla`** es la trampa del `RGB_565`.
+
+Segun lo que salga: **tanda 29** (el zoom de verdad, la secuencia, el volumen, la
+cache y la forma exacta del globo), o cambiar de detector, o ajustar numeros. La
+**fase 2 del port** sigue esperando, con una pregunta abierta para Dani: en iOS,
+avisar con la app cerrada exige `BGAppRefreshTask` (Swift en `App.swift` y
+permisos en `project.yml`), y **cuando la despierta lo decide iOS**.
+
 ## Donde se paro el 07/09/2026
 
 **DANI HA DECIDIDO PORTAR LA APP ENTERA A iOS ANTES DE INSTALAR NADA.** Lo dijo

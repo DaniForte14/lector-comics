@@ -4625,7 +4625,71 @@ hay que escribir `import kotlin.concurrent.Volatile`, como ya hacen `ColorPortad
 y `ComicVine`. **Es la segunda vez**: `PortadasIOS` cayo en lo mismo en la 25.
 Lo bueno: el compilador de iOS solo dio esos dos errores, asi que
 `DiscoIOS.anadir` y `RecorteIOS`, que eran lo que se temia, **pasaron su
-analisis**.
+analisis**. **Y con el arreglo (`0d0f437`) el CI quedo en verde el
+11/09/2026**: los dos trabajos, las pruebas comunes corridas en el simulador y
+el artefacto `lector-ipa`. Compilar sigue sin ser funcionar: nadie lo ha
+arrancado.
+
+### Tanda 28: la sonda de los bocadillos, con dos agentes (11/09/2026)
+
+**Dani paro la fase 2 del port** ("vamos a modificar cosas de Android") y pidio
+**el Bubble Zoom de Google Play Libros**, exacto y que sirva en el iPad. El
+diseño, los tres caminos y por que se descarto `comic-text-detector` estan en
+`DISENO.md` §24. Esta tanda es **solo la sonda**: detectar y pintar, sin zoom.
+Coordinador nuevo; reparto de siempre, Paco en `:app` y Lucia en `commonMain`, y
+el contrato (`DetectorTexto` y la firma de `Bocadillos.globos`) escrito antes de
+repartir para que ninguno esperase al otro.
+
+**Paco — ML Kit y la sonda en el lector.** `text-recognition:16.0.1`,
+`DetectorAndroid` con un cliente perezoso y la `Task` pasada a corrutina a mano
+(sin `kotlinx-coroutines-play-services`). **`CancellationException` se relanza**:
+pasar de pagina cancela y eso no es un fallo del OCR. Cualquier otro fallo da
+lista vacia y una miga `OCR falla: <motivo>`. `VistaModelo.globosDe` pide la
+pagina a 1600 por la misma `pagina()` que pinta —asi el recorte es el mismo— y
+apunta en el rastro los ms del OCR y de los globos. En el lector, las lineas en
+cian y los globos numerados en el acento, **dentro del `graphicsLayer` del
+zoom** para que sigan a la pagina. Tres desvios aceptados: el conmutador es un
+texto como la estrella y no el `Interruptor` (no cabe en la barra); la escala
+tiene en cuenta el `ContentScale.Fit` y su centrado, **que en horizontal habria
+corrido los recuadros**; y el estado vive en un `remember` del `Visor` para que
+responda en el mismo fotograma.
+
+**Lucia — `Bocadillos.globos`, con 11 pruebas.** Agrupar por union-find (el
+hueco contra la linea MAS BAJA, para que un grito no se trague el texto de al
+lado); el color del globo es el claro dominante DENTRO de la caja del texto, no
+se supone blanco; relleno 4-conexo con pila explicita y un `ByteArray` del
+tamaño de la ventana, **cada pixel leido una sola vez** porque en Android es un
+`getPixel`; fusion por interseccion/union >= 0,8; orden por filas con su
+`ponytail:`. Dos reglas que no estaban en el encargo y valen: la ventana es la
+caja + la mitad de su lado mayor **+ 6 alturas de linea** (sin eso, dos bloques
+en el mismo globo se descartaban), y **el globo tiene que envolver su texto**
+(sin eso, las islas claras de un dibujo pasaban por globo). Las pruebas comparan
+el INTERIOR EXACTO del globo, no "hay uno".
+
+**LA TRAMPA DEL 565, cazada por Paco antes de que mordiera.** `ComicZip`
+decodifica en `RGB_565` todo lo que pase de 1200 de ancho, y la sonda pide 1600.
+Para el relleno esta cubierto: `TOLERANCIA = 60` aguanta los pasos de 8/4/8, y
+hay una prueba con el blanco cuantizado como lo hace Android. **Pero la prueba no
+sujeta el 60**: Lucia la probo a mano y falla con 8 y pasa con 12. Lo que NO se
+sabe es si `InputImage.fromBitmap` de ML Kit acepta un bitmap 565; si no, el
+rastro dira `OCR falla` en cada pagina, y el arreglo es copiar a ARGB en el
+detector o pedir la pagina por debajo de 1200.
+
+**Verificado:** los dos agentes por separado (`comprobar.py` en 0, las 11 pruebas
+por su filtro, `--tests "*NoExisteTest*"` sin pruebas y una asercion rota a
+proposito que falla), y el coordinador con los dos trabajos ya quietos —para no
+coger un fichero a medio editar—: `comprobar.py` en 0 y `:app:assembleDebug
+:shared:testDebugUnitTest --rerun-tasks` en verde, con un solo `w:`, el de
+compatibilidad KMP<->AGP de siempre. El recuento de pruebas no se leyo.
+
+**Sin verificar:** si ML Kit pilla la rotulacion a mano (para eso es la sonda, y
+lo dice el movil de Dani, ANDROID); los MB que añade al APK (a los dos agentes se
+les denego leer `build/`, y **si crece ~4 MB el modelo va dentro; si casi nada,
+lo baja Play services en el primer uso**, porque el arbol trae
+`play-services-mlkit-text-recognition` como transitiva); el coste real de un
+`getPixel` por pixel en un bloque sobre cielo; `TOLERANCIA`, `LINEAS_DE_MARGEN`
+y `CASI_IGUALES`, que salen de la cuenta y ninguna prueba sujeta; y
+`Bocadillos` en Kotlin/Native, que lo dice el CI.
 
 ### El motor de RAR para iOS: hay via, y se aplaza (07/09/2026)
 
@@ -4666,6 +4730,11 @@ saltar de pagina obliga a descomprimir desde el principio.
 
 ### Pendiente
 
+- **Mirar la sonda de los bocadillos en el movil (ANDROID)**: encender
+  "Bocadillos" en la barra del lector, pasar unas veinte paginas y pegar el
+  rastro. Que mirar, en la tabla de `SIGUIENTE.md`. De eso depende la tanda 29
+  o el cambio de detector. Y **medir el APK** con ML Kit dentro, que nadie ha
+  podido leer todavia.
 - **Portar la interfaz entera antes de instalar el `.ipa`**, decidido por Dani
   el 07/09/2026. Las fases, el mapa de los siete agujeros de plataforma y la
   unica dependencia nueva (`lifecycle-viewmodel-compose:2.8.4` de JetBrains)
