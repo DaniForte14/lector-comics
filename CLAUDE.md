@@ -50,14 +50,14 @@ python comprobar.py     # en la raíz. Tiene que decir PROBLEMAS: 0
 ./gradlew :app:assembleDebug :shared:testDebugUnitTest
 ```
 
-`comprobar.py` mira los dos módulos y caza cuatro roturas: llaves y paréntesis
-sin cerrar, **cuerpos huérfanos** (código suelto cuando un borrado corta por en
-medio de una función), bloques de comentario descuadrados, e imports de Android
-o de la JVM dentro de `commonMain`.
+`comprobar.py` solo mira una cosa: **imports de Android o de la JVM dentro de
+`commonMain`**. Es lo único que Gradle no caza desde Windows —el target de
+Android de `:shared` tiene la JVM en el classpath— y sin esto sale en el CI de
+iOS, una vuelta después. Hasta el 12/09/2026 miraba también llaves, cuerpos
+huérfanos y comentarios; Dani los quitó porque saltaban sobre ficheros a medio
+editar por los agentes, y Gradle los caza igual.
 
-> **`PROBLEMAS: 0` no significa "compila", significa "no están esas cuatro
-> roturas".** Quien dice si compila es Gradle. El 07/09/2026 dio 0 sobre un
-> fichero que no compilaba; por eso hay que pasar también el `gradlew`.
+> **`PROBLEMAS: 0` no significa "compila".** Quien dice si compila es Gradle.
 
 Y cruza los imports: **`private` a nivel de fichero es de FICHERO, no de
 paquete.** Dos ficheros del mismo paquete no se ven las funciones privadas del
