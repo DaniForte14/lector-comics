@@ -4999,6 +4999,113 @@ estaban en el PC, ni el color real de sus calles (la hipotesis la sujeta una
 prueba sintetica); la calle central de la doble pagina de Recharge; las tres
 paginas que bajan; y la sonda leia las paginas en 8888, no en el 565 del movil.
 
+**LO QUE DIJO EL MOVIL DE LA 31 (13/09/2026, 01:00)**, en Green Lantern
+Recharge #04:
+
+- **Ya se detectan viñetas**: pag. 5, 3 bandas (antes 1); pag. 6, dos viñetas
+  arriba y una abajo, con el orden bien. La 7 y la doble pagina (4), 1 viñeta.
+- **La pagina del "BIEN" sigue empezando por "BIEN"**, pero el rastro dice que
+  NO ES EL ORDEN: es la pag. 5 (las fracciones del ancho de los globos casan con
+  la captura: 233/1024 = "ES MIEDO", 918/1024 = "¿TIBIO?"...) y en su lista de
+  12 globos **faltan justo "SI NOS PEGAMOS..." y "TIENEN INTELIGENCIA..."**, los
+  dos de arriba a la izquierda. No se detectan, y el primero que queda es
+  "BIEN". Hipotesis sin comprobar: estan pegados al borde de arriba y la regla
+  "tocar el borde de la pagina es escaparse" los descarta.
+- **Dobles paginas, regla de Dani**: se leen POR NIVELES a lo ancho de toda la
+  doble pagina —de izquierda a derecha, y se baja—, no mitad izquierda y luego
+  derecha. La guillotina ya corta primero en horizontal, que es eso; lo que
+  falla es que en la pag. 4 no encuentra ni una calle.
+- Las viñetas cuestan ahora 13-30 ms por pagina en el movil (debug), frente a
+  0-2 cuando no encontraban nada.
+- CI verde en `df3d61f`: las viñetas nuevas compilan en Kotlin/Native y sus
+  pruebas pasan en el simulador de iOS.
+
+Las dos cosas estan bloqueadas por lo mismo: **sin el CBZ en el PC solo se puede
+adivinar**, y la tanda 31 demostro que medir sobre la pagina real lo resuelve.
+
+### Tanda 32: medido sobre Recharge #04 y Absolute Batman #01 (13/09/2026)
+
+Dani copio los dos CBZ a `Descargas`. Lo medido por Lucia antes de arreglar:
+
+- **EL MOVIL TIENE PUESTO "RECORTAR"**: la pag. 5 del rastro (1024x1627 y sus
+  3 viñetas exactas) solo sale asi pasando antes por `Recorte.util`. Cualquier
+  sonda que quiera reproducir lo que ve el movil tiene que recortar igual.
+- **LA DOBLE PAGINA (pag. 4) NO TIENE NI UNA FILA LISA NEUTRA A LO ANCHO.** Sus
+  calles son DIAGONALES —la banda de "CAZADOS", los creditos, las viñetas de
+  abajo inclinadas— y la mitad de arriba es un dibujo a sangre de lado a lado.
+  La guillotina no puede cortarla y se acepta: se queda en 1 viñeta. Lo que se
+  arregla es el orden SIN viñetas: en el rastro las filas se ENCADENAN por los
+  globos altos (el globo en y=550 sale detras de los de y=767 y y=1115), y la
+  regla de Dani es leer por niveles, de izquierda a derecha y bajando.
+
+**Las causas, medidas con el motivo exacto de cada descarte:**
+
+- **Recharge pag. 5, los dos globos que faltaban: NO era el borde ni el
+  recorte.** Estan UNIDOS POR UN PICO (son del mismo personaje) y juntos miden
+  ~550 px, mas que la ventana de cualquiera de sus dos bloques: cada relleno se
+  escapaba por un lado. Arreglo: la ventana de un bloque se ensancha a la de
+  cada bloque vecino cuya caja cae dentro de ella, una vez y no en cadena.
+- **Batman pags. 5 y 17**: el relleno se escapa por un PASILLO de calle blanca
+  de 3-4 px que queda dentro de la viñeta detectada, porque la esquina del marco
+  o un globo que se sale de el manchan las primeras columnas de la calle y
+  `Vinetas`, que no perdona un pixel, lleva el borde hasta pasarlas.
+- **Batman pag. 3**: la doble pagina del titulo, rotulo sobre dibujo. 0 globos
+  es lo correcto.
+- **El orden de la doble pagina**: una fila de `ordenar` ya no crece con los
+  globos que entran; un globo entra si EMPIEZA a la altura del primero.
+
+**DECISION DEL COORDINADOR: los globos se buscan en la pagina SIN RECORTAR.**
+Con "recortar" puesto, un globo que rompe el marco hacia el margen acaba tocando
+el borde de la imagen recortada, y la regla de la tanda 28 lo descarta (Batman
+pag. 17). Se descarto contar el borde de pagina como calle, porque un cielo
+abierto por el borde pasaria por globo, y aceptar la perdida, porque los globos
+que rompen el marco son habituales. `VistaModelo` (Paco) analiza sin recorte y
+traslada las coordenadas al recorte, que es lo que se pinta.
+
+**Lucia — el metodo**: sonda JVM sobre las paginas reales escaladas como el
+movil, con las cajas del OCR PUESTAS A MANO (leidas de recortes ampliados con
+rejilla: en el PC no hay ML Kit) y un aviso temporal en cada `return null` para
+saber en que paso cae cada bloque. Todo quitado al cerrar.
+
+- **Recharge pag. 5**: la ventana de un bloque se ensancha a la de cada bloque
+  vecino cuya caja cae dentro, una vez y no en cadena (en cadena, una pagina
+  llena de texto acabaria con una ventana del tamaño de la viñeta). **1 globo
+  -> 2**: la pareja unida como uno, con su pico, y "BIEN"; en ese orden.
+- **El pasillo de Batman**, visto ampliado y pintado en rojo: el marco acaba en
+  x=339, su esquina redondeada mancha 340-342, `Vinetas` lleva el borde a 343 y
+  queda un pasillo blanco de arriba abajo. Arreglo en `Bocadillos`, sin tocar
+  `Vinetas`: en una franja pegada a un lado de calle (max(4, linea/2) px) el
+  relleno solo avanza HACIA la calle, nunca a lo largo. **Batman pag. 5: 0 -> 2
+  globos** (el texto de los cuatro, dentro; tres salen como uno porque sus
+  blancos estan unidos por dentro, y **"ERES UN GIGANTE" se enseña despues de
+  "CIERTO..."**: una union no se separa con el relleno). **Pag. 17: 1 -> 3 sin
+  recorte**; con recorte, 2, porque "SEIS MAS..." toca el borde: lo que resuelve
+  la decision de arriba.
+- **Doble pagina**: la fila de `ordenar` ya no crece con cada globo que entra; un
+  globo entra si su parte de arriba no se aparta mas de media altura de la del
+  primero. Es la regla de Dani, por niveles, y vale tambien sin viñetas.
+- Tres pruebas nuevas; cada mutacion (sin ensanchar la ventana, sin la franja,
+  filas que crecen) tumba SOLO la suya, 1 de 36.
+
+**Sin verificar**: el orden nuevo sobre la doble pagina real (sin OCR en el PC no
+estan sus 82 lineas: lo dira el rastro del movil); las cajas de ML Kit seran
+parecidas a las puestas a mano, no iguales; de Recharge pag. 5 y Batman pag. 17
+solo se probaron los globos del encargo; y un pasillo mas ancho que max(4,
+linea/2) seguiria escapandose.
+
+**Paco — los globos sobre la pagina sin recortar.** `calcularGlobos` pide la de
+1600 con `recortar = false`, saca el recuadro del recorte de ESA misma imagen
+(`RecorteAndroid.recuadro`, partido de `aplicar` sin cambiar lo que se ve) y
+traslada los globos con `globosEnRecorte` (comun, en `EncuadreGlobo.kt`, 4
+pruebas). La trampa de la cache NO se daba: `ComicZip` ya pone `|r` en la clave
+de las recortadas. **`globosEnRecorte` traslada Y ACOTA**: el trozo de un globo
+que rompe el marco hacia el margen no existe en la pagina recortada (ni en
+pantalla ni en el detalle), y solo restando saldria un `izq` negativo y el globo
+ampliado ESTIRADO. Un globo entero en el margen desaparece, y la miga lo cuenta.
+El rastro dice ahora `recorte (izq,arriba,ancho x alto)` o `sin recorte`, y
+`orden:` y `viñetas:` van ya en la pagina recortada. Por pagina siguen las mismas
+tres decodificaciones grandes que en la 29.
+
 ### El motor de RAR para iOS: hay via, y se aplaza (07/09/2026)
 
 Dani eligio **buscar un motor de RAR nativo** en vez de dejar el CBR fuera del

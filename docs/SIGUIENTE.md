@@ -21,9 +21,24 @@ midiendo sobre 96 paginas reales de Daredevil y Green Lantern (detalle en
 
 **Lo que toca, y es de Dani (ANDROID):** abrir Green Lantern Recharge #04 con
 "Bocadillos" y mirar la pagina que empezaba por "BIEN". Si sigue mal, pegar el
-rastro: la linea `viñetas` dira si ya se detectan. Y, si puede, copiar
-`313 - Green Lantern Corps Recharge #04.cbz` y `Absolute Batman #01.cbz` a
-`Descargas` del PC, para medir sobre esas mismas paginas.
+rastro: la linea `viñetas` dira si ya se detectan. **Ya lo miro, y no era el orden**: en la pag. 5 faltan los
+dos globos de arriba a la izquierda (ver `CONTEXTO.md`, lo que dijo el movil de
+la 31). Dani copio los dos CBZ a `Descargas` y la **tanda 32** (Lucia) mide
+sobre esas paginas por que se pierden esos globos y por que la doble pagina no
+tiene calles. Regla de Dani para las dobles: se leen por niveles a lo ancho de
+toda la doble pagina.
+
+**Cuando se cierre la 32, lo que tiene que mirar Dani (ANDROID):**
+
+| Donde | Que tiene que pasar |
+|---|---|
+| Recharge #04, pag. 5 | empieza por la pareja de arriba a la izquierda ("SI NOS PEGAMOS..." + "TIENEN INTELIGENCIA..."), unida como un globo, y luego "BIEN" |
+| Recharge #04, pag. 4 (doble) | el orden va por niveles: de izquierda a derecha y bajando |
+| Absolute Batman #01, pag. 5 | salen los globos de la viñeta de abajo a la izquierda (tres unidos como uno; "ERES UN GIGANTE" va despues de "CIERTO...", y se sabe) |
+| Absolute Batman #01, pag. 17 | salen tres globos arriba, incluido "SEIS MAS FUERON ASESINADOS HOY", que rompe el marco |
+
+Si algo falla, pegar el rastro: la miga de cada pagina dice ahora si hubo
+`recorte (...)` y cuantos globos, y `orden:`/`viñetas:` van en la pagina que se ve.
 
 ## Donde se paro el 11/09/2026
 
