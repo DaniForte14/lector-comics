@@ -59,7 +59,9 @@ object Bocadillos {
      * son para el caso que no sale del tamaño del bloque: DOS bloques de texto
      * en el mismo globo, donde el globo se extiende desde uno hasta mas alla
      * del otro. Basta con que uno de los dos lo alcance: la fusion se encarga
-     * del resto.
+     * del resto. Y si no lo alcanza ninguno —dos globos unidos, cada uno con
+     * su bloque—, la ventana se ensancha a la de sus bloques vecinos: ver
+     * `globoDe`.
      *
      * Es un numero para tocar mirando la sonda, en las dos direcciones: si sale
      * pequeño, se descartan globos de verdad por tocar la ventana; si sale
@@ -135,8 +137,10 @@ object Bocadillos {
         if (dentro.isEmpty()) return emptyList()
         val pagina = Recuadro(0, 0, ancho, alto)
 
+        val bloques = agrupar(dentro)
+        val ventanas = bloques.map { b -> envolvente(b).let { c -> c to ventanaDe(c, b.maxOf { it.alto }) } }
         val encontrados = mutableListOf<Pair<Int, Globo>>()
-        for (bloque in agrupar(dentro)) {
+        for (bloque in bloques) {
             val caja = envolvente(bloque)
             val suya = vinetaQueContiene(caja, vinetas)
             // EL TEXTO QUE NO CAE EN NINGUNA VIÑETA —un globo en el margen de
@@ -146,7 +150,7 @@ object Bocadillos {
             // que esta en el margen: se queda como antes de las viñetas.
             val orden = if (suya >= 0) suya else vinetaMasCercana(caja, vinetas)
             val marco = if (suya >= 0) vinetas[suya] else pagina
-            val globo = globoDe(bloque, dentro, marco, ancho, alto, pixel) ?: continue
+            val globo = globoDe(bloque, dentro, ventanas, marco, ancho, alto, pixel) ?: continue
             val i = encontrados.indexOfFirst { casiIguales(it.second.recuadro, globo.recuadro) }
             if (i < 0) encontrados += orden to globo
             else encontrados[i] = minOf(encontrados[i].first, orden) to fusionar(encontrados[i].second, globo)
@@ -161,6 +165,15 @@ object Bocadillos {
     private fun enLaPagina(lineas: List<Recuadro>, ancho: Int, alto: Int) = lineas
         .map { Recuadro(maxOf(0, it.izq), maxOf(0, it.arriba), minOf(ancho, it.der), minOf(alto, it.abajo)) }
         .filter { it.ancho > 0 && it.alto > 0 }
+
+    /** La ventana de un bloque sin recortar a nada: su caja, ampliada lo que dice [LINEAS_DE_MARGEN]. */
+    private fun ventanaDe(caja: Recuadro, linea: Int): Recuadro {
+        val m = maxOf(caja.ancho, caja.alto) / 2 + LINEAS_DE_MARGEN * linea
+        return Recuadro(caja.izq - m, caja.arriba - m, caja.der + m, caja.abajo + m)
+    }
+
+    private fun seTocan(a: Recuadro, b: Recuadro) =
+        a.izq < b.der && b.izq < a.der && a.arriba < b.abajo && b.arriba < a.abajo
 
     /** La viñeta que contiene el centro de [caja], o -1 si ninguna. */
     private fun vinetaQueContiene(caja: Recuadro, vinetas: List<Recuadro>): Int {
@@ -224,19 +237,31 @@ object Bocadillos {
      * pixeles, y en recursivo eso es otras tantas llamadas anidadas.
      */
     private fun globoDe(
-        bloque: List<Recuadro>, todas: List<Recuadro>, marco: Recuadro,
-        ancho: Int, alto: Int, pixel: (x: Int, y: Int) -> Int
+        bloque: List<Recuadro>, todas: List<Recuadro>, ventanas: List<Pair<Recuadro, Recuadro>>,
+        marco: Recuadro, ancho: Int, alto: Int, pixel: (x: Int, y: Int) -> Int
     ): Globo? {
         val caja = envolvente(bloque)
         val fondo = claroDominante(caja, pixel) ?: return null
 
         val linea = bloque.maxOf { it.alto }
-        val margen = maxOf(caja.ancho, caja.alto) / 2 + LINEAS_DE_MARGEN * linea
+        // DOS GLOBOS UNIDOS POR UN PICO pueden medir mas que la ventana de
+        // cualquiera de sus dos bloques, y entonces los dos se escapan, cada uno
+        // por su lado. Medido en Green Lantern Corps Recharge #04, pag. 5: dos
+        // globos del mismo personaje, unidos, de unos 550 px entre los dos, y
+        // ninguno de los dos salia. Por eso la ventana se ensancha a la de cada
+        // bloque vecino cuya caja cae dentro de ella. Una vez y no en cadena:
+        // en una pagina llena de texto, encadenando, la ventana acabaria siendo
+        // la viñeta entera.
+        val propia = ventanaDe(caja, linea)
+        var amplia = propia
+        for ((otraCaja, otraVentana) in ventanas) {
+            if (otraCaja != caja && seTocan(otraCaja, propia)) amplia = envolvente(listOf(amplia, otraVentana))
+        }
         // La ventana se recorta a la viñeta, y la viñeta ya esta dentro de la
         // pagina.
         val v = Recuadro(
-            maxOf(marco.izq, caja.izq - margen), maxOf(marco.arriba, caja.arriba - margen),
-            minOf(marco.der, caja.der + margen), minOf(marco.abajo, caja.abajo + margen)
+            maxOf(marco.izq, amplia.izq), maxOf(marco.arriba, amplia.arriba),
+            minOf(marco.der, amplia.der), minOf(marco.abajo, amplia.abajo)
         )
         if (v.ancho <= 0 || v.alto <= 0) return null
         val an = v.ancho
@@ -253,6 +278,16 @@ object Bocadillos {
         val calleArriba = v.arriba == marco.arriba && marco.arriba > 0
         val calleDer = v.der == marco.der && marco.der < ancho
         val calleAbajo = v.abajo == marco.abajo && marco.abajo < alto
+        // LA VIÑETA DETECTADA ACABA UNOS PIXELES DENTRO DE LA CALLE: la esquina
+        // redondeada de un marco, o un globo que se sale de el, mancha las
+        // primeras lineas de la calle, y [Vinetas], que no perdona ni un pixel,
+        // lleva el borde hasta pasarlas. Queda un pasillo blanco de 3 o 4 px por
+        // dentro del borde, y un globo que toca la calle se escapaba por el hasta
+        // el fondo de la ventana (medido en Absolute Batman #01, pags. 5 y 17).
+        // Por eso, en esta franja pegada a un lado de calle, el relleno solo
+        // avanza HACIA la calle y nunca a lo largo: el globo sigue llegando hasta
+        // el borde, y el pasillo, que corre paralelo al borde, no se recorre.
+        val franja = maxOf(4, linea / 2)
 
         // Del tamaño de la ventana y no de la pagina: es lo que acota la memoria.
         val estado = ByteArray(an * v.alto)
@@ -294,7 +329,18 @@ object Bocadillos {
                 if (x > der) der = x
                 if (y < arriba) arriba = y
                 if (y > abajo) abajo = y
-                mirar(x - 1, y); mirar(x + 1, y); mirar(x, y - 1); mirar(x, y + 1)
+                val enIzq = calleIzq && x < v.izq + franja
+                val enDer = calleDer && x >= v.der - franja
+                val enArriba = calleArriba && y < v.arriba + franja
+                val enAbajo = calleAbajo && y >= v.abajo - franja
+                if (enIzq || enDer || enArriba || enAbajo) {
+                    if (enIzq) mirar(x - 1, y)
+                    if (enDer) mirar(x + 1, y)
+                    if (enArriba) mirar(x, y - 1)
+                    if (enAbajo) mirar(x, y + 1)
+                } else {
+                    mirar(x - 1, y); mirar(x + 1, y); mirar(x, y - 1); mirar(x, y + 1)
+                }
             }
         }
         if (der < 0) return null
@@ -652,10 +698,19 @@ object Bocadillos {
      * y, dentro de cada fila, de izquierda a derecha. Entre viñetas manda el
      * orden de [Vinetas].
      *
-     * Un globo entra en la fila si comparte con ella al menos la mitad de su
-     * altura (o de la de la fila, si es mas baja). Con que se tocaran bastaria
-     * para meter en la misma fila el globo que sube unos pixeles, y la fila se
-     * iria encadenando hasta el final de la viñeta.
+     * POR NIVELES, que es la regla de Dani para las dobles paginas y vale para
+     * todo: se empieza por la izquierda, se va hasta la derecha y se baja. Un
+     * globo entra en la fila si EMPIEZA a la altura de la fila: si su parte de
+     * arriba no se separa de la del primero de la fila mas de media altura del
+     * mas bajo de los dos.
+     *
+     * Hasta la tanda 32 entraba si SOLAPABA con la fila, y la fila crecia con
+     * cada globo que entraba. En la doble pagina de Green Lantern Corps
+     * Recharge eso se vio en el movil: un globo alto estiraba la fila hacia
+     * abajo y arrastraba a otros de mas abajo, que al ordenar la fila de
+     * izquierda a derecha salian antes que los de su altura (el de la altura
+     * 550 detras de los de la 767 y la 1115). Comparando solo con el primero,
+     * un globo alto se lee en su nivel y ya no arrastra a nadie.
      *
      * ponytail: filas dentro de la viñeta y nada mas. Si [Vinetas] no ha podido
      * cortar —calles en diagonal, una pagina a sangre— esto vuelve a ser la
@@ -664,19 +719,14 @@ object Bocadillos {
      */
     private fun ordenar(globos: List<Globo>): List<Globo> {
         val filas = mutableListOf<MutableList<Globo>>()
-        var arriba = 0
-        var abajo = 0
         for (g in globos.sortedWith(compareBy({ it.recuadro.arriba }, { it.recuadro.izq }))) {
             val r = g.recuadro
             val fila = filas.lastOrNull()
-            val solape = minOf(r.abajo, abajo) - maxOf(r.arriba, arriba)
-            if (fila != null && solape * 2 >= minOf(r.alto, abajo - arriba)) {
+            val primero = fila?.first()?.recuadro
+            if (fila != null && primero != null && (r.arriba - primero.arriba) * 2 <= minOf(r.alto, primero.alto)) {
                 fila += g
-                abajo = maxOf(abajo, r.abajo)
             } else {
                 filas += mutableListOf(g)
-                arriba = r.arriba
-                abajo = r.abajo
             }
         }
         return filas.flatMap { fila -> fila.sortedBy { it.recuadro.izq } }

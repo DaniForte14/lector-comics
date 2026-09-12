@@ -185,6 +185,51 @@ class BocadillosTest {
         assertTrue(p.lecturas < 1000 * 1000 / 10, "se leyeron ${p.lecturas} pixeles")
     }
 
+    @Test fun `las filas no se encadenan por un globo alto`() {
+        // La doble pagina de Green Lantern Corps Recharge, en el movil: sin
+        // viñetas, un globo alto estiraba la fila hacia abajo y arrastraba a
+        // otro de mas abajo, que al ordenar la fila de izquierda a derecha salia
+        // antes que el de su altura. Aqui T es alto, C empieza a su altura a la
+        // derecha y D esta mas abajo, entre los dos: por niveles es T, C, D; con
+        // la regla vieja salia T, D, C.
+        val p = Pagina(1000, 800, DIBUJO)
+        p.globo(100, 50, 300, 150)
+        p.globo(700, 60, 900, 160)
+        p.globo(150, 250, 350, 700)
+        p.globo(600, 280, 800, 340)
+        p.globo(450, 600, 650, 660)
+        val lineas = listOf(
+            p.linea(150, 94, 250, 106),
+            p.linea(750, 104, 850, 116),
+            p.linea(650, 304, 750, 316),
+            p.linea(500, 624, 600, 636)
+        ) + (270..680 step 20).map { p.linea(200, it, 300, it + 12) }
+        assertEquals(
+            listOf(
+                Recuadro(100, 50, 300, 150), Recuadro(700, 60, 900, 160),
+                Recuadro(150, 250, 350, 700), Recuadro(600, 280, 800, 340),
+                Recuadro(450, 600, 650, 660)
+            ),
+            p.globos(lineas)
+        )
+    }
+
+    @Test fun `dos globos unidos mas anchos que la ventana de cada bloque salen como uno`() {
+        // Green Lantern Corps Recharge #04, pag. 5: dos globos del mismo
+        // personaje unidos por un pico, cada uno con su bloque de texto. La
+        // union mide 330 px y la ventana de cada bloque, unos 260: sin
+        // ensanchar la ventana a la del vecino, los dos rellenos se salian por
+        // su lado y no salia ninguno.
+        val p = Pagina(500, 250, DIBUJO)
+        p.globo(60, 60, 200, 140)
+        p.globo(230, 50, 390, 150)
+        p.rect(198, 85, 232, 115, NEGRO)
+        p.rect(198, 87, 232, 113, BLANCO)
+        val a = p.linea(80, 94, 140, 106)
+        val b = p.linea(235, 94, 295, 106)
+        assertEquals(listOf(Recuadro(60, 50, 390, 150)), p.globos(listOf(a, b)))
+    }
+
     // --- Las viñetas ---------------------------------------------------------
 
     @Test fun `en una fila de tres vinetas el globo alto de la derecha va el ultimo`() {
@@ -254,6 +299,23 @@ class BocadillosTest {
         assertEquals(esperado, p.globosEn(listOf(pequeno, primero, segundo), vinetas))
         // Y con las viñetas que encuentre la pagina sola, el mismo orden.
         assertEquals(esperado, p.globos(listOf(pequeno, primero, segundo)))
+    }
+
+    @Test fun `un globo que rompe el marco no se escapa por el pasillo de calle de dentro de la vineta`() {
+        // Absolute Batman #01, pags. 5 y 17, medido: la viñeta detectada acaba 3
+        // px dentro de la calle blanca, porque la esquina del marco o un globo
+        // que se sale de el manchan las primeras columnas de la calle. Aqui, la
+        // viñeta va hasta la 203 y el marco acaba en la 199: un pasillo blanco de
+        // 200 a 202, de arriba abajo. El globo rompe el marco por la esquina de
+        // arriba a la derecha y toca ese pasillo; antes bajaba por el hasta el
+        // fondo de la ventana y se descartaba. Ahora sale, cortado en la viñeta.
+        val p = Pagina(400, 300, BLANCO)
+        p.rect(10, 10, 200, 200, NEGRO)
+        p.rect(13, 13, 197, 197, DIBUJO)
+        p.rect(120, 13, 200, 70, NEGRO)
+        p.rect(123, 10, 203, 67, BLANCO)
+        val l = p.linea(140, 34, 190, 46)
+        assertEquals(listOf(Recuadro(121, 10, 203, 69)), p.globosEn(listOf(l), listOf(Recuadro(10, 10, 203, 200))))
     }
 
     // --- El contorno ---------------------------------------------------------

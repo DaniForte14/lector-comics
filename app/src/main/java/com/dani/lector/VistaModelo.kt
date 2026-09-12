@@ -23,6 +23,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Deferred
+import com.dani.lector.ui.globosEnRecorte
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.graphics.asAndroidBitmap
 
@@ -382,43 +383,61 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
      */
     private suspend fun calcularGlobos(uri: String, nombre: String, num: Int): Globos? {
         val resultado = try {
-            pagina(uri, nombre, 1600)?.let { img ->
+            // SIN RECORTAR aunque la pantalla pinte la pagina recortada (tanda
+            // 32): con el recorte, un globo que rompe el marco hacia el margen
+            // toca el borde de la imagen y Bocadillos lo descarta, porque tocar
+            // el borde es escaparse. Se analiza entera y abajo se traslada. La
+            // cache de ComicZip distingue las dos: su clave lleva "|r".
+            archivo.pagina(uri, nombre, 1600, false)?.let { img ->
                 val t0 = System.currentTimeMillis()
                 val lineas = detector.lineas(img)
                 val t1 = System.currentTimeMillis()
                 // getPixel sobre el Bitmap, NO la pagina copiada a un IntArray:
                 // 1600x2400 son 15 MB de enteros para mirar unos cientos de pixeles.
                 val bmp = img.asAndroidBitmap()
-                val globos = Bocadillos.globos(lineas, bmp.width, bmp.height) { x, y ->
+                val enteros = Bocadillos.globos(lineas, bmp.width, bmp.height) { x, y ->
                     bmp.getPixel(x, y)
                 }
                 val t2 = System.currentTimeMillis()
-                Rastro.apunta("  globos: pág $num, OCR ${t1 - t0} ms, globos " +
-                    "${t2 - t1} ms, ${lineas.size} líneas, ${globos.size} globos")
 
-                // DIAGNOSTICO DEL ORDEN (tanda 30), para quitar cuando se sepa.
-                // Una pagina empezo por un globo pequeño de arriba a la derecha
-                // en vez de por los dos de arriba a la izquierda, que estan mas
-                // altos, y la sospecha es el reparto por viñetas. Antes de tocar
-                // la regla hay que verlo: el centro de cada globo en el orden en
-                // que sale, y las viñetas que se detectaron, en pixeles de ESTA
-                // imagen. Las viñetas se vuelven a calcular aqui porque
-                // Bocadillos no las devuelve; van con sus propios ms para no
-                // ensuciar los de arriba.
+                // Y a la pagina RECORTADA, que es la que se pinta y de la que sale
+                // el detalle: con los globos en sus coordenadas, GloboAmpliado y
+                // el encuadre siguen igual. El recorte se decide sobre ESTA imagen
+                // y con la misma regla que ComicZip aplica a lo que se ve.
+                val recorte = if (recortar) RecorteAndroid.recuadro(bmp) else null
+                val globos = if (recorte == null) enteros else globosEnRecorte(enteros, recorte)
+                val ancho = recorte?.ancho ?: bmp.width
+                val alto = recorte?.alto ?: bmp.height
+                Rastro.apunta("  globos: pág $num, OCR ${t1 - t0} ms, globos " +
+                    "${t2 - t1} ms, ${lineas.size} líneas, ${globos.size} globos" +
+                    (if (globos.size < enteros.size)
+                        " (${enteros.size - globos.size} enteros en el margen)" else "") +
+                    ", " + (recorte?.let { "recorte (${it.izq},${it.arriba},${it.ancho}x${it.alto})" }
+                        ?: "sin recorte"))
+
+                // DIAGNOSTICO DEL ORDEN (tanda 30), para quitar cuando se sepa:
+                // el centro de cada globo en el orden en que sale, y las viñetas
+                // que se detectaron. Todo YA en la pagina recortada, que es la
+                // que se ve. Las viñetas se vuelven a calcular porque Bocadillos
+                // no las devuelve, con sus propios ms para no ensuciar los de
+                // arriba.
                 Rastro.apunta("    orden: " + globos.mapIndexed { i, g ->
                     val r = g.recuadro
                     "${i + 1}(${(r.izq + r.der) / 2},${(r.arriba + r.abajo) / 2})"
                 }.joinToString(" "))
+                val t3 = System.currentTimeMillis()
                 val vinetas = Vinetas.de(bmp.width, bmp.height) { x, y -> bmp.getPixel(x, y) }
-                Rastro.apunta("    viñetas (${System.currentTimeMillis() - t2} ms, " +
-                    "${bmp.width}x${bmp.height}): " +
+                val dx = recorte?.izq ?: 0
+                val dy = recorte?.arriba ?: 0
+                Rastro.apunta("    viñetas (${System.currentTimeMillis() - t3} ms, " +
+                    "${ancho}x${alto}): " +
                     // Numeradas en el orden en que Bocadillos las recorre: un
                     // globo que no cae en ninguna va detras de todas.
                     vinetas.mapIndexed { i, v ->
-                        "v${i + 1}[${v.izq},${v.arriba}-${v.der},${v.abajo}]"
+                        "v${i + 1}[${v.izq - dx},${v.arriba - dy}-${v.der - dx},${v.abajo - dy}]"
                     }.joinToString(" "))
 
-                Globos(bmp.width, bmp.height, globos)
+                Globos(ancho, alto, globos)
             }
         } catch (e: CancellationException) {
             throw e

@@ -2,6 +2,9 @@ package com.dani.lector.ui
 
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import com.dani.lector.datos.Globo
+import com.dani.lector.datos.Punto
+import com.dani.lector.datos.Recuadro
 
 // Las cuentas del globo ampliado. En comun y no en el lector de Android por dos
 // razones: deciden algo con casos de borde, y eso en este proyecto va en una
@@ -63,3 +66,30 @@ fun encuadreGlobo(enPagina: Rect, pantalla: Size): Rect {
         else enPagina.center.y.coerceIn(alto / 2, pantalla.height - alto / 2)
     return Rect(cx - ancho / 2, cy - alto / 2, cx + ancho / 2, cy + alto / 2)
 }
+
+/**
+ * Los globos de la pagina SIN recortar, pasados a la RECORTADA, que es la que
+ * se pinta y de la que se saca el detalle. Con eso GloboAmpliado y el encuadre
+ * siguen igual: trabajan por proporcion sobre la pagina que se ve.
+ *
+ * Por que hace falta (tanda 32): con el recorte puesto, un globo que rompe el
+ * marco hacia el margen tocaba el borde de la imagen recortada, y Bocadillos lo
+ * descartaba, porque tocar el borde de la pagina es escaparse (la regla que
+ * evita que un cielo pase por globo). Asi que se analiza la pagina entera y se
+ * traslada aqui.
+ *
+ * ACOTADO AL RECORTE, no solo trasladado: el trozo de globo que caia en el
+ * margen ya no existe en la pagina recortada, ni en pantalla ni en el detalle.
+ * Sin acotar, el recuadro se saldria de la imagen y el globo ampliado se
+ * estiraria para rellenar lo que falta. Un globo que cae ENTERO en el margen
+ * desaparece: en pantalla tampoco se ve.
+ */
+fun globosEnRecorte(globos: List<Globo>, recorte: Recuadro): List<Globo> =
+    globos.mapNotNull { g ->
+        fun x(v: Int) = (v - recorte.izq).coerceIn(0, recorte.ancho)
+        fun y(v: Int) = (v - recorte.arriba).coerceIn(0, recorte.alto)
+        val r = g.recuadro
+        val dentro = Recuadro(x(r.izq), y(r.arriba), x(r.der), y(r.abajo))
+        if (dentro.ancho <= 0 || dentro.alto <= 0) null
+        else Globo(dentro, g.contorno.map { Punto(x(it.x), y(it.y)) })
+    }

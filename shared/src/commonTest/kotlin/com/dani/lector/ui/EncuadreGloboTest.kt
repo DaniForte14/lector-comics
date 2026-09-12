@@ -2,6 +2,9 @@ package com.dani.lector.ui
 
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import com.dani.lector.datos.Globo
+import com.dani.lector.datos.Punto
+import com.dani.lector.datos.Recuadro
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -90,5 +93,39 @@ class EncuadreGloboTest {
         // La proporcion llega cuando la pagina ya se ha decodificado; hasta
         // entonces es 0 y no puede dividir.
         assertEquals(1f, escalaBase(true, 2.2f, 1, 0f))
+    }
+
+    // ── globosEnRecorte: de la pagina entera a la recortada ──
+
+    /** Un recorte de 1000 x 1500 que se come 100 por la izquierda y 50 por arriba. */
+    private val recorte = Recuadro(100, 50, 1100, 1550)
+
+    private fun cuadrado(izq: Int, arriba: Int, der: Int, abajo: Int) = Globo(
+        Recuadro(izq, arriba, der, abajo),
+        listOf(Punto(izq, arriba), Punto(der, arriba), Punto(der, abajo), Punto(izq, abajo))
+    )
+
+    @Test fun `el recorte traslada el recuadro y el contorno`() {
+        val t = globosEnRecorte(listOf(cuadrado(300, 250, 500, 350)), recorte).single()
+        assertEquals(Recuadro(200, 200, 400, 300), t.recuadro)
+        assertEquals(
+            listOf(Punto(200, 200), Punto(400, 200), Punto(400, 300), Punto(200, 300)),
+            t.contorno)
+    }
+
+    @Test fun `un globo que rompe el marco hacia el margen se corta por el borde del recorte`() {
+        // Asoma 60 px por la izquierda: justo lo que se comio el margen.
+        val t = globosEnRecorte(listOf(cuadrado(40, 400, 240, 500)), recorte).single()
+        assertEquals(Recuadro(0, 350, 140, 450), t.recuadro)
+        assertTrue(t.contorno.all { it.x in 0..recorte.ancho }, "el contorno no sale del recorte")
+    }
+
+    @Test fun `por la derecha y por abajo se acota igual`() {
+        val t = globosEnRecorte(listOf(cuadrado(1000, 1500, 1200, 1600)), recorte).single()
+        assertEquals(Recuadro(900, 1450, 1000, 1500), t.recuadro)
+    }
+
+    @Test fun `un globo entero en el margen desaparece`() {
+        assertTrue(globosEnRecorte(listOf(cuadrado(0, 0, 90, 40)), recorte).isEmpty())
     }
 }

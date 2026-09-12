@@ -12,7 +12,15 @@ import android.graphics.Bitmap
  */
 object RecorteAndroid {
 
-    fun aplicar(b: Bitmap): Bitmap {
+    /**
+     * El trozo que se queda, o null si no sobra nada.
+     *
+     * Aparte de [aplicar] porque los globos lo necesitan SIN cortar (tanda 32):
+     * se analizan en la pagina entera —si no, un globo que rompe el marco hacia
+     * el margen toca el borde y se descarta— y luego se trasladan a la
+     * recortada con este mismo recuadro.
+     */
+    fun recuadro(b: Bitmap): Recuadro? {
         val an = b.width
         val al = b.height
 
@@ -25,9 +33,13 @@ object RecorteAndroid {
         val r = Recorte.util(an, al,
             { y -> b.getPixels(fila, 0, an, 0, y, an, 1); fila },
             { x -> b.getPixels(columna, 0, 1, x, 0, 1, al); columna }
-        ) ?: return b
+        ) ?: return null
 
-        if (r.ancho >= an && r.alto >= al) return b
+        return if (r.ancho >= an && r.alto >= al) null else r
+    }
+
+    fun aplicar(b: Bitmap): Bitmap {
+        val r = recuadro(b) ?: return b
         return runCatching {
             Bitmap.createBitmap(b, r.izq, r.arriba, r.ancho, r.alto)
         }.getOrDefault(b)
