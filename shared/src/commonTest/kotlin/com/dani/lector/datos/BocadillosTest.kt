@@ -20,9 +20,10 @@ import kotlin.test.assertTrue
  * el texto son palotes de tinta con hueco entre ellos: lo que importa es que el
  * relleno tenga que rodear letras, no que se lean.
  *
- * LOS GLOBOS SE COMPARAN POR SU INTERIOR EXACTO, no por "hay uno": asi se
- * prueba a la vez que el borde para el relleno y que las letras, que son
- * agujeros, no encogen el recuadro.
+ * LOS GLOBOS SE COMPARAN POR SU RECUADRO EXACTO, no por "hay uno". Desde la
+ * tanda 30 el recuadro es el globo ENTERO, trazo incluido —quien pinta recorta
+ * por el, y un trazo fuera no se veria—, asi que con las letras de 12 px el
+ * trazo que se suma son 2 px y el recuadro es justo el rectangulo pintado.
  */
 class BocadillosTest {
 
@@ -56,13 +57,17 @@ class BocadillosTest {
             lecturas++
             px[y * ancho + x]
         }.map { it.recuadro }
+
+        /** Igual, pero con las viñetas puestas a mano. */
+        fun globosEn(lineas: List<Recuadro>, vinetas: List<Recuadro>) =
+            Bocadillos.globosEn(lineas, ancho, alto, vinetas) { x, y -> px[y * ancho + x] }.map { it.recuadro }
     }
 
     @Test fun `un globo blanco con borde negro da un globo`() {
         val p = Pagina(400, 300, DIBUJO)
         p.globo(100, 80, 300, 180)
         val l = p.linea(140, 124, 260, 136)
-        assertEquals(listOf(Recuadro(102, 82, 298, 178)), p.globos(listOf(l)))
+        assertEquals(listOf(Recuadro(100, 80, 300, 180)), p.globos(listOf(l)))
     }
 
     @Test fun `un globo con ruido de escaneo pasado a 565 sale entero`() {
@@ -84,7 +89,7 @@ class BocadillosTest {
             )
         }
         val l = p.linea(140, 124, 260, 136)
-        assertEquals(listOf(Recuadro(102, 82, 298, 178)), p.globos(listOf(l)))
+        assertEquals(listOf(Recuadro(100, 80, 300, 180)), p.globos(listOf(l)))
     }
 
     @Test fun `dos lineas del mismo globo dan un solo globo`() {
@@ -92,7 +97,7 @@ class BocadillosTest {
         p.globo(100, 80, 300, 180)
         val a = p.linea(140, 110, 260, 122)
         val b = p.linea(150, 126, 250, 138)
-        assertEquals(listOf(Recuadro(102, 82, 298, 178)), p.globos(listOf(a, b)))
+        assertEquals(listOf(Recuadro(100, 80, 300, 180)), p.globos(listOf(a, b)))
     }
 
     @Test fun `dos bloques de texto del mismo globo dan un solo globo`() {
@@ -105,7 +110,7 @@ class BocadillosTest {
             p.linea(110, 86, 290, 98),
             p.linea(100, 180, 300, 192)
         )
-        assertEquals(listOf(Recuadro(62, 42, 338, 258)), p.globos(lineas))
+        assertEquals(listOf(Recuadro(60, 40, 340, 260)), p.globos(lineas))
     }
 
     @Test fun `el texto sobre el dibujo sin globo se descarta`() {
@@ -128,7 +133,7 @@ class BocadillosTest {
         val p = Pagina(400, 300, BLANCO)
         p.globo(100, 40, 300, 100, relleno = AMARILLO)
         val l = p.linea(120, 64, 280, 76)
-        assertEquals(listOf(Recuadro(102, 42, 298, 98)), p.globos(listOf(l)))
+        assertEquals(listOf(Recuadro(100, 40, 300, 100)), p.globos(listOf(l)))
     }
 
     @Test fun `un globo que toca el borde de la pagina se descarta`() {
@@ -154,10 +159,10 @@ class BocadillosTest {
         val abajoDer = p.linea(250, 189, 350, 201)
         assertEquals(
             listOf(
-                Recuadro(22, 22, 178, 108),
-                Recuadro(222, 32, 378, 118),
-                Recuadro(22, 162, 178, 248),
-                Recuadro(222, 152, 378, 238)
+                Recuadro(20, 20, 180, 110),
+                Recuadro(220, 30, 380, 120),
+                Recuadro(20, 160, 180, 250),
+                Recuadro(220, 150, 380, 240)
             ),
             p.globos(listOf(abajoDer, arribaIzq, abajoIzq, arribaDer))
         )
@@ -176,7 +181,7 @@ class BocadillosTest {
         val p = Pagina(1000, 1000, DIBUJO)
         p.globo(450, 450, 600, 540)
         val l = p.linea(480, 490, 570, 502)
-        assertEquals(listOf(Recuadro(452, 452, 598, 538)), p.globos(listOf(l)))
+        assertEquals(listOf(Recuadro(450, 450, 600, 540)), p.globos(listOf(l)))
         assertTrue(p.lecturas < 1000 * 1000 / 10, "se leyeron ${p.lecturas} pixeles")
     }
 
@@ -201,10 +206,10 @@ class BocadillosTest {
         )
         assertEquals(
             listOf(
-                Recuadro(22, 102, 118, 148),
-                Recuadro(152, 122, 248, 168),
-                Recuadro(152, 202, 248, 248),
-                Recuadro(282, 22, 378, 68)
+                Recuadro(20, 100, 120, 150),
+                Recuadro(150, 120, 250, 170),
+                Recuadro(150, 200, 250, 250),
+                Recuadro(280, 20, 380, 70)
             ),
             p.globos(lineas)
         )
@@ -213,7 +218,8 @@ class BocadillosTest {
     @Test fun `un globo abierto a la calle sale cortado en el borde de su vineta`() {
         // Sin borde por arriba y pegado al techo de la viñeta: su blanco sigue
         // por el margen blanco de la pagina. Antes el relleno se escapaba por
-        // ahi y el globo no salia; ahora se corta donde empieza la viñeta.
+        // ahi y el globo no salia; ahora se corta donde empieza la viñeta, que
+        // es la fila 10. Por los otros tres lados lleva su trazo.
         val p = Pagina(400, 300, BLANCO)
         p.rect(10, 10, 195, 145, DIBUJO)
         p.rect(205, 10, 390, 145, DIBUJO)
@@ -222,7 +228,32 @@ class BocadillosTest {
         p.rect(38, 10, 162, 72, NEGRO)
         p.rect(40, 10, 160, 70, BLANCO)
         val l = p.linea(70, 34, 130, 46)
-        assertEquals(listOf(Recuadro(40, 10, 160, 70)), p.globos(listOf(l)))
+        assertEquals(listOf(Recuadro(38, 10, 162, 72)), p.globos(listOf(l)))
+    }
+
+    @Test fun `un globo en el margen de arriba se lee con la vineta mas cercana`() {
+        // La pagina de Green Lantern: dos globos arriba a la izquierda que
+        // empiezan en el margen y pisan la primera viñeta, con el centro del
+        // texto FUERA de toda viñeta, y uno pequeño mas abajo a la derecha. Antes
+        // lo que no caia en ninguna viñeta iba al final, y se leia primero el
+        // pequeño. Y su relleno no se recorta a esa viñeta: saldria cortado por
+        // la fila 50, que es donde empieza.
+        val p = Pagina(400, 300, BLANCO)
+        val vinetas = listOf(
+            Recuadro(10, 50, 195, 145), Recuadro(205, 50, 390, 145),
+            Recuadro(10, 155, 195, 290), Recuadro(205, 155, 390, 290)
+        )
+        for (v in vinetas) p.rect(v.izq, v.arriba, v.der, v.abajo, DIBUJO)
+        p.globo(20, 10, 110, 70)
+        p.globo(115, 15, 185, 72)
+        p.globo(300, 80, 370, 120)
+        val pequeno = p.linea(315, 94, 355, 106)
+        val primero = p.linea(40, 24, 90, 36)
+        val segundo = p.linea(130, 30, 170, 42)
+        val esperado = listOf(Recuadro(20, 10, 110, 70), Recuadro(115, 15, 185, 72), Recuadro(300, 80, 370, 120))
+        assertEquals(esperado, p.globosEn(listOf(pequeno, primero, segundo), vinetas))
+        // Y con las viñetas que encuentre la pagina sola, el mismo orden.
+        assertEquals(esperado, p.globos(listOf(pequeno, primero, segundo)))
     }
 
     // --- El contorno ---------------------------------------------------------
@@ -238,9 +269,7 @@ class BocadillosTest {
         for ((x, y) in esquinas(g.recuadro)) {
             assertFalse(g.contorno.contiene(x, y), "la esquina ($x, $y) cae dentro")
         }
-        for ((x, y) in esquinas(lineas[0])) {
-            assertTrue(g.contorno.contiene(x, y), "el texto ($x, $y) se queda fuera")
-        }
+        assertCajasDentro(g, lineas)
     }
 
     @Test fun `el contorno de un globo rectangular ocupa casi todo su recuadro`() {
@@ -251,6 +280,32 @@ class BocadillosTest {
         assertTrue(area(g.contorno) >= 0.95 * r.ancho * r.alto, "area ${area(g.contorno)} de ${r.ancho * r.alto}")
     }
 
+    @Test fun `una letra pegada al trazo queda dentro del contorno`() {
+        // Lo que vio Dani: la ultima letra, en las columnas 296-297, toca el
+        // trazo de la derecha, que empieza en la 298. El relleno la rodea por
+        // dentro y deja una muesca justo encima; si el contorno la siguiera, el
+        // recorte se llevaria la letra.
+        val p = Pagina(400, 300, DIBUJO)
+        p.globo(100, 80, 300, 180)
+        val l = p.linea(200, 124, 298, 136)
+        val g = p.completos(listOf(l)).single()
+        assertCajasDentro(g, listOf(l))
+    }
+
+    @Test fun `el contorno abarca el trazo del globo`() {
+        // El trazo son las columnas 100-101 y 298-299 y las filas 80-81 y
+        // 178-179. Tiene que quedar dentro, y el dibujo de fuera no.
+        val p = Pagina(400, 300, DIBUJO)
+        p.globo(100, 80, 300, 180)
+        val g = p.completos(listOf(p.linea(140, 124, 260, 136))).single()
+        for ((x, y) in listOf(100.5 to 130.5, 298.5 to 130.5, 200.5 to 80.5, 200.5 to 178.5)) {
+            assertTrue(g.contorno.contiene(x, y), "el trazo ($x, $y) se queda fuera")
+        }
+        for ((x, y) in listOf(95.5 to 130.5, 304.5 to 130.5, 200.5 to 75.5, 200.5 to 184.5)) {
+            assertFalse(g.contorno.contiene(x, y), "el dibujo ($x, $y) entra")
+        }
+    }
+
     @Test fun `el contorno no pasa del tope de puntos`() {
         // Un borde con dieciseis ondas: sin tope, la simplificacion se quedaria
         // con mas de 64 puntos. Y aun aflojada tiene que seguir envolviendo el
@@ -258,9 +313,7 @@ class BocadillosTest {
         val (p, lineas) = ondulada()
         val g = p.completos(lineas).single()
         assertTrue(g.contorno.size <= 64, "${g.contorno.size} puntos")
-        for (l in lineas) for ((x, y) in esquinas(l)) {
-            assertTrue(g.contorno.contiene(x, y), "el texto ($x, $y) se queda fuera")
-        }
+        assertCajasDentro(g, lineas)
     }
 
     @Test fun `todos los puntos del contorno caen dentro del recuadro`() {
@@ -275,18 +328,17 @@ class BocadillosTest {
     }
 
     @Test fun `el contorno de dos globos unidos no se come el dibujo de entre medias`() {
-        // Es el caso por el que el contorno se saca siguiendo el borde y no con
-        // rayos desde el texto ni con el primer y el ultimo pixel de cada fila:
-        // el punto (265, 110) esta dentro del recuadro, en la muesca entre los
-        // dos globos, y es dibujo.
+        // Es el caso por el que el contorno se saca siguiendo el borde, y no con
+        // rayos desde el texto, ni con el primer y el ultimo pixel de cada fila,
+        // ni con la envolvente convexa: el punto (265, 110) esta dentro del
+        // recuadro, en la muesca entre los dos globos, y es dibujo. Ensanchar
+        // lo del trazo (3 px aqui) no la tapa: mide mas de 40.
         val (p, lineas) = unidos()
         val g = p.completos(lineas).single()
         assertTrue(265 in g.recuadro.izq until g.recuadro.der && 110 in g.recuadro.arriba until g.recuadro.abajo)
         assertFalse(g.contorno.contiene(265.5, 110.5), "se come el dibujo de entre los globos")
         assertTrue(g.contorno.contiene(265.5, 168.5), "se deja el cuello")
-        for (l in lineas) for ((x, y) in esquinas(l)) {
-            assertTrue(g.contorno.contiene(x, y), "el texto ($x, $y) se queda fuera")
-        }
+        assertCajasDentro(g, lineas)
     }
 
     @Test fun `al fusionar dos bloques el contorno envuelve los dos`() {
@@ -297,10 +349,7 @@ class BocadillosTest {
             p.linea(110, 86, 290, 98),
             p.linea(100, 180, 300, 192)
         )
-        val g = p.completos(lineas).single()
-        for (l in lineas) for ((x, y) in esquinas(l)) {
-            assertTrue(g.contorno.contiene(x, y), "el texto ($x, $y) se queda fuera")
-        }
+        assertCajasDentro(p.completos(lineas).single(), lineas)
     }
 
     /** Un globo eliptico con borde negro de 2 px y una linea dentro. */
@@ -361,6 +410,21 @@ class BocadillosTest {
     /** Los globos enteros, con su contorno. */
     private fun Pagina.completos(lineas: List<Recuadro>) =
         Bocadillos.globos(lineas, ancho, alto) { x, y -> px[y * ancho + x] }
+
+    /**
+     * Que NINGUN pixel de las cajas de texto caiga fuera del contorno, por su
+     * centro. Se miran todos los del filo de cada caja: para meterse dentro de
+     * una caja, el poligono tiene que cruzar su filo.
+     */
+    private fun assertCajasDentro(g: Globo, lineas: List<Recuadro>) {
+        for (l in lineas) {
+            val filo = (l.izq until l.der).flatMap { x -> listOf(x to l.arriba, x to l.abajo - 1) } +
+                (l.arriba until l.abajo).flatMap { y -> listOf(l.izq to y, l.der - 1 to y) }
+            for ((x, y) in filo) {
+                assertTrue(g.contorno.contiene(x + 0.5, y + 0.5), "la letra ($x, $y) se queda fuera")
+            }
+        }
+    }
 
     /** Las cuatro esquinas de un recuadro, medio pixel hacia dentro para no caer justo en un lado. */
     private fun esquinas(r: Recuadro) = listOf(

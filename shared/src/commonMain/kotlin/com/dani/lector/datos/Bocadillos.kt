@@ -77,7 +77,8 @@ object Bocadillos {
     private const val CASI_IGUALES = 0.8
 
     /**
-     * Cuantos puntos puede tener un contorno como mucho.
+     * Cuantos puntos puede tener un contorno, salvo que aflojar para llegar
+     * aqui dejara una letra fuera: EL TEXTO MANDA SOBRE EL TOPE.
      *
      * Con 64, un globo de 400 px de ancho —grande en una pagina de 1600— queda
      * en tramos de unos 20 px, y lo que una elipse de radio 200 se separa de
@@ -113,36 +114,76 @@ object Bocadillos {
         ancho: Int, alto: Int,
         pixel: (x: Int, y: Int) -> Int
     ): List<Globo> {
-        // Una caja del OCR puede asomar fuera de la imagen por un pixel; se
-        // recorta para que ningun acceso se salga de la pagina.
-        val dentro = lineas
-            .map { Recuadro(maxOf(0, it.izq), maxOf(0, it.arriba), minOf(ancho, it.der), minOf(alto, it.abajo)) }
-            .filter { it.ancho > 0 && it.alto > 0 }
-        if (dentro.isEmpty()) return emptyList()
+        // Sin texto no se buscan ni las viñetas: una pagina sin lineas no lee
+        // ni un pixel.
+        if (enLaPagina(lineas, ancho, alto).isEmpty()) return emptyList()
+        return globosEn(lineas, ancho, alto, Vinetas.de(ancho, alto, pixel), pixel)
+    }
 
-        // Una vez por pagina, y solo si hay texto: sin lineas no se lee nada.
-        val vinetas = Vinetas.de(ancho, alto, pixel)
+    /**
+     * [globos] con las viñetas ya dadas. Aparte para que las pruebas puedan
+     * poner las viñetas a mano y probar el reparto sin depender de como las
+     * encuentra [Vinetas].
+     */
+    internal fun globosEn(
+        lineas: List<Recuadro>,
+        ancho: Int, alto: Int,
+        vinetas: List<Recuadro>,
+        pixel: (x: Int, y: Int) -> Int
+    ): List<Globo> {
+        val dentro = enLaPagina(lineas, ancho, alto)
+        if (dentro.isEmpty()) return emptyList()
         val pagina = Recuadro(0, 0, ancho, alto)
 
         val encontrados = mutableListOf<Pair<Int, Globo>>()
         for (bloque in agrupar(dentro)) {
-            val n = vinetaDe(envolvente(bloque), vinetas)
-            val globo = globoDe(bloque, vinetas.getOrElse(n) { pagina }, ancho, alto, pixel) ?: continue
+            val caja = envolvente(bloque)
+            val suya = vinetaQueContiene(caja, vinetas)
+            // EL TEXTO QUE NO CAE EN NINGUNA VIÑETA —un globo en el margen de
+            // arriba que pisa la primera— se lee con la mas cercana, y no al
+            // final: al final salia despues de todo lo de la pagina. Pero su
+            // relleno NO se recorta a esa viñeta, que le cortaria justo la mitad
+            // que esta en el margen: se queda como antes de las viñetas.
+            val orden = if (suya >= 0) suya else vinetaMasCercana(caja, vinetas)
+            val marco = if (suya >= 0) vinetas[suya] else pagina
+            val globo = globoDe(bloque, dentro, marco, ancho, alto, pixel) ?: continue
             val i = encontrados.indexOfFirst { casiIguales(it.second.recuadro, globo.recuadro) }
-            if (i < 0) encontrados += n to globo
-            else encontrados[i] = minOf(encontrados[i].first, n) to fusionar(encontrados[i].second, globo)
+            if (i < 0) encontrados += orden to globo
+            else encontrados[i] = minOf(encontrados[i].first, orden) to fusionar(encontrados[i].second, globo)
         }
-        // Primero por viñeta y, dentro de cada una, por filas. Lo que no cae en
-        // ninguna —texto en la calle o en el margen— va al final.
-        return (0..vinetas.size).flatMap { v -> ordenar(encontrados.filter { it.first == v }.map { it.second }) }
+        // Primero por viñeta y, dentro de cada una, por filas.
+        return encontrados.groupBy { it.first }.entries.sortedBy { it.key }
+            .flatMap { e -> ordenar(e.value.map { it.second }) }
     }
 
-    /** La viñeta que contiene el centro de [caja], o `vinetas.size` si ninguna. */
-    private fun vinetaDe(caja: Recuadro, vinetas: List<Recuadro>): Int {
+    // Una caja del OCR puede asomar fuera de la imagen por un pixel; se recorta
+    // para que ningun acceso se salga de la pagina.
+    private fun enLaPagina(lineas: List<Recuadro>, ancho: Int, alto: Int) = lineas
+        .map { Recuadro(maxOf(0, it.izq), maxOf(0, it.arriba), minOf(ancho, it.der), minOf(alto, it.abajo)) }
+        .filter { it.ancho > 0 && it.alto > 0 }
+
+    /** La viñeta que contiene el centro de [caja], o -1 si ninguna. */
+    private fun vinetaQueContiene(caja: Recuadro, vinetas: List<Recuadro>): Int {
         val cx = (caja.izq + caja.der) / 2
         val cy = (caja.arriba + caja.abajo) / 2
-        val i = vinetas.indexOfFirst { cx >= it.izq && cx < it.der && cy >= it.arriba && cy < it.abajo }
-        return if (i >= 0) i else vinetas.size
+        return vinetas.indexOfFirst { cx >= it.izq && cx < it.der && cy >= it.arriba && cy < it.abajo }
+    }
+
+    /** La viñeta mas cercana al centro de [caja], contando desde su borde. */
+    private fun vinetaMasCercana(caja: Recuadro, vinetas: List<Recuadro>): Int {
+        val cx = (caja.izq + caja.der) / 2
+        val cy = (caja.arriba + caja.abajo) / 2
+        var mejor = 0
+        var menor = Long.MAX_VALUE
+        for ((i, v) in vinetas.withIndex()) {
+            val dx = maxOf(v.izq - cx, 0, cx - (v.der - 1)).toLong()
+            val dy = maxOf(v.arriba - cy, 0, cy - (v.abajo - 1)).toLong()
+            if (dx * dx + dy * dy < menor) {
+                menor = dx * dx + dy * dy
+                mejor = i
+            }
+        }
+        return mejor
     }
 
     /**
@@ -173,17 +214,18 @@ object Bocadillos {
 
     /**
      * El globo que contiene [bloque] dentro de la viñeta [marco], o null si no
-     * esta en uno.
+     * esta en uno. [todas] son todas las lineas de la pagina.
      *
      * Relleno 4-conexo desde todos los pixeles de la caja del texto que tengan
      * el color del globo. Las letras quedan como agujeros y da igual: el
-     * recuadro envuelve lo rellenado y el contorno sigue solo su borde de fuera.
+     * contorno sigue solo el borde de fuera.
      *
      * CON PILA EXPLICITA Y NUNCA RECURSIVO: un globo son decenas de miles de
      * pixeles, y en recursivo eso es otras tantas llamadas anidadas.
      */
     private fun globoDe(
-        bloque: List<Recuadro>, marco: Recuadro, ancho: Int, alto: Int, pixel: (x: Int, y: Int) -> Int
+        bloque: List<Recuadro>, todas: List<Recuadro>, marco: Recuadro,
+        ancho: Int, alto: Int, pixel: (x: Int, y: Int) -> Int
     ): Globo? {
         val caja = envolvente(bloque)
         val fondo = claroDominante(caja, pixel) ?: return null
@@ -267,20 +309,117 @@ object Bocadillos {
             der < caja.der - 1 - holgura || abajo < caja.abajo - 1 - holgura
         ) return null
 
-        val recuadro = Recuadro(izq, arriba, der + 1, abajo + 1)
-
-        // El contorno sale del mismo `estado`, SIN LEER NI UN PIXEL MAS. Se
-        // empieza por el primero lleno de la fila de arriba: por encima no hay
-        // nada y a su izquierda tampoco, que es lo que el recorrido necesita.
-        var inicio = izq
-        while (estado[(arriba - v.arriba) * an + (inicio - v.izq)] != GLOBO) inicio++
-        val borde = bordeExterior(inicio, arriba, 4 * estado.size + 8) { x, y ->
-            x >= v.izq && x < v.der && y >= v.arriba && y < v.abajo &&
-                estado[(y - v.arriba) * an + (x - v.izq)] == GLOBO
+        // LO QUE SE RECORTA NO ES EL RELLENO TAL CUAL. Dani vio letras cortadas
+        // al ampliar, y salian de dos sitios:
+        //  - una letra pegada al trazo corta el relleno, que la rodea por
+        //    dentro: el borde hace una muesca justo encima de la letra y el
+        //    recorte se la lleva. Por eso se suman las CAJAS DEL OCR a la
+        //    mancha: una letra no puede quedar fuera, esten como esten sus
+        //    pixeles. Y no un cierre de una altura de linea, que tapa las
+        //    muescas estrechas a ciegas, incluido el cuello de dos globos
+        //    unidos, que es lo que el contorno tiene que respetar.
+        //  - el trazo negro quedaba fuera del relleno, y el globo perdia su
+        //    borde. Por eso la mancha se ENSANCHA lo que mide el trazo.
+        //
+        // Las cajas son TODAS las que tengan algo de este relleno dentro, no
+        // solo las del bloque: si dos bloques dan el mismo globo, el contorno
+        // que se quede tiene que guardar las letras de los dos.
+        val texto = todas.mapNotNull { t ->
+            val c = Recuadro(maxOf(v.izq, t.izq), maxOf(v.arriba, t.arriba), minOf(v.der, t.der), minOf(v.abajo, t.abajo))
+            val suya = c.ancho > 0 && c.alto > 0 && (t in bloque || (c.arriba until c.abajo).any { y ->
+                (c.izq until c.der).any { x -> estado[(y - v.arriba) * an + (x - v.izq)] == GLOBO }
+            })
+            if (suya) c else null
         }
-        val poligono = borde?.let { simplificar(it) }?.takeIf { it.size >= 3 }
+
+        // El trazo va con la pluma de las letras, que es un quinto de su
+        // altura, poco mas o menos. Para tocar mirando la sonda: si sobra, entra
+        // un filo del dibujo de alrededor, que se nota menos que un globo sin
+        // borde.
+        val trazo = maxOf(2, linea / 5)
+        var mIzq = izq
+        var mArriba = arriba
+        var mDer = der
+        var mAbajo = abajo
+        for (t in texto) {
+            mIzq = minOf(mIzq, t.izq)
+            mArriba = minOf(mArriba, t.arriba)
+            mDer = maxOf(mDer, t.der - 1)
+            mAbajo = maxOf(mAbajo, t.abajo - 1)
+        }
+        // Solo la zona del globo, no la ventana entera: es lo que se ensancha.
+        val zona = Recuadro(
+            maxOf(v.izq, mIzq - trazo), maxOf(v.arriba, mArriba - trazo),
+            minOf(v.der, mDer + 1 + trazo), minOf(v.abajo, mAbajo + 1 + trazo)
+        )
+        val zw = zona.ancho
+        val zh = zona.alto
+        val base = BooleanArray(zw * zh)
+        for (y in zona.arriba until zona.abajo) for (x in zona.izq until zona.der) {
+            if (estado[(y - v.arriba) * an + (x - v.izq)] == GLOBO) base[(y - zona.arriba) * zw + (x - zona.izq)] = true
+        }
+        for (t in texto) for (y in t.arriba until t.abajo) for (x in t.izq until t.der) {
+            base[(y - zona.arriba) * zw + (x - zona.izq)] = true
+        }
+        val mancha = ensanchar(base, zw, zh, trazo)
+
+        // El recuadro es el de la mancha y no el del relleno: quien pinta
+        // recorta primero por el recuadro, asi que lo que se quedara fuera de el
+        // —el trazo, una letra— no saldria aunque el contorno lo abarcara.
+        var rIzq = Int.MAX_VALUE
+        var rArriba = Int.MAX_VALUE
+        var rDer = -1
+        var rAbajo = -1
+        for (y in 0 until zh) for (x in 0 until zw) {
+            if (!mancha[y * zw + x]) continue
+            if (x < rIzq) rIzq = x
+            if (x > rDer) rDer = x
+            if (y < rArriba) rArriba = y
+            if (y > rAbajo) rAbajo = y
+        }
+        val recuadro = Recuadro(zona.izq + rIzq, zona.arriba + rArriba, zona.izq + rDer + 1, zona.arriba + rAbajo + 1)
+
+        // El contorno sale de la mancha, SIN LEER NI UN PIXEL MAS. Se empieza
+        // por el primero lleno de la fila de arriba: por encima no hay nada y a
+        // su izquierda tampoco, que es lo que el recorrido necesita.
+        var inicio = rIzq
+        while (!mancha[rArriba * zw + inicio]) inicio++
+        val borde = bordeExterior(zona.izq + inicio, zona.arriba + rArriba, 4 * mancha.size + 8) { x, y ->
+            x >= zona.izq && x < zona.der && y >= zona.arriba && y < zona.abajo &&
+                mancha[(y - zona.arriba) * zw + (x - zona.izq)]
+        }
+        val poligono = borde?.let { simplificar(it, texto) }?.takeIf { it.size >= 3 }
             ?: esquinas(recuadro)
         return Globo(recuadro, poligono)
+    }
+
+    /**
+     * [m] ensanchada [r] pixeles por cada lado, con un cuadrado: primero en
+     * horizontal y luego en vertical, contando cuantos hay encendidos en la
+     * ventana que se desliza. Lineal en el area, sea cual sea [r].
+     */
+    private fun ensanchar(m: BooleanArray, w: Int, h: Int, r: Int): BooleanArray {
+        val horizontal = BooleanArray(w * h)
+        for (y in 0 until h) {
+            var cuenta = 0
+            for (x in 0 until minOf(r, w)) if (m[y * w + x]) cuenta++
+            for (x in 0 until w) {
+                if (x + r < w && m[y * w + x + r]) cuenta++
+                if (x - r - 1 >= 0 && m[y * w + x - r - 1]) cuenta--
+                horizontal[y * w + x] = cuenta > 0
+            }
+        }
+        val fuera = BooleanArray(w * h)
+        for (x in 0 until w) {
+            var cuenta = 0
+            for (y in 0 until minOf(r, h)) if (horizontal[y * w + x]) cuenta++
+            for (y in 0 until h) {
+                if (y + r < h && horizontal[(y + r) * w + x]) cuenta++
+                if (y - r - 1 >= 0 && horizontal[(y - r - 1) * w + x]) cuenta--
+                fuera[y * w + x] = cuenta > 0
+            }
+        }
+        return fuera
     }
 
     /**
@@ -293,9 +432,9 @@ object Bocadillos {
      * y cualquier forma que no se vea entera desde el centro. Y la que mas se
      * da en un comic son DOS GLOBOS UNIDOS POR UN CUELLO: el relleno los junta
      * y los rayos no pueden seguir la muesca de entre los dos. Tampoco vale
-     * guardar el primer y el ultimo pixel de cada fila: en esos mismos globos
-     * unidos, la fila que cruza los dos se lleva el dibujo de en medio. Esto
-     * sigue cualquier forma, y las letras, que son agujeros dentro, no las toca.
+     * guardar el primer y el ultimo pixel de cada fila, ni la envolvente
+     * convexa: en esos mismos globos unidos, las dos se llevan el dibujo de en
+     * medio. Esto sigue cualquier forma.
      *
      * Se para al volver al inicio para dar el MISMO paso que al salir, y no
      * solo al volver a pisarlo: por un cuello de un pixel se pasa dos veces por
@@ -341,21 +480,60 @@ object Bocadillos {
      * hasta que nada se aparta mas de la tolerancia.
      *
      * La tolerancia empieza en UN PIXEL, que es lo que mide la escalera de un
-     * borde hecho de pixeles: por debajo se guardarian los peldaños. Si aun asi
-     * salen mas de [TOPE_PUNTOS], se afloja hasta que quepan; lo que se pierde
-     * entonces es detalle de un borde muy ondulado, no la forma.
+     * borde hecho de pixeles: por debajo se guardarian los peldaños. Con eso el
+     * texto no corre peligro, porque la mancha lo rodea con el trazo de sobra.
+     * Si salen mas de [TOPE_PUNTOS], se afloja hasta que quepan, pero cada
+     * vuelta se comprueba que no se queda fuera ni un pixel de [texto]: una
+     * recta que ataja una curva puede pasar por encima de una letra, y eso es
+     * justo lo que se esta arreglando. Si aflojar corta una letra, se queda la
+     * vuelta anterior aunque tenga mas puntos.
      */
-    private fun simplificar(borde: List<Punto>): List<Punto> {
+    private fun simplificar(borde: List<Punto>, texto: List<Recuadro>): List<Punto> {
         // Cerrado: el primero se repite al final, y la recta entre dos puntos
         // iguales mide la distancia a ese punto, que es justo lo que hace falta
         // para partir el anillo por su punto mas lejano.
         val anillo = borde + borde[0]
         var tolerancia = 1.0
-        while (true) {
-            val puntos = douglasPeucker(anillo, tolerancia).dropLast(1)
-            if (puntos.size <= TOPE_PUNTOS) return puntos
+        var mejor = douglasPeucker(anillo, tolerancia).dropLast(1)
+        if (!textoDentro(mejor, texto)) return borde
+        while (mejor.size > TOPE_PUNTOS) {
             tolerancia *= 1.5
+            val otro = douglasPeucker(anillo, tolerancia).dropLast(1)
+            if (!textoDentro(otro, texto)) break
+            mejor = otro
         }
+        return mejor
+    }
+
+    /**
+     * Si todos los pixeles de las cajas de [texto] caen dentro de [poligono],
+     * por su centro. Basta con el filo de cada caja: para que el poligono se
+     * meta dentro de una caja tiene que cruzar su filo.
+     */
+    private fun textoDentro(poligono: List<Punto>, texto: List<Recuadro>): Boolean {
+        if (poligono.size < 3) return false
+        for (t in texto) {
+            for (x in t.izq until t.der) {
+                if (!contiene(poligono, x + 0.5, t.arriba + 0.5) || !contiene(poligono, x + 0.5, t.abajo - 0.5)) return false
+            }
+            for (y in t.arriba until t.abajo) {
+                if (!contiene(poligono, t.izq + 0.5, y + 0.5) || !contiene(poligono, t.der - 0.5, y + 0.5)) return false
+            }
+        }
+        return true
+    }
+
+    /** Punto en poligono, par-impar: cuantas veces corta los lados un rayo hacia la derecha. */
+    private fun contiene(p: List<Punto>, x: Double, y: Double): Boolean {
+        var dentro = false
+        var j = p.size - 1
+        for (i in p.indices) {
+            val a = p[i]
+            val b = p[j]
+            if ((a.y > y) != (b.y > y) && x < (b.x - a.x) * (y - a.y) / (b.y - a.y) + a.x) dentro = !dentro
+            j = i
+        }
+        return dentro
     }
 
     // Con pila y no recursivo, por lo mismo que el relleno: un borde son miles
@@ -407,9 +585,10 @@ object Bocadillos {
      * dos, y el contorno, el del relleno MAS GRANDE.
      *
      * Casi siempre son el mismo contorno, porque los dos bloques rellenan la
-     * misma mancha. Cuando no, es que uno se ha colado por un pixel de ruido
-     * que el otro no alcanzo, y el mayor es el mas completo. Unir los dos
-     * poligonos daria, como mucho, ese pixel, y es otro algoritmo entero.
+     * misma mancha y los dos suman las cajas de texto de los dos. Cuando no, es
+     * que uno se ha colado por un pixel de ruido que el otro no alcanzo, y el
+     * mayor es el mas completo. Unir los dos poligonos daria, como mucho, ese
+     * pixel, y es otro algoritmo entero.
      */
     private fun fusionar(a: Globo, b: Globo): Globo {
         val areaA = a.recuadro.ancho.toLong() * a.recuadro.alto

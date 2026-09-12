@@ -392,9 +392,32 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
                 val globos = Bocadillos.globos(lineas, bmp.width, bmp.height) { x, y ->
                     bmp.getPixel(x, y)
                 }
+                val t2 = System.currentTimeMillis()
                 Rastro.apunta("  globos: pág $num, OCR ${t1 - t0} ms, globos " +
-                    "${System.currentTimeMillis() - t1} ms, ${lineas.size} líneas, " +
-                    "${globos.size} globos")
+                    "${t2 - t1} ms, ${lineas.size} líneas, ${globos.size} globos")
+
+                // DIAGNOSTICO DEL ORDEN (tanda 30), para quitar cuando se sepa.
+                // Una pagina empezo por un globo pequeño de arriba a la derecha
+                // en vez de por los dos de arriba a la izquierda, que estan mas
+                // altos, y la sospecha es el reparto por viñetas. Antes de tocar
+                // la regla hay que verlo: el centro de cada globo en el orden en
+                // que sale, y las viñetas que se detectaron, en pixeles de ESTA
+                // imagen. Las viñetas se vuelven a calcular aqui porque
+                // Bocadillos no las devuelve; van con sus propios ms para no
+                // ensuciar los de arriba.
+                Rastro.apunta("    orden: " + globos.mapIndexed { i, g ->
+                    val r = g.recuadro
+                    "${i + 1}(${(r.izq + r.der) / 2},${(r.arriba + r.abajo) / 2})"
+                }.joinToString(" "))
+                val vinetas = Vinetas.de(bmp.width, bmp.height) { x, y -> bmp.getPixel(x, y) }
+                Rastro.apunta("    viñetas (${System.currentTimeMillis() - t2} ms, " +
+                    "${bmp.width}x${bmp.height}): " +
+                    // Numeradas en el orden en que Bocadillos las recorre: un
+                    // globo que no cae en ninguna va detras de todas.
+                    vinetas.mapIndexed { i, v ->
+                        "v${i + 1}[${v.izq},${v.arriba}-${v.der},${v.abajo}]"
+                    }.joinToString(" "))
+
                 Globos(bmp.width, bmp.height, globos)
             }
         } catch (e: CancellationException) {

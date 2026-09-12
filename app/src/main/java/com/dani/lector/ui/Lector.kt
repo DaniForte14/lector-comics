@@ -824,9 +824,14 @@ private fun PaginaConZoom(
 }
 
 /**
- * El globo abierto: la pagina oscurecida y encima el globo ampliado, recortado
- * por su CONTORNO y no por el recuadro, que se llevaria las esquinas del dibujo
- * de alrededor.
+ * El globo abierto: el globo ampliado encima de la pagina, recortado por su
+ * CONTORNO y no por el recuadro, que se llevaria las esquinas del dibujo de
+ * alrededor.
+ *
+ * SIN OSCURECER LA PAGINA, desde la tanda 30. La 29 la ponia en negro al 60%
+ * por detras, como Play Books, y Dani al probarlo: "que no se oscurezca lo
+ * demas, simplemente que se haga el bocadillo mas grande y ya". El globo se
+ * despega con el filo.
  *
  * Todo sale de la imagen analizada ([analizada], la de 1600 del OCR): a la de
  * DETALLE por proporcion, que es de donde se recorta para que no pixele; y a
@@ -863,8 +868,6 @@ private fun GloboAmpliado(
         val enPagina = Rect(x0 + r.izq * escala, y0 + r.arriba * escala,
             x0 + r.der * escala, y0 + r.abajo * escala)
         val destino = lerp(enPagina, encuadreGlobo(enPagina, size), t)
-
-        drawRect(Color.Black.copy(alpha = GLOBO_OSCURO * t))
 
         val silueta = Path().apply {
             globo.contorno.forEachIndexed { i, p ->

@@ -26,8 +26,6 @@ fun escalaBase(
 // LOS NUMEROS DEL GLOBO AMPLIADO, puestos a ojo mirando Play Books y para
 // tocarlos cuando Dani lo pruebe. Ninguno sale de medir.
 //
-//  - GLOBO_OSCURO: el negro de la pagina de detras. Lo bastante para que el
-//    globo se despegue, no tanto como para perder donde estas.
 //  - GLOBO_ANCHO_MAX / GLOBO_ALTO_MAX: lo mas grande que se hace, en fraccion
 //    de la pantalla. Menos de alto porque arriba y abajo tiene que seguir
 //    viendose algo de la pagina.
@@ -35,7 +33,6 @@ fun escalaBase(
 //    los pixeles aunque salga del detalle.
 //  - GLOBO_ENTRADA_MS: lo que tarda en salir de su sitio. Una vez por globo, y
 //    nada sigue animandose despues: CONTEXTO.md cuenta lo que calentaba el movil.
-const val GLOBO_OSCURO = 0.6f
 const val GLOBO_ANCHO_MAX = 0.92f
 const val GLOBO_ALTO_MAX = 0.80f
 const val GLOBO_AMPLIACION_MAX = 2.5f
