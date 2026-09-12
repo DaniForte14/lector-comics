@@ -101,7 +101,62 @@ class VinetasTest {
         assertTrue(p.lecturas < 800 * 1200 / 10, "se leyeron ${p.lecturas} pixeles")
     }
 
+    @Test fun `un margen negro con calles grises da cuatro vinetas en orden`() {
+        // Green Lantern Corps Recharge, segun la captura de Dani: margen oscuro y
+        // calles grises. Con el color de la calle sacado del margen no cortaba
+        // nada; y la fila de una calle, de lado a lado, pisa el margen negro de
+        // los lados y no sale lisa si no se quita antes el margen.
+        val p = Pagina(400, 300, NEGRO)
+        p.rect(10, 10, 390, 290, GRIS)
+        for (r in REJILLA) p.rect(r.izq, r.arriba, r.der, r.abajo, DIBUJO)
+        assertEquals(REJILLA, p.vinetas())
+    }
+
+    @Test fun `una pagina a sangre con calles blancas se corta igual`() {
+        // Daredevil #006, medido: el dibujo llega a los cuatro bordes y las calles
+        // son blancas. Sin un borde liso del que sacar el color, las 25 paginas
+        // salian como una sola viñeta.
+        // Calles de 10 px, un 3% de la pagina, como las de verdad (Daredevil, 17-22
+        // filas de 1574).
+        val p = Pagina(400, 300, BLANCO)
+        p.ruido(Recuadro(0, 0, 400, 140))
+        p.ruido(Recuadro(0, 150, 195, 300))
+        p.ruido(Recuadro(205, 150, 400, 300))
+        assertEquals(
+            listOf(Recuadro(0, 0, 400, 140), Recuadro(0, 150, 195, 300), Recuadro(205, 150, 400, 300)),
+            p.vinetas()
+        )
+    }
+
+    @Test fun `una franja negra lisa a lo ancho de una vineta no la corta`() {
+        // El otro riesgo de aceptar calles de cualquier color neutro: una noche o
+        // una sombra que cruza una viñeta enmarcada de lado a lado. Con el marco,
+        // que tambien es negro, la fila sale lisa de punta a punta. Lo que la
+        // salva es el grosor: una calle de verdad no pasa del 1,4% de la pagina
+        // (medido) y esta franja es un 27%.
+        val p = Pagina(400, 300, BLANCO)
+        p.rect(10, 10, 390, 290, NEGRO)
+        p.ruido(Recuadro(12, 12, 388, 100))
+        p.ruido(Recuadro(12, 180, 388, 288))
+        assertEquals(listOf(Recuadro(10, 10, 390, 290)), p.vinetas())
+    }
+
+    @Test fun `un cielo liso a lo ancho de una vineta no la corta`() {
+        // El riesgo de aceptar calles de cualquier color: una viñeta a sangre por
+        // los lados, con una franja de cielo liso de lado a lado, tiene filas tan
+        // uniformes como una calle. La franja es de 10 px, tan fina como una
+        // calle, para que no la salve el grosor maximo sino el color: una calle
+        // es blanca, gris o negra, y el cielo es azul.
+        val p = Pagina(400, 300, BLANCO)
+        p.ruido(Recuadro(0, 20, 400, 140))
+        p.rect(0, 140, 400, 150, AZUL)
+        p.ruido(Recuadro(0, 150, 400, 280))
+        assertEquals(listOf(Recuadro(0, 20, 400, 280)), p.vinetas())
+    }
+
     private companion object {
+        val GRIS = 0xFF8C8C8C.toInt()
+        val AZUL = 0xFF87CEEB.toInt()
         val NEGRO = 0xFF000000.toInt()
         val BLANCO = 0xFFFFFFFF.toInt()
         val DIBUJO = 0xFF2A4D8F.toInt()
