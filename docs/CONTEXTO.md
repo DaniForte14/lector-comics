@@ -4823,7 +4823,9 @@ opuestos) no se mete sin verlo antes en el movil.
 **Sin verificar:** nada de la 29 se ha visto en un movil; que la causa real del
 fallo de Absolute Batman fuera la calle (la prueba sintetica lo cubre, la pagina
 real no se ha vuelto a mirar); los numeros de las viñetas; y `Vinetas`,
-`EncuadreGlobo` y el contorno en Kotlin/Native, que lo dice el CI.
+`EncuadreGlobo` y el contorno en Kotlin/Native, que lo dijo el CI: **verde
+en `db2921a`** (tandas 29 y 30 subidas juntas el 12/09/2026), con las pruebas
+corridas en el simulador de iOS.
 
 **LO QUE DIJO EL MOVIL DE LA 29 (12/09/2026)**, en una pagina de Green Lantern,
 y lo que se hace en la tanda 30:
@@ -4908,6 +4910,94 @@ son el mismo punto.
 - Verificado con **mutaciones**: sin sumar las cajas cae justo "letra pegada al
   trazo"; con la ventana recortada a la viñeta cae solo "margen"; sin ensanchar
   caen las doce que tenian que caer.
+
+**LO QUE DIJO EL MOVIL DE LA 30 (12/09/2026, 02:53):** las letras ya no se
+cortan y se ve el trazo; sin oscurecer, el globo se distingue bien. **El orden
+sigue mal**, y el rastro nuevo dice por que: **en las cinco paginas de Green
+Lantern la deteccion de viñetas devuelve la pagina entera** (`v1[0,0-ancho,
+alto]`). No encuentra ni una calle, asi que el arreglo del texto fuera de
+viñeta ni actua y el orden es por filas sobre la pagina entera: en la pag. 5 el
+primero es uno de la derecha (733,138) antes que los de la izquierda (233,224),
+y en la pag. 4 —una doble pagina de 2048 de ancho— mezcla las dos mitades.
+Hipotesis, sin comprobar: `Vinetas` saca el color de la calle de los bordes de
+la pagina, y en este comic **las calles se ven grises y el margen oscuro**; si
+no son el mismo color, no hay calle que valga. La hipotesis de Lucia de la
+tanda 30 (el globo en el margen visto como calle) no aplica a estas paginas.
+
+### Tanda 31: las viñetas, medidas sobre paginas de verdad (12/09/2026)
+
+**Antes de arreglar, una sonda sobre comics reales**, la leccion de §6: un test
+JVM desechable que abre el CBZ, decodifica y le pasa `Vinetas.de` a cada pagina.
+Green Lantern Recharge #04 y Absolute Batman #01 no estaban en el PC; se uso
+Green Lantern Emerald Warriors #13 y Daredevil #006, #020 y 30.
+
+**LA CAUSA, MEDIDA Y NO SUPUESTA, son dos fallos:**
+
+1. **El color de la calle se sacaba de los bordes de la pagina.** Si el dibujo
+   llega a los cuatro bordes (pagina a sangre), no hay color de calle y sale una
+   sola viñeta: Daredevil #006, **0 de 25 paginas** con cortes, con calles
+   blancas a la vista.
+2. **Una calle que cruza la pagina tambien pisa los margenes de los lados**, y
+   si el margen es de otro color, la fila no sale lisa. Es lo que encaja con
+   Green Lantern Recharge: calles grises, margen oscuro.
+
+Antes del arreglo: GL Emerald Warriors 5 de 20 paginas con cortes, DD #006 0 de
+25, DD #020 8 de 26, DD 30 8 de 25. Las dos dobles paginas, 1 viñeta.
+
+**El arreglo en marcha**: una calle es cualquier linea casi uniforme de color
+NEUTRO (blanco, gris o negro), confirmada leyendola entera; los margenes se
+quitan en las dos direcciones antes de buscar calles; y el color ya no sale de
+los bordes. El cielo azul queda fuera por el color. **El riesgo nuevo, avisado a
+Lucia antes de cerrar**: una banda negra o gris lisa DENTRO del dibujo (noche,
+sombra) tambien es neutra y partiria una viñeta; se le pidio un grosor maximo de
+calle o contenido a los dos lados, justificado con la sonda sobre las paginas
+oscuras de Daredevil.
+
+**Lo que se hizo (`Vinetas.kt`, sin cambiar la firma de `Vinetas.de`):**
+
+- **Una calle es un TRAMO de lineas casi uniformes de color NEUTRO** (canal
+  mas alto menos el mas bajo <= 48), de al menos `grosor`, confirmado leyendo
+  la linea central entera. Medido: las calles de Green Lantern se separan 9, las
+  blancas y negras de Daredevil menos de 5, un cielo (87CEEB) 100, la portada
+  roja de Daredevil 210. **Tramo y no linea suelta**: el marco de 2 px de una
+  viñeta o el trazo de una cartela son lineas negras de lado a lado, y contados
+  como calle se recortaban como margen.
+- **Los margenes se quitan antes, en las dos direcciones.**
+- **CONTRA LAS BANDAS NEUTRAS DEL DIBUJO: una calle interior no pasa del 4% de
+  la pagina.** Las de verdad no pasan del 1,4% (Daredevil 17-22 filas de 1574,
+  Green Lantern 9-12). Una noche o una sombra enmarcada es mas gruesa y no se
+  corta aunque el marco negro haga la fila lisa de punta a punta. Se descarto
+  exigir "contenido no liso a los dos lados": al lado de una calle blanca suele
+  haber un marco, que tambien es liso. Y un globo no puede quedar partido: una
+  fila que lo cruza tiene trazo y letras y ya no es lisa.
+- **El techo que queda**: una banda neutra lisa y FINA (menos del 4%) de lado a
+  lado de una region si se corta; por ejemplo, una franja negra fina en una
+  viñeta sin marco.
+
+**Viñetas por pagina, ANTES -> DESPUES** (paginas con al menos un corte):
+GL Emerald Warriors #13 5/20 -> **10/20**; Daredevil #006 0/25 -> **19/25**;
+Daredevil #020 8/26 -> **16/26**; Daredevil 30 (paginas oscuras) 8/25 ->
+**13/25**. ~1 ms por pagina. **Tres paginas bajan** (GL p4 6->5, DD #020 p1 3->2,
+DD 30 p24 6->4), sin mirar por que; lo probable es el tramo o el grosor maximo.
+
+**Mirado con los ojos**, sobre 7 paginas con las viñetas pintadas: DD #006 p2,
+sus 7 viñetas exactas; DD 30 p6 (oscura, calles negras), 6 bien cortadas y
+ningun corte falso en el dibujo negro; DD 30 p5, viñetas que se montan, se queda
+en 1 como antes; las dos dobles paginas probadas, 1 viñeta y es lo correcto
+(ninguna tiene calle central).
+
+**Pruebas**: `VinetasTest` de 7 a 11 (margen negro con calles grises; pagina a
+sangre con calles blancas; cielo azul fino que salva el color y no el grosor;
+franja negra del 27% enmarcada que no se corta). **Mutaciones**, una a una: sin
+grosor maximo cae SOLO la franja negra; sin quitar antes los margenes, SOLO la
+de calles grises; sin exigir neutro caen el cielo y tambien las rejillas, porque
+el azul del dibujo sintetico pasaria a ser calle: el color protege a toda la
+pagina, no solo al cielo.
+
+**Sin verificar:** Green Lantern Recharge #04 y Absolute Batman #01, que no
+estaban en el PC, ni el color real de sus calles (la hipotesis la sujeta una
+prueba sintetica); la calle central de la doble pagina de Recharge; las tres
+paginas que bajan; y la sonda leia las paginas en 8888, no en el 565 del movil.
 
 ### El motor de RAR para iOS: hay via, y se aplaza (07/09/2026)
 

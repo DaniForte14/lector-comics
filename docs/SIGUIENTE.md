@@ -9,6 +9,22 @@ propósito.
 
 ---
 
+## Donde se paro el 13/09/2026
+
+El Bubble Zoom va por la **tanda 31**. Lo que funciona en el movil de Dani
+(tandas 28-30): globo a globo, recortado por su forma, sin cortar letras y sin
+oscurecer la pagina. Lo que fallaba era el **orden**, y el rastro demostro que
+en Green Lantern Recharge **no se detectaba ni una viñeta**. La 31 lo arregla
+midiendo sobre 96 paginas reales de Daredevil y Green Lantern (detalle en
+`CONTEXTO.md`): las paginas con viñetas detectadas pasan, segun el comic, de
+0/25 a 19/25 o de 5/20 a 10/20.
+
+**Lo que toca, y es de Dani (ANDROID):** abrir Green Lantern Recharge #04 con
+"Bocadillos" y mirar la pagina que empezaba por "BIEN". Si sigue mal, pegar el
+rastro: la linea `viñetas` dira si ya se detectan. Y, si puede, copiar
+`313 - Green Lantern Corps Recharge #04.cbz` y `Absolute Batman #01.cbz` a
+`Descargas` del PC, para medir sobre esas mismas paginas.
+
 ## Donde se paro el 11/09/2026
 
 **Coordinador nuevo.** La tanda 27 quedo cerrada con el CI en verde (`0d0f437`).
