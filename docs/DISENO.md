@@ -1354,8 +1354,10 @@ comprobadas y el ejemplo de TFLite se inventa la forma de la salida.
 - Tercio derecho o volumen abajo: siguiente globo. Tercio izquierdo o volumen
   arriba: el anterior. Tras el último, pasa de página; una página sin globos
   pasa directa.
-- El globo sale **ampliado encima de la página, en su sitio**, con la página
-  oscurecida alrededor. Se recorta de la decodificación al triple, la del zoom,
+- El globo sale **ampliado encima de la página, en su sitio**. **Sin oscurecer
+  la página** (Dani, 12/09/2026, tras probarlo: "que no se oscurezca lo demás,
+  simplemente que se haga el bocadillo más grande y ya"). La tanda 29 la
+  oscurecía a 0,6, como Play Books. Se recorta de la decodificación al triple, la del zoom,
   para que no pixele.
 - El centro sigue sacando los controles y el doble toque sigue siendo el zoom.
 - **Fuera a propósito:** modo tira, doble página en horizontal y manga (derecha
@@ -1363,8 +1365,9 @@ comprobadas y el ejemplo de TFLite se inventa la forma de la salida.
 
 **Cómo está hecho, y por qué así (camino A de tres):**
 
-- **El OCR del sistema da cajas de texto**: ML Kit empaquetado en Android (~4 MB
-  por arquitectura según Google, y aquí solo hay una: `arm64-v8a`), `Vision` en
+- **El OCR del sistema da cajas de texto**: ML Kit empaquetado en Android (Google
+  dice ~4 MB; **medido, 11,8 MB**, casi todo una librería nativa, y eso con
+  solo `arm64-v8a`), `Vision` en
   iOS (del sistema, 0 MB; `platform.Vision` viene ya en Kotlin/Native,
   comprobado en su repositorio). Detrás de `DetectorTexto`.
 - **Lo que decide va en `commonMain/Bocadillos.kt` con pruebas**: juntar líneas

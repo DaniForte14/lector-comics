@@ -4825,6 +4825,90 @@ fallo de Absolute Batman fuera la calle (la prueba sintetica lo cubre, la pagina
 real no se ha vuelto a mirar); los numeros de las viñetas; y `Vinetas`,
 `EncuadreGlobo` y el contorno en Kotlin/Native, que lo dice el CI.
 
+**LO QUE DIJO EL MOVIL DE LA 29 (12/09/2026)**, en una pagina de Green Lantern,
+y lo que se hace en la tanda 30:
+
+- **Fuera el oscurecido**: "que no se oscurezca lo demas, simplemente que se
+  haga el bocadillo mas grande y ya". Paco.
+- **Letras cortadas** en el globo ampliado. Hipotesis: el poligono sigue el
+  borde del INTERIOR, y una letra pegada al trazo deja una muesca que el recorte
+  sigue por encima de la letra; ademas el trazo negro queda fuera. Regla nueva:
+  ninguna caja de texto fuera del poligono, y el poligono abarca el trazo.
+  Lucia.
+- **Orden**: la secuencia empezo por un globo pequeño de arriba a la derecha
+  ("BIEN") en vez de por los dos de la izquierda, que empiezan mas arriba. Por
+  filas no sale asi, asi que el fallo esta en las viñetas. Sospecha sin
+  confirmar: esos dos estan sobre el margen de arriba, con el centro fuera de
+  toda viñeta, y esa regla los mandaba al final. Lucia los ordena con la viñeta
+  mas cercana, y Paco saca al rastro el orden y los centros de los globos, para
+  medir en vez de adivinar si no era eso.
+
+**EL APK CON ML KIT, MEDIDO (12/09/2026)**, abriendo el APK de debug de la 29
+en vez de compilar otra version para comparar: **40,9 MB**, de los que **11,8
+son ML Kit** —10,8 la libreria nativa `libmlkit_google_ocr_pipeline.so` y ~1 los
+modelos en `assets/mlkit-google-ocr-models/`—. O sea: ~29 MB antes, casi el
+TRIPLE de los "~4 MB" que dice Google, y eso con `abiFilters` dejando solo
+arm64. **Confirma que la variante empaquetada lleva el modelo dentro**, que era
+la duda de la tanda 28. Va tambien el modelo que LEE el texto, aunque aqui solo
+se usen las cajas: ML Kit no deja quitarlo. Se deja asi: la de Play services
+pesa ~260 KB pero baja el modelo en el primer uso y hasta entonces no hay
+globos sin decir por que. Si algun dia pesa, es una linea de `build.gradle.kts`.
+
+**Tanda 30, Paco.** Fuera el `drawRect` negro y `GLOBO_OSCURO`, con la frase de
+Dani en el KDoc de `GloboAmpliado` para que nadie lo vuelva a poner por imitar
+a Play Books. **Sin sombra, a proposito**: Dani pidio "mas grande y ya" y nadie
+ha visto si sin el negro el globo se despega. Si no se despega, la sombra barata
+es pintar la misma silueta en negro translucido (~35%) desplazada 2-3 dp antes
+del recorte; nada de `blur`, que pide API 31. En el estilo iOS el filo es blanco
+al 10% y de 0,5 dp: ahi es donde mas puede quedarse corto.
+
+**El rastro de cada pagina lleva ahora el orden y las viñetas**, para
+diagnosticar en vez de adivinar:
+
+```
+  globos: pag N, OCR X ms, globos Y ms, L lineas, G globos
+    orden: 1(420,310) 2(880,300) ...      <- centro del RECUADRO de cada globo
+    viñetas (Z ms, 1600xH): v1[izq,arriba-der,abajo] ...
+```
+
+Las viñetas se calculan una segunda vez solo para esto (`Bocadillos` no las
+devuelve), marcado en el codigo como "para quitar cuando se sepa". Ojo al
+leerlo: `Bocadillos` asigna la viñeta por el centro de la caja del TEXTO, y
+`orden` da el centro del GLOBO; casi siempre caen en la misma viñeta, pero no
+son el mismo punto.
+
+**Tanda 30, Lucia — letras cortadas y orden.**
+
+- **A la mancha del relleno se le SUMAN LAS CAJAS DEL OCR y se ENSANCHA lo del
+  trazo** (max(2, linea/5), por la pluma de las letras; numero para mirar en la
+  sonda), y despues Moore y Douglas-Peucker como antes. Sumar las cajas cierra
+  justo la muesca de una letra pegada al trazo. Se descarto un cierre
+  morfologico, que tapa a ciegas cualquier muesca estrecha, incluido el cuello
+  de dos globos unidos; y la envolvente convexa, que se come la muesca entre los
+  dos lobulos y dejaria ver el dibujo de entre ellos. Se suman todas las cajas
+  de la pagina que tengan algun pixel del relleno, para que la fusion guarde
+  las letras de los dos bloques.
+- **EL TEXTO MANDA SOBRE EL TOPE DE 64 PUNTOS**: si aflojar Douglas-Peucker
+  corta una letra, se queda la vuelta anterior aunque pase de 64. Es un seguro
+  sin prueba que lo tumbe: ninguna pagina de prueba afloja tanto.
+- **`recuadro` es ahora el de la mancha ensanchada** (el globo entero, con
+  trazo y letras), no el interior: Paco recorta la imagen por el recuadro y
+  dentro por el contorno, y lo que quedara fuera del recuadro no se veria. Las
+  pruebas de recuadro exacto cambiaron de numero por eso, y solo por eso.
+- **Orden**: el texto con el centro fuera de toda viñeta se ordena con la mas
+  cercana, y su ventana NO se recorta a ella. `internal fun globosEn(...)` recibe
+  las viñetas a mano para que la prueba sea determinista; la firma publica no
+  cambia.
+- **La causa probable, sin confirmar**: la pasada rala (una muestra cada 50 px)
+  no ve un globo blanco de trazo fino sobre un margen blanco y lo toma por
+  calle, y si ademas queda una fila limpia entre el globo y la viñeta, el ajuste
+  denso se para ahi y el globo se queda fuera como si fuera margen. Si en el
+  rastro los centros caen fuera de toda viñeta, era esto y ya esta cubierto; si
+  caen dentro de la primera, hay otra vuelta.
+- Verificado con **mutaciones**: sin sumar las cajas cae justo "letra pegada al
+  trazo"; con la ventana recortada a la viñeta cae solo "margen"; sin ensanchar
+  caen las doce que tenian que caer.
+
 ### El motor de RAR para iOS: hay via, y se aplaza (07/09/2026)
 
 Dani eligio **buscar un motor de RAR nativo** en vez de dejar el CBR fuera del
@@ -4867,8 +4951,8 @@ saltar de pagina obliga a descomprimir desde el principio.
 - **Mirar la sonda de los bocadillos en el movil (ANDROID)**: encender
   "Bocadillos" en la barra del lector, pasar unas veinte paginas y pegar el
   rastro. Que mirar, en la tabla de `SIGUIENTE.md`. De eso depende la tanda 29
-  o el cambio de detector. Y **medir el APK** con ML Kit dentro, que nadie ha
-  podido leer todavia.
+  o el cambio de detector. ~~Medir el APK con ML Kit dentro~~ **HECHO (12/09/2026)**:
+  +11,8 MB, ver la tanda 29.
 - **Portar la interfaz entera antes de instalar el `.ipa`**, decidido por Dani
   el 07/09/2026. Las fases, el mapa de los siete agujeros de plataforma y la
   unica dependencia nueva (`lifecycle-viewmodel-compose:2.8.4` de JetBrains)

@@ -27,14 +27,19 @@ Falta mirar otras series y el orden; eso se hace en paralelo a la tanda 29.
 | Que hacer | Que tiene que pasar |
 |---|---|
 | Pasar a una pagina | se ve ENTERA, sin globo |
-| Tercio derecho o volumen abajo | sale el globo 1 ampliado, con su forma y la pagina oscurecida |
+| Tercio derecho o volumen abajo | sale el globo 1 ampliado con su forma, **sin oscurecer la pagina** (tanda 30) |
 | Seguir tocando | globo a globo, en orden de lectura, y tras el ultimo pasa de pagina |
 | Tercio izquierdo / volumen arriba | el globo anterior; del 1 a la pagina entera |
 | Tocar el centro con un globo abierto | salen los controles (**si no responde, el globo se esta comiendo los toques**) |
 | Doble toque | el zoom de siempre, y cierra el globo |
 | La pag. 5 de Absolute Batman #01 | salen los cuatro globos de la viñeta de abajo a la izquierda y el orden va por viñetas |
+| Un globo con letras pegadas al borde | **ninguna letra cortada**, y se ve el trazo del globo (tanda 30) |
+| La pagina de Green Lantern que empezaba por "BIEN" | empieza por los dos de arriba a la izquierda. Si no, **pegar el rastro**: las lineas `orden:` y `viñetas` de esa pagina dicen por que |
 
-Los numeros para tocar si algo se ve raro (oscuro 0,6, 92% de ancho, 80% de
+Si sin oscurecer el globo no se despega del dibujo, la sombra esta pensada y es
+una linea (ver la tanda 30 de `CONTEXTO.md`).
+
+Los numeros para tocar si algo se ve raro (92% de ancho, 80% de
 alto, 2,5x, 200 ms) estan juntos en `shared/.../ui/EncuadreGlobo.kt`, con las
 pruebas que dicen que pasa en cada borde.
 
