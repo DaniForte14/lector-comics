@@ -1,7 +1,12 @@
 package com.dani.lector.datos
 
+import kotlin.math.abs
+import kotlin.math.atan2
+import kotlin.math.sin
+import kotlin.math.sqrt
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
@@ -45,10 +50,12 @@ class BocadillosTest {
             return Recuadro(izq, arriba, der, abajo)
         }
 
+        // El recuadro y no el Globo entero: estas pruebas son de que se amplia y
+        // en que orden; la forma del contorno tiene las suyas.
         fun globos(lineas: List<Recuadro>) = Bocadillos.globos(lineas, ancho, alto) { x, y ->
             lecturas++
             px[y * ancho + x]
-        }
+        }.map { it.recuadro }
     }
 
     @Test fun `un globo blanco con borde negro da un globo`() {
@@ -171,6 +178,218 @@ class BocadillosTest {
         val l = p.linea(480, 490, 570, 502)
         assertEquals(listOf(Recuadro(452, 452, 598, 538)), p.globos(listOf(l)))
         assertTrue(p.lecturas < 1000 * 1000 / 10, "se leyeron ${p.lecturas} pixeles")
+    }
+
+    // --- Las viñetas ---------------------------------------------------------
+
+    @Test fun `en una fila de tres vinetas el globo alto de la derecha va el ultimo`() {
+        // El caso de Absolute Batman #01, pag. 5: sin viñetas, el globo de la
+        // derecha se leia antes que los dos de en medio solo por estar mas alto.
+        val p = Pagina(400, 300, BLANCO)
+        p.rect(10, 10, 130, 290, DIBUJO)
+        p.rect(140, 10, 260, 290, DIBUJO)
+        p.rect(270, 10, 390, 290, DIBUJO)
+        p.globo(20, 100, 120, 150)
+        p.globo(150, 120, 250, 170)
+        p.globo(150, 200, 250, 250)
+        p.globo(280, 20, 380, 70)
+        val lineas = listOf(
+            p.linea(300, 39, 360, 51),
+            p.linea(170, 219, 230, 231),
+            p.linea(40, 119, 100, 131),
+            p.linea(170, 139, 230, 151)
+        )
+        assertEquals(
+            listOf(
+                Recuadro(22, 102, 118, 148),
+                Recuadro(152, 122, 248, 168),
+                Recuadro(152, 202, 248, 248),
+                Recuadro(282, 22, 378, 68)
+            ),
+            p.globos(lineas)
+        )
+    }
+
+    @Test fun `un globo abierto a la calle sale cortado en el borde de su vineta`() {
+        // Sin borde por arriba y pegado al techo de la viñeta: su blanco sigue
+        // por el margen blanco de la pagina. Antes el relleno se escapaba por
+        // ahi y el globo no salia; ahora se corta donde empieza la viñeta.
+        val p = Pagina(400, 300, BLANCO)
+        p.rect(10, 10, 195, 145, DIBUJO)
+        p.rect(205, 10, 390, 145, DIBUJO)
+        p.rect(10, 155, 195, 290, DIBUJO)
+        p.rect(205, 155, 390, 290, DIBUJO)
+        p.rect(38, 10, 162, 72, NEGRO)
+        p.rect(40, 10, 160, 70, BLANCO)
+        val l = p.linea(70, 34, 130, 46)
+        assertEquals(listOf(Recuadro(40, 10, 160, 70)), p.globos(listOf(l)))
+    }
+
+    // --- El contorno ---------------------------------------------------------
+    //
+    // Se prueba la FORMA del poligono, no sus puntos uno a uno: que puntos
+    // exactos salgan depende de donde empiece el recorrido y de la
+    // simplificacion, y eso puede cambiar sin que el recorte se vea distinto.
+
+    @Test fun `el contorno de un globo eliptico deja fuera las esquinas del recuadro`() {
+        // Si el contorno fuera el recuadro, sus esquinas estarian dentro.
+        val (p, lineas) = eliptica()
+        val g = p.completos(lineas).single()
+        for ((x, y) in esquinas(g.recuadro)) {
+            assertFalse(g.contorno.contiene(x, y), "la esquina ($x, $y) cae dentro")
+        }
+        for ((x, y) in esquinas(lineas[0])) {
+            assertTrue(g.contorno.contiene(x, y), "el texto ($x, $y) se queda fuera")
+        }
+    }
+
+    @Test fun `el contorno de un globo rectangular ocupa casi todo su recuadro`() {
+        val p = Pagina(400, 300, DIBUJO)
+        p.globo(100, 80, 300, 180)
+        val g = p.completos(listOf(p.linea(140, 124, 260, 136))).single()
+        val r = g.recuadro
+        assertTrue(area(g.contorno) >= 0.95 * r.ancho * r.alto, "area ${area(g.contorno)} de ${r.ancho * r.alto}")
+    }
+
+    @Test fun `el contorno no pasa del tope de puntos`() {
+        // Un borde con dieciseis ondas: sin tope, la simplificacion se quedaria
+        // con mas de 64 puntos. Y aun aflojada tiene que seguir envolviendo el
+        // texto, que es lo que no se puede perder.
+        val (p, lineas) = ondulada()
+        val g = p.completos(lineas).single()
+        assertTrue(g.contorno.size <= 64, "${g.contorno.size} puntos")
+        for (l in lineas) for ((x, y) in esquinas(l)) {
+            assertTrue(g.contorno.contiene(x, y), "el texto ($x, $y) se queda fuera")
+        }
+    }
+
+    @Test fun `todos los puntos del contorno caen dentro del recuadro`() {
+        for ((p, lineas) in listOf(eliptica(), ondulada(), unidos())) {
+            for (g in p.completos(lineas)) {
+                val r = g.recuadro
+                for (q in g.contorno) {
+                    assertTrue(q.x in r.izq..r.der && q.y in r.arriba..r.abajo, "$q fuera de $r")
+                }
+            }
+        }
+    }
+
+    @Test fun `el contorno de dos globos unidos no se come el dibujo de entre medias`() {
+        // Es el caso por el que el contorno se saca siguiendo el borde y no con
+        // rayos desde el texto ni con el primer y el ultimo pixel de cada fila:
+        // el punto (265, 110) esta dentro del recuadro, en la muesca entre los
+        // dos globos, y es dibujo.
+        val (p, lineas) = unidos()
+        val g = p.completos(lineas).single()
+        assertTrue(265 in g.recuadro.izq until g.recuadro.der && 110 in g.recuadro.arriba until g.recuadro.abajo)
+        assertFalse(g.contorno.contiene(265.5, 110.5), "se come el dibujo de entre los globos")
+        assertTrue(g.contorno.contiene(265.5, 168.5), "se deja el cuello")
+        for (l in lineas) for ((x, y) in esquinas(l)) {
+            assertTrue(g.contorno.contiene(x, y), "el texto ($x, $y) se queda fuera")
+        }
+    }
+
+    @Test fun `al fusionar dos bloques el contorno envuelve los dos`() {
+        val p = Pagina(400, 300, DIBUJO)
+        p.globo(60, 40, 340, 260)
+        val lineas = listOf(
+            p.linea(100, 70, 300, 82),
+            p.linea(110, 86, 290, 98),
+            p.linea(100, 180, 300, 192)
+        )
+        val g = p.completos(lineas).single()
+        for (l in lineas) for ((x, y) in esquinas(l)) {
+            assertTrue(g.contorno.contiene(x, y), "el texto ($x, $y) se queda fuera")
+        }
+    }
+
+    /** Un globo eliptico con borde negro de 2 px y una linea dentro. */
+    private fun eliptica(): Pair<Pagina, List<Recuadro>> {
+        val p = Pagina(400, 300, DIBUJO)
+        p.elipse(200, 150, 122, 72, NEGRO)
+        p.elipse(200, 150, 120, 70, BLANCO)
+        return p to listOf(p.linea(150, 140, 250, 152))
+    }
+
+    /** Un globo de radio 150 con dieciseis ondas de 20, y tres lineas altas dentro. */
+    private fun ondulada(): Pair<Pagina, List<Recuadro>> {
+        val p = Pagina(500, 500, DIBUJO)
+        fun radio(x: Int, y: Int) = sqrt(((x - 250) * (x - 250) + (y - 250) * (y - 250)).toDouble())
+        fun onda(x: Int, y: Int) = 150 + 20 * sin(16 * atan2((y - 250).toDouble(), (x - 250).toDouble()))
+        p.pinta(NEGRO) { x, y -> radio(x, y) <= onda(x, y) + 3 }
+        p.pinta(BLANCO) { x, y -> radio(x, y) <= onda(x, y) }
+        return p to listOf(
+            p.linea(150, 212, 350, 232),
+            p.linea(150, 237, 350, 257),
+            p.linea(150, 262, 350, 282)
+        )
+    }
+
+    /**
+     * Dos globos elipticos, uno grande a la izquierda y otro pequeño a la
+     * derecha, unidos por un cuello bajo. Primero todo lo negro y luego todo lo
+     * blanco, para que el borde quede solo por fuera de la union.
+     *
+     * Solo el bloque del globo grande llega a ver la union entera dentro de su
+     * ventana; el del pequeño se descarta por tocarla. Da igual: con uno basta.
+     */
+    private fun unidos(): Pair<Pagina, List<Recuadro>> {
+        val p = Pagina(500, 300, DIBUJO)
+        p.elipse(150, 130, 102, 57, NEGRO)
+        p.elipse(330, 130, 52, 47, NEGRO)
+        p.rect(228, 158, 302, 178, NEGRO)
+        p.elipse(150, 130, 100, 55, BLANCO)
+        p.elipse(330, 130, 50, 45, BLANCO)
+        p.rect(230, 160, 300, 176, BLANCO)
+        return p to listOf(
+            p.linea(80, 110, 220, 126),
+            p.linea(90, 130, 210, 146),
+            p.linea(310, 124, 350, 136)
+        )
+    }
+
+    private fun Pagina.pinta(color: Int, dentro: (Int, Int) -> Boolean) {
+        for (y in 0 until alto) for (x in 0 until ancho) if (dentro(x, y)) px[y * ancho + x] = color
+    }
+
+    private fun Pagina.elipse(cx: Int, cy: Int, rx: Int, ry: Int, color: Int) = pinta(color) { x, y ->
+        val dx = (x - cx).toDouble() / rx
+        val dy = (y - cy).toDouble() / ry
+        dx * dx + dy * dy <= 1.0
+    }
+
+    /** Los globos enteros, con su contorno. */
+    private fun Pagina.completos(lineas: List<Recuadro>) =
+        Bocadillos.globos(lineas, ancho, alto) { x, y -> px[y * ancho + x] }
+
+    /** Las cuatro esquinas de un recuadro, medio pixel hacia dentro para no caer justo en un lado. */
+    private fun esquinas(r: Recuadro) = listOf(
+        r.izq + 0.5 to r.arriba + 0.5, r.der - 0.5 to r.arriba + 0.5,
+        r.der - 0.5 to r.abajo - 0.5, r.izq + 0.5 to r.abajo - 0.5
+    )
+
+    /** Punto en poligono, par-impar: cuantas veces corta los lados un rayo hacia la derecha. */
+    private fun List<Punto>.contiene(x: Double, y: Double): Boolean {
+        var dentro = false
+        var j = size - 1
+        for (i in indices) {
+            val a = this[i]
+            val b = this[j]
+            if ((a.y > y) != (b.y > y) && x < (b.x - a.x) * (y - a.y) / (b.y - a.y) + a.x) dentro = !dentro
+            j = i
+        }
+        return dentro
+    }
+
+    /** El area de un poligono, por la formula del cordon. */
+    private fun area(p: List<Punto>): Double {
+        var doble = 0L
+        for (i in p.indices) {
+            val a = p[i]
+            val b = p[(i + 1) % p.size]
+            doble += a.x.toLong() * b.y - b.x.toLong() * a.y
+        }
+        return abs(doble) / 2.0
     }
 
     /**

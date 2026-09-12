@@ -21,6 +21,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.graphics.asAndroidBitmap
 
@@ -339,33 +341,79 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
     fun pagina(uri: String, nombre: String, ancho: Int) =
         archivo.pagina(uri, nombre, ancho, recortar)
 
-    /** Lo que ve la sonda en una pagina, en pixeles de la imagen analizada. */
-    class Globos(val ancho: Int, val alto: Int, val lineas: List<Recuadro>, val globos: List<Recuadro>)
+    /** Los globos de una pagina, en pixeles de la imagen de [ancho] x [alto] que se analizo. */
+    class Globos(val ancho: Int, val alto: Int, val globos: List<Globo>)
 
     /**
-     * Las lineas y los globos de una pagina. Sin cache todavia: es de la 29.
+     * LOS GLOBOS SE GUARDAN SOLO PARA EL COMIC ABIERTO, en memoria, y se tiran
+     * al abrir otro. Nada en disco, decidido por Dani el 11/09/2026: una cache
+     * de disco sin techo es la trampa de los 3,78 GB de CONTEXTO.md, y rehacer
+     * esto cuesta medio segundo por pagina, no una consulta de red.
      *
+     * Un Deferred por pagina y no el resultado: el carrusel compone tambien las
+     * paginas de al lado, y dos que piden la misma a la vez esperan al MISMO
+     * calculo en vez de lanzar dos OCR.
+     */
+    private var uriGlobos: String? = null
+    private val globosCalculados = HashMap<String, Deferred<Globos?>>()
+
+    private fun globosEn(uri: String, nombre: String, num: Int): Deferred<Globos?> =
+        synchronized(globosCalculados) {
+            if (uri != uriGlobos) {
+                globosCalculados.values.forEach { it.cancel() }
+                globosCalculados.clear()
+                uriGlobos = uri
+            }
+            globosCalculados.getOrPut(nombre) {
+                viewModelScope.async(Dispatchers.IO) { calcularGlobos(uri, nombre, num) }
+            }
+        }
+
+    /** Deja una pagina calculandose sin esperarla: la siguiente a la que se ve. */
+    fun prepararGlobos(uri: String, nombre: String, num: Int) { globosEn(uri, nombre, num) }
+
+    suspend fun globosDe(uri: String, nombre: String, num: Int): Globos? =
+        globosEn(uri, nombre, num).await()
+
+    /**
      * A 1600 y por [pagina], la misma funcion que pinta: asi el recorte es el
-     * mismo y las cajas casan con lo que se ve POR PROPORCION, aunque la
+     * mismo y los globos casan con lo que se ve POR PROPORCION, aunque la
      * pantalla la haya decodificado a otro ancho.
      */
-    suspend fun globosDe(uri: String, nombre: String, num: Int): Globos? =
-        withContext(Dispatchers.IO) {
-            val img = pagina(uri, nombre, 1600) ?: return@withContext null
-            val t0 = System.currentTimeMillis()
-            val lineas = detector.lineas(img)
-            val t1 = System.currentTimeMillis()
-            // getPixel sobre el Bitmap, NO la pagina copiada a un IntArray:
-            // 1600x2400 son 15 MB de enteros para mirar unos cientos de pixeles.
-            val bmp = img.asAndroidBitmap()
-            val globos = Bocadillos.globos(lineas, bmp.width, bmp.height) { x, y ->
-                bmp.getPixel(x, y)
+    private suspend fun calcularGlobos(uri: String, nombre: String, num: Int): Globos? {
+        val resultado = try {
+            pagina(uri, nombre, 1600)?.let { img ->
+                val t0 = System.currentTimeMillis()
+                val lineas = detector.lineas(img)
+                val t1 = System.currentTimeMillis()
+                // getPixel sobre el Bitmap, NO la pagina copiada a un IntArray:
+                // 1600x2400 son 15 MB de enteros para mirar unos cientos de pixeles.
+                val bmp = img.asAndroidBitmap()
+                val globos = Bocadillos.globos(lineas, bmp.width, bmp.height) { x, y ->
+                    bmp.getPixel(x, y)
+                }
+                Rastro.apunta("  globos: pág $num, OCR ${t1 - t0} ms, globos " +
+                    "${System.currentTimeMillis() - t1} ms, ${lineas.size} líneas, " +
+                    "${globos.size} globos")
+                Globos(bmp.width, bmp.height, globos)
             }
-            Rastro.apunta("  globos: pág $num, OCR ${t1 - t0} ms, globos " +
-                "${System.currentTimeMillis() - t1} ms, ${lineas.size} líneas, " +
-                "${globos.size} globos")
-            Globos(bmp.width, bmp.height, lineas, globos)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            // Throwable: un OutOfMemoryError no es una Exception. Sin globos la
+            // pagina se lee entera, que es lo mismo que sin bocadillos.
+            Rastro.apunta("  globos: pág $num, FALLA $e")
+            null
         }
+        // UN FALLO NO SE GUARDA: se vuelve a intentar la proxima vez que se pida,
+        // en vez de quedarse la pagina sin globos hasta cerrar el comic. Es la
+        // leccion del 420 de Comic Vine (CONTEXTO §6). La uri se mira para no
+        // borrar la misma pagina de OTRO comic abierto mientras tanto.
+        if (resultado == null) synchronized(globosCalculados) {
+            if (uri == uriGlobos) globosCalculados.remove(nombre)
+        }
+        return resultado
+    }
     suspend fun portada(uri: String) = portadas.obtener(uri)
 
     /** La portada solo si ya esta en memoria. Para pintar sin esperar al scroll. */

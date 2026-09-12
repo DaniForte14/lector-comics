@@ -29,9 +29,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.lerp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.layout.ContentScale
@@ -51,6 +53,9 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.dani.lector.VistaModelo
 import com.dani.lector.datos.Comic
+import com.dani.lector.datos.Globo
+import com.dani.lector.datos.Paso
+import com.dani.lector.datos.SecuenciaGlobos
 import com.dani.lector.datos.Rastro
 import com.dani.lector.datos.Exportar
 import com.dani.lector.datos.Salto
@@ -271,16 +276,66 @@ private fun Visor(
                 var ampliada by remember { mutableStateOf(false) }
                 val densidad = LocalDensity.current.density
 
-                // volumen arriba = atras, volumen abajo = adelante
-                LaunchedEffect(estado) {
-                    mover = { subir ->
-                        alcance.launch {
-                            val destino = if (subir) estado.currentPage - 1
-                                          else estado.currentPage + 1
-                            if (destino in 0..hojas.size) estado.animateScrollToPage(destino)
+                // LOS GLOBOS DE LA HOJA QUE SE VE, y el que esta abierto. Van
+                // ETIQUETADOS con su hoja y solo se leen si la etiqueta es la de
+                // ahora: asi el globo 2 de la pagina anterior no se pinta ni un
+                // fotograma encima de la nueva. Y son dos estados que no cambian
+                // de objeto, que es lo que necesitan las lambdas de los toques y
+                // del volumen: se crean una vez y se quedan.
+                var globosPagina by remember { mutableStateOf<Pair<Int, VistaModelo.Globos?>?>(null) }
+                var globoAbierto by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+
+                LaunchedEffect(estado.currentPage, bocadillos, hojas) {
+                    // Pagina nueva = pagina ENTERA, venga de un toque, del volumen
+                    // o de un deslizamiento: los tres cambian currentPage.
+                    globoAbierto = null
+                    val hojaVista = estado.currentPage
+                    val p = hojas.getOrNull(hojaVista)?.singleOrNull()
+                    if (!bocadillos || p == null) return@LaunchedEffect
+                    // p y p+1: mientras se mira la pagina entera se calcula la
+                    // siguiente, y el medio segundo del OCR no se ve nunca.
+                    paginas.getOrNull(p + 1)?.let { vm.prepararGlobos(uri, it, p + 2) }
+                    val g = vm.globosDe(uri, paginas[p], p + 1)
+                    globosPagina = hojaVista to g
+                    // Y el detalle de ESTA pagina, que es de donde se recorta el
+                    // globo: asi el primer toque no espera a decodificar. Va
+                    // despues de los globos a proposito: la cache de detalle es
+                    // de dos, y lo que tiene que caer es la de 1600 del OCR, que
+                    // ya esta calculada, no esta.
+                    if (!g?.globos.isNullOrEmpty()) withContext(Dispatchers.IO) {
+                        vm.pagina(uri, paginas[p], ancho * 2 * 3)
+                    }
+                }
+
+                // Tercios y volumen pasan por aqui. Con los bocadillos, sin zoom
+                // y con una sola pagina manda SecuenciaGlobos; si no, se pasa de
+                // pagina como siempre. Vale igual con el esqueleto, que solo pasa
+                // pagina, que con la regla de verdad.
+                fun avanzar(adelante: Boolean) {
+                    val hojaVista = estado.currentPage
+                    val globoAGlobo = bocadillos && !ampliada &&
+                        hojas.getOrNull(hojaVista)?.size == 1
+                    val total = globosPagina?.takeIf { it.first == hojaVista }
+                        ?.second?.globos?.size ?: 0
+                    val actual = globoAbierto?.takeIf { it.first == hojaVista }?.second
+                    val paso = when {
+                        globoAGlobo -> SecuenciaGlobos.paso(actual, total, adelante)
+                        adelante -> Paso.PaginaSiguiente
+                        else -> Paso.PaginaAnterior
+                    }
+                    when (paso) {
+                        is Paso.EnPagina -> globoAbierto = paso.globo?.let { hojaVista to it }
+                        Paso.PaginaSiguiente -> alcance.launch {
+                            estado.animateScrollToPage((hojaVista + 1).coerceAtMost(hojas.size))
+                        }
+                        Paso.PaginaAnterior -> alcance.launch {
+                            estado.animateScrollToPage((hojaVista - 1).coerceAtLeast(0))
                         }
                     }
                 }
+
+                // volumen arriba = atras, volumen abajo = adelante
+                LaunchedEffect(estado) { mover = { subir -> avanzar(!subir) } }
 
                 HorizontalPager(
                     estado,
@@ -298,22 +353,18 @@ private fun Visor(
                         if (hoja.size > 1) ancho else ancho * 2,
                         hoja.first() + 1,
                         llenar = vm.llenar,
-                        bocadillos = bocadillos,
-                        onZoom = { ampliada = it },
+                        // Ampliar a mano (doble toque o pellizco) cierra el globo:
+                        // son dos formas de acercarse y a la vez no caben.
+                        onZoom = { ampliada = it; if (it) globoAbierto = null },
                         onToque = { fraccionX ->
-                            // tercios: los lados pasan pagina, el centro saca
-                            // los controles. Con zoom puesto no se pasa pagina,
-                            // que ahi el dedo esta para mover la imagen.
+                            // tercios: los lados avanzan -una pagina, o un globo
+                            // con los bocadillos- y el centro saca los controles.
+                            // Con zoom puesto no se avanza, que ahi el dedo esta
+                            // para mover la imagen.
                             when {
                                 ampliada -> alternarControles()
-                                fraccionX < 0.30f -> alcance.launch {
-                                    estado.animateScrollToPage(
-                                        (estado.currentPage - 1).coerceAtLeast(0))
-                                }
-                                fraccionX > 0.70f -> alcance.launch {
-                                    estado.animateScrollToPage(
-                                        (estado.currentPage + 1).coerceAtMost(hojas.size))
-                                }
+                                fraccionX < 0.30f -> avanzar(false)
+                                fraccionX > 0.70f -> avanzar(true)
                                 else -> alternarControles()
                             }
                         },
@@ -335,6 +386,29 @@ private fun Visor(
                         }
                     )
                 }
+
+                // EL GLOBO ABIERTO, en coordenadas de PANTALLA: fuera del
+                // graphicsLayer del zoom, porque con un globo abierto no hay zoom
+                // manual. Sin pointerInput a proposito: los toques lo atraviesan
+                // y llegan a la pagina de debajo, que es la que sabe de tercios,
+                // doble toque y controles.
+                val hojaVista = estado.currentPage
+                val analizada = globosPagina?.takeIf { it.first == hojaVista }?.second
+                val globo = globoAbierto?.takeIf { it.first == hojaVista }
+                    ?.let { analizada?.globos?.getOrNull(it.second) }
+                val paginaVista = hojas.getOrNull(hojaVista)?.singleOrNull()
+                if (bocadillos && !ampliada && analizada != null && globo != null &&
+                    paginaVista != null
+                ) {
+                    val conf = LocalConfiguration.current
+                    GloboAmpliado(
+                        vm, uri, paginas[paginaVista], ancho * 2, analizada, globo,
+                        base = escalaBase(vm.llenar,
+                            conf.screenHeightDp.toFloat() / conf.screenWidthDp, 1,
+                            analizada.alto.toFloat() / analizada.ancho)
+                    )
+                }
+
                 if (controles) Controles(
                     actual = ((hojas.getOrNull(estado.currentPage)?.last() ?: 0) + 1)
                         .coerceIn(1, paginas.size),
@@ -597,7 +671,6 @@ private fun TarjetaSiguiente(
 private fun PaginaConZoom(
     vm: VistaModelo, uri: String, nombres: List<String>, anchoPx: Int, num: Int,
     llenar: Boolean = false,
-    bocadillos: Boolean = false,
     onZoom: (Boolean) -> Unit = {},
     onToque: (Float) -> Unit,
     // ANTES de `transicion`, que ya tenia valor por defecto, y las dos antes de
@@ -630,8 +703,7 @@ private fun PaginaConZoom(
         pantalla.screenHeightDp.toFloat() / pantalla.screenWidthDp.toFloat()
     var proporcionPagina by remember(nombres) { mutableStateOf(0f) }
 
-    val base = if (!llenar || proporcionPagina <= 0f) 1f
-        else (proporcionPantalla * nombres.size / proporcionPagina).coerceIn(1f, 3f)
+    val base = escalaBase(llenar, proporcionPantalla, nombres.size, proporcionPagina)
 
     LaunchedEffect(base) {
         escala.snapTo(base); desX.snapTo(0f); desY.snapTo(0f)
@@ -745,11 +817,6 @@ private fun PaginaConZoom(
                     Contenido(vm, uri, n, if (detalle) anchoPx * 3 else anchoPx,
                         num + i, Modifier.fillMaxWidth(),
                         onProporcion = { if (i == 0) proporcionPagina = it })
-                    // Dentro del Row con el graphicsLayer del zoom, asi que los
-                    // recuadros se amplian y se mueven con la pagina sin hacer
-                    // cuentas. Solo con UNA pagina: en dobles no hay globo a globo.
-                    if (bocadillos && nombres.size == 1)
-                        SondaGlobos(vm, uri, n, num + i, Modifier.matchParentSize())
                 }
             }
         }
@@ -757,48 +824,73 @@ private fun PaginaConZoom(
 }
 
 /**
- * La sonda de los bocadillos (tanda 28): lo que ve el detector, pintado encima
- * de la pagina. Las LINEAS del OCR en cian y finas; los GLOBOS en el acento,
- * gruesos y con su numero de orden. Es para que Dani vea en el movil si falla
- * el OCR (no hay lineas sobre la rotulacion) o el contorno (hay lineas y no hay
- * globo), que es lo que decide la tanda siguiente.
+ * El globo abierto: la pagina oscurecida y encima el globo ampliado, recortado
+ * por su CONTORNO y no por el recuadro, que se llevaria las esquinas del dibujo
+ * de alrededor.
+ *
+ * Todo sale de la imagen analizada ([analizada], la de 1600 del OCR): a la de
+ * DETALLE por proporcion, que es de donde se recorta para que no pixele; y a
+ * PANTALLA con el mismo encaje que pinta la pagina —Fit, centrado y por la
+ * escala de partida [base]—.
  */
 @Composable
-private fun SondaGlobos(vm: VistaModelo, uri: String, nombre: String, num: Int, mod: Modifier) {
-    var datos by remember(nombre) { mutableStateOf<VistaModelo.Globos?>(null) }
-    LaunchedEffect(nombre) { datos = vm.globosDe(uri, nombre, num) }
-    var tam by remember { mutableStateOf(IntSize.Zero) }
-    val d = datos ?: return
-    if (d.ancho <= 0 || d.alto <= 0) return
-
-    // Contenido pinta con ContentScale.Fit: la pagina va ENCAJADA y CENTRADA
-    // en su caja. Con la pagina a lo ancho sobra la cuenta y la escala es
-    // ancho pintado / ancho detectado; pero si la pagina es mas alargada que
-    // el hueco (en horizontal, sin dobles) quedan bandas a los lados, y sin el
-    // desplazamiento los recuadros saldrian corridos.
-    val escala = minOf(tam.width.toFloat() / d.ancho, tam.height.toFloat() / d.alto)
-    val x0 = (tam.width - d.ancho * escala) / 2
-    val y0 = (tam.height - d.alto * escala) / 2
-
-    Box(mod.onSizeChanged { tam = it }) {
-        Canvas(Modifier.matchParentSize()) {
-            val fina = 1.dp.toPx()
-            val gruesa = 2.dp.toPx()
-            d.lineas.forEach { r ->
-                drawRect(Cian, Offset(x0 + r.izq * escala, y0 + r.arriba * escala),
-                    Size(r.ancho * escala, r.alto * escala), style = Stroke(fina))
-            }
-            d.globos.forEach { r ->
-                drawRect(Acento, Offset(x0 + r.izq * escala, y0 + r.arriba * escala),
-                    Size(r.ancho * escala, r.alto * escala), style = Stroke(gruesa))
-            }
+private fun GloboAmpliado(
+    vm: VistaModelo, uri: String, nombre: String, anchoPx: Int,
+    analizada: VistaModelo.Globos, globo: Globo, base: Float
+) {
+    // La del zoom, anchoPx * 3: la misma clave, asi que si ya se amplio a mano o
+    // el Visor la dejo precalentada no se decodifica otra vez. Si fallara, la de
+    // pantalla: pixela, pero se lee.
+    var detalle by remember(nombre) { mutableStateOf<ImageBitmap?>(null) }
+    LaunchedEffect(nombre) {
+        detalle = withContext(Dispatchers.IO) {
+            vm.pagina(uri, nombre, anchoPx * 3) ?: vm.pagina(uri, nombre, anchoPx)
         }
-        d.globos.forEachIndexed { i, r ->
-            Text("${i + 1}", style = Tipo.pie, color = SobreAcento,
-                modifier = Modifier
-                    .offset { IntOffset((x0 + r.izq * escala).toInt(), (y0 + r.arriba * escala).toInt()) }
-                    .background(Acento).padding(horizontal = 3.dp))
+    }
+    val entrada = remember(globo) { Animatable(0f) }
+    val ms = if (hayAnimaciones()) GLOBO_ENTRADA_MS else 0
+    val img = detalle ?: return
+    // Arranca cuando ya hay imagen, no antes: con el detalle aun decodificandose
+    // la animacion se gastaria sin nada que enseñar.
+    LaunchedEffect(globo) { entrada.animateTo(1f, tween(ms)) }
+
+    val r = globo.recuadro
+    Canvas(Modifier.fillMaxSize()) {
+        val t = entrada.value
+        val escala = minOf(size.width / analizada.ancho, size.height / analizada.alto) * base
+        val x0 = (size.width - analizada.ancho * escala) / 2
+        val y0 = (size.height - analizada.alto * escala) / 2
+        val enPagina = Rect(x0 + r.izq * escala, y0 + r.arriba * escala,
+            x0 + r.der * escala, y0 + r.abajo * escala)
+        val destino = lerp(enPagina, encuadreGlobo(enPagina, size), t)
+
+        drawRect(Color.Black.copy(alpha = GLOBO_OSCURO * t))
+
+        val silueta = Path().apply {
+            globo.contorno.forEachIndexed { i, p ->
+                val x = destino.left + (p.x - r.izq) * destino.width / r.ancho
+                val y = destino.top + (p.y - r.arriba) * destino.height / r.alto
+                if (i == 0) moveTo(x, y) else lineTo(x, y)
+            }
+            close()
         }
+        // El mismo trozo en el detalle. Acotado a la imagen: por redondeo, un
+        // globo pegado al filo de la pagina puede caer un pixel fuera.
+        val kx = img.width.toFloat() / analizada.ancho
+        val ky = img.height.toFloat() / analizada.alto
+        val sx = (r.izq * kx).toInt().coerceIn(0, img.width - 1)
+        val sy = (r.arriba * ky).toInt().coerceIn(0, img.height - 1)
+        val sw = ((r.der * kx).toInt().coerceAtMost(img.width) - sx).coerceAtLeast(1)
+        val sh = ((r.abajo * ky).toInt().coerceAtMost(img.height) - sy).coerceAtLeast(1)
+        clipPath(silueta) {
+            drawImage(img, IntOffset(sx, sy), IntSize(sw, sh),
+                IntOffset(destino.left.toInt(), destino.top.toInt()),
+                IntSize(destino.width.toInt().coerceAtLeast(1),
+                    destino.height.toInt().coerceAtLeast(1)))
+        }
+        // El filo de las caratulas: sobre el negro, sin el, un globo de fondo
+        // oscuro no tendria forma.
+        drawPath(silueta, FiloColor, style = Stroke(FiloAncho.toPx()))
     }
 }
 
