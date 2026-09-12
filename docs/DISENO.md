@@ -526,6 +526,13 @@ cerrar, y **líneas sangradas cuando no hay nada abierto**, que es exactamente l
 forma que tiene un cuerpo huérfano. No es un compilador; es lo que se puede
 tender en tres minutos desde un sitio donde no hay compilador.
 
+**Desde el 12/09/2026 ya no mira eso: solo imports de Android o de la JVM en
+`commonMain`.** Lo de arriba se escribió cuando no se podía compilar desde
+donde se editaba; hoy Gradle corre en cada tanda y caza los cuerpos huérfanos
+igual. Con dos agentes escribiendo a la vez, las llaves y los huérfanos saltaban
+sobre ficheros a medio editar, y Dani lo quitó por ruido. Los imports se quedan
+porque Gradle no los ve desde Windows. La versión vieja, en git (`9024ae0`).
+
 **Se pasa antes de dar nada por terminado**, junto con las otras dos
 comprobaciones que ya se hacían a mano: imports muertos, y que todo lo que la
 interfaz llama exista de verdad.
@@ -1383,3 +1390,26 @@ escrito sin compilar.
 
 **Lo que nadie ha comprobado todavía:** que ML Kit detecte la rotulación a mano
 de un cómic. Para eso existe la tanda 28, y lo dice el móvil de Dani.
+
+**Lo que dijo la sonda (11/09/2026), y lo que se decidió con eso:**
+
+- Los globos salen prácticamente todos en un cómic real. **El camino A se
+  queda.** Que el OCR no subraye todas las líneas no importa: el globo sale del
+  relleno, y con una línea detectada basta.
+- **Una página nueva se ve ENTERA primero** y el siguiente toque abre el globo
+  1, como Play Books. Hacia atrás, del globo 1 se vuelve a la página entera y de
+  ahí a la anterior. Decidido por Dani; la regla vive en `SecuenciaGlobos`, con
+  pruebas.
+- **La caché es en memoria y solo del cómic abierto, no en disco.** Ver la página
+  entera primero tapa el medio segundo de cálculo, y más aún si la página
+  siguiente se deja calculada antes de llegar. Una caché de disco necesitaría un
+  tope (la lección de los 3,78 GB de `CONTEXTO.md`) para ahorrar una espera que
+  no se ve. Si en el móvil se nota, se añade entonces.
+- **El globo se recorta por su contorno**, un polígono (`Globo.contorno`) sacado
+  del mismo relleno, y no por el recuadro, que se llevaría las esquinas del
+  dibujo de alrededor.
+- **Primero se detectan las viñetas** (pedido por Dani a mitad de la tanda 29,
+  tras ver Absolute Batman #01 p.5): el globo que rompe el marco y se abre a la
+  calle ya no se descarta —se queda cortado en el borde de su viñeta—, y el
+  orden es por viñetas y, dentro, por filas. Una página sin calles lisas se
+  trata como una sola viñeta, igual que antes.

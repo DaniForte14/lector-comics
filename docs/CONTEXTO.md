@@ -1981,6 +1981,11 @@ Mira llaves y paréntesis sin cerrar y, sobre todo, **cuerpos huérfanos** —c�
 que se queda suelto a nivel de fichero cuando un borrado corta por en medio de
 una función—. Ese fallo no descuadra nada y no se ve leyendo; solo lo caza
 Gradle, y el 02/09/2026 llegó dos veces al móvil de Dani por no tener esto.
+**Desde el 12/09/2026 solo mira los imports de `commonMain`**: Dani quitó las
+otras tres comprobaciones porque "siempre sale que hay que hacer algo" —con dos
+agentes escribiendo, saltaban sobre ficheros a medio editar— y Gradle las caza
+igual. Los imports se quedaron porque es lo único que Gradle no ve desde
+Windows. La versión de cuatro sigue en git (`9024ae0`).
 
 **Un reemplazo por rango tiene que comprobar qué hay DENTRO del rango.** Exigir
 que el patrón aparezca N veces exactas —que es lo que este proyecto ya hacía— no
@@ -4682,14 +4687,143 @@ coger un fichero a medio editar—: `comprobar.py` en 0 y `:app:assembleDebug
 :shared:testDebugUnitTest --rerun-tasks` en verde, con un solo `w:`, el de
 compatibilidad KMP<->AGP de siempre. El recuento de pruebas no se leyo.
 
+**LO QUE DIJO EL MOVIL (11/09/2026, 17:49, debug), sobre UN solo comic**
+(Green Lantern Corps Recharge #04, paginas 1-20):
+
+- **ML Kit acepta las paginas en `RGB_565`**: ni un `OCR falla` en todo el
+  rastro. La trampa que se temia no existe.
+- **Los recuadros gruesos pillan "practicamente todos" los globos**, segun Dani.
+- **El cian no pilla todas las lineas**: a veces un globo tiene subrayado un 80%
+  de su texto. **No importa, y es por diseño**: el globo no sale de juntar
+  lineas, sale de rellenar desde CUALQUIER linea detectada hasta el contorno.
+  Con que el OCR pille una sola linea del globo, el globo sale entero. Solo se
+  perderia un globo en el que no pille ninguna.
+- Coste, en debug: OCR 60-300 ms (casi siempre ~100), globos 17-357 ms (casi
+  siempre ~60); lo peor, la pagina 4 con 82 lineas y 16 globos, ~medio segundo
+  entre los dos. Sin cache se repite en cada vuelta a la pagina y en las
+  vecinas, porque el carrusel las compone (`beyondViewportPageCount = 1`).
+- El orden no se ha juzgado en ese comic.
+
+**Segundo comic, con captura (Absolute Batman #01, pag. 5, 18:02).** Coste
+parecido (OCR 88-297 ms, globos 16-391). Tres fallos distintos:
+
+1. **LOS GLOBOS DE DIALOGO DE UNA VIÑETA NO SALEN, y es el fallo gordo.** Cuatro
+   globos blancos con borde negro, pegados entre si, arriba del todo de su
+   viñeta: el cian SI esta (el OCR los lee) y no hay recuadro. Hipotesis, sin
+   comprobar: el de arriba **se abre a la calle blanca entre viñetas** y el
+   relleno se escapa por ahi, y los otros tres se van con el por estar unidos.
+   Las cartelas rectangulares (nueve en esa pagina) salen todas.
+2. **Sobra un letrero** ("GOTHAM DELI & GROCERY"): texto dentro de una zona clara
+   cerrada, que para el relleno es igual que una cartela. Se acepta: cualquier
+   regla que lo quite se lleva cartelas buenas.
+3. **El orden por filas se equivoca entre viñetas**: el globo de la viñeta de la
+   derecha, por estar mas alto, va antes que los dos de la del medio. Es el techo
+   que el `ponytail:` de `Bocadillos.ordenar` ya decia.
+
+1 y 3 tienen el mismo arreglo: **detectar antes las viñetas** (calles lisas,
+como `Recorte`, en cortes recursivos) y rellenar y ordenar dentro de cada una.
+Tambien salen **0 globos** en la pag. 3 (4 lineas) y la 17 (26 lineas), sin
+captura para saber por que.
+
 **Sin verificar:** si ML Kit pilla la rotulacion a mano (para eso es la sonda, y
 lo dice el movil de Dani, ANDROID); los MB que añade al APK (a los dos agentes se
 les denego leer `build/`, y **si crece ~4 MB el modelo va dentro; si casi nada,
 lo baja Play services en el primer uso**, porque el arbol trae
 `play-services-mlkit-text-recognition` como transitiva); el coste real de un
 `getPixel` por pixel en un bloque sobre cielo; `TOLERANCIA`, `LINEAS_DE_MARGEN`
-y `CASI_IGUALES`, que salen de la cuenta y ninguna prueba sujeta; y
-`Bocadillos` en Kotlin/Native, que lo dice el CI.
+y `CASI_IGUALES`, que salen de la cuenta y ninguna prueba sujeta. **`Bocadillos` en
+Kotlin/Native ya no esta en esta lista**: el CI de `6138528` salio verde, con
+sus 11 pruebas corridas en el simulador de iOS.
+
+### Tanda 29: el zoom de verdad, el contorno y las viñetas (11-12/09/2026)
+
+Dani dio el camino A por bueno tras la sonda y decidio dos cosas: **una pagina
+nueva se ve entera primero**, y **la cache de globos es en memoria**, no en
+disco. Antes de repartir, el coordinador escribio el contrato: `Globo`
+(recuadro + contorno poligonal) y `SecuenciaGlobos.paso` como esqueleto que
+solo pasaba pagina, para que el lector funcionase mientras se escribia la regla.
+A mitad de tanda, con la captura de Absolute Batman, Dani pidio meter ya la
+deteccion de viñetas en vez de dejarla para la 30.
+
+**Paco — el globo ampliado (`Lector.kt`) y la cache (`VistaModelo`).**
+
+- Cache: un `Deferred` por pagina, solo del comic abierto (al cambiar de uri se
+  cancela y se vacia). Dos que piden la misma pagina esperan al mismo calculo:
+  el carrusel compone tambien las vecinas. **Un fallo no se guarda**: se quita
+  y se reintenta, la leccion del 420 de Comic Vine.
+- Al cambiar de hoja: globo a null (toque, volumen y deslizar cambian los tres
+  `currentPage`), la pagina p+1 calculandose, y el detalle de p precalentado.
+- `GloboAmpliado` va en coordenadas de pantalla, entre el pager y los controles,
+  **sin `pointerInput`**, para que los toques lo atraviesen hasta la pagina, que
+  es la que sabe de tercios, doble toque y controles. Recorta del detalle con
+  un `clipPath` del poligono y entra con un `lerp` de ~200 ms, una vez por globo.
+- **El estado va ETIQUETADO con su hoja** (`hoja to globo`): las lambdas de los
+  toques y de `mover` se crean una vez y se quedan, y asi el globo 2 de la
+  pagina anterior no se pinta ni un fotograma encima de la nueva.
+- **El modo llenar** escala la pagina por `base`; sin tenerlo en cuenta el globo
+  saldria de un sitio que no es el suyo. Por eso `escalaBase` es una sola funcion
+  para el zoom y para el globo, y no dos cuentas.
+- Los numeros para tocar, juntos y comentados: oscuro 0,6, ancho 92%, alto 80%,
+  ampliacion maxima 2,5x (minima 1x), entrada 200 ms (0 sin animaciones).
+- **`encuadreGlobo` y `escalaBase` pasaron despues a `commonMain`**
+  (`shared/.../ui/EncuadreGlobo.kt`) con 12 pruebas: la regla de que lo que
+  decide con casos de borde va puro y probado, y el iPad las va a necesitar.
+  Entre ellas, el globo mas grande que la pantalla, que con un `coerceIn` de
+  minimo por encima del maximo habria lanzado una excepcion, y que **se conserva
+  la forma** al ampliar, o el recorte saldria estirado. Publicas, porque
+  `:shared` es otro modulo y `internal` no llega a `:app`.
+
+**LA CACHE DE DETALLE DE `ComicZip` SON DOS ENTRADAS**, y las comparten todos
+los anchos de 1200 para arriba: la pagina de 1600 del OCR y el detalle del zoom
+compiten. Por eso el detalle de p se precalienta DESPUES de sus globos: asi lo
+que cae es la de 1600, ya usada, y no el detalle de la pagina que se ve. **Si
+algun dia se añade otra decodificacion grande, hay que volver a mirar esto.**
+
+Una pega vieja, que no es de esta tanda: `mover` se asigna una vez con
+`LaunchedEffect(estado)` y se queda con las `hojas` de la primera composicion;
+al girar con dobles puesto, el volumen podria calcular mal la hoja. Ya pasaba
+antes con el pasapaginas.
+
+**Lucia — el contorno, la secuencia y las viñetas (`Bocadillos`, `Vinetas`,
+`SecuenciaGlobos`).**
+
+- **Contorno: recorrido de Moore sobre el `ByteArray` del relleno + Douglas-
+  Peucker**, sin leer un pixel mas. Se descarto lanzar rayos desde el centro
+  porque **los globos unidos por un cuello** son habituales y los rayos no
+  siguen la muesca de entre los dos; un perfil por filas se comeria el dibujo
+  de entre los lobulos. Tope de 64 puntos (la tolerancia empieza en 1 px y se
+  afloja x1,5 hasta caber). En la fusion queda el contorno del relleno mas
+  grande. **El poligono va por el borde del INTERIOR**: el trazo negro del globo
+  queda fuera, y lo que se ve alrededor en el zoom es el `Filo` que pinta Paco.
+- **Secuencia**: la regla del KDoc, y un globo que ya no existe (`actual >=
+  total`, pagina recalculada) cuenta como "pasado el ultimo". 9 pruebas.
+- **Viñetas (`Vinetas.de`)**: cortes de guillotina recursivos por calles
+  lisas, profundidad 5, viñeta minima 1/12 de la pagina, calle minima max(4 px,
+  1/200 del lado menor), tolerancia 40. El color de la calle sale de los cuatro
+  bordes de la pagina; si ninguno es liso (pagina a sangre), una sola viñeta y
+  todo como antes. **LO RALO PROPONE Y LO DENSO CONFIRMA**: ninguna calle vale
+  sin leer su linea central entera, porque con 32 muestras se escapa un marco de
+  2 px, y una fila que cruza un globo blanco en una viñeta blanca parece calle.
+- **En `globos()`**: cada bloque va a la viñeta de su centro y la ventana se
+  recorta a ella; tocar una calle ya no es escaparse (el globo que rompe el
+  marco se queda cortado ahi), tocar el borde de la pagina si. Orden por viñeta
+  y dentro por filas. Un globo que cruza de verdad a otra viñeta sale cortado.
+- Coste en la JVM, pagina sintetica de 1600x2400: **viñetas ~89.000 lecturas
+  (2,3% de la pagina), ~1,2 ms**, lo mismo que rellenar un globo grande, una vez
+  por pagina. El contorno, 0 lecturas de pixel.
+- Verificado con **mutaciones**: cuatro roturas a la vez tumban justo las cinco
+  pruebas esperadas, y cada rotura suelta tumba solo la suya.
+
+**UN RIESGO NUEVO, sin tapar a proposito:** texto sobre fondo claro, sin globo,
+en una viñeta pequeña que cabe entera en la ventana. Antes se escapaba por la
+ventana; ahora toca calles, que se aceptan, y puede salir un "globo" del tamaño
+de la viñeta. El arreglo pensado (descartar los rellenos que tocan dos lados
+opuestos) no se mete sin verlo antes en el movil.
+
+**Sin verificar:** nada de la 29 se ha visto en un movil; que la causa real del
+fallo de Absolute Batman fuera la calle (la prueba sintetica lo cubre, la pagina
+real no se ha vuelto a mirar); los numeros de las viñetas; y `Vinetas`,
+`EncuadreGlobo` y el contorno en Kotlin/Native, que lo dice el CI.
 
 ### El motor de RAR para iOS: hay via, y se aplaza (07/09/2026)
 

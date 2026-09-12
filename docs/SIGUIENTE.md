@@ -16,6 +16,28 @@ Dani **paro la fase 2 del port** para meter antes una cosa de Android: **el
 Bubble Zoom de Google Play Libros**, globo a globo. Diseño en `DISENO.md` §24,
 detalle en la tanda 28 de `CONTEXTO.md`.
 
+**La sonda ya se miro (11/09, 17:49), sobre un comic:** los globos salen
+practicamente todos, ML Kit acepta el `RGB_565`, y que al cian le falten lineas
+no importa porque el globo sale del relleno. **El camino A se da por bueno.**
+Falta mirar otras series y el orden; eso se hace en paralelo a la tanda 29.
+
+**Cuando se cierre la 29, lo que tiene que mirar Dani (ANDROID)**, con
+"Bocadillos" encendido:
+
+| Que hacer | Que tiene que pasar |
+|---|---|
+| Pasar a una pagina | se ve ENTERA, sin globo |
+| Tercio derecho o volumen abajo | sale el globo 1 ampliado, con su forma y la pagina oscurecida |
+| Seguir tocando | globo a globo, en orden de lectura, y tras el ultimo pasa de pagina |
+| Tercio izquierdo / volumen arriba | el globo anterior; del 1 a la pagina entera |
+| Tocar el centro con un globo abierto | salen los controles (**si no responde, el globo se esta comiendo los toques**) |
+| Doble toque | el zoom de siempre, y cierra el globo |
+| La pag. 5 de Absolute Batman #01 | salen los cuatro globos de la viñeta de abajo a la izquierda y el orden va por viñetas |
+
+Los numeros para tocar si algo se ve raro (oscuro 0,6, 92% de ancho, 80% de
+alto, 2,5x, 200 ms) estan juntos en `shared/.../ui/EncuadreGlobo.kt`, con las
+pruebas que dicen que pasa en cada borde.
+
 **LO QUE TOCA AHORA LO HACE DANI, Y ES DE ANDROID:** instalar, abrir un comic,
 tocar el centro y encender **"Bocadillos"** en la barra, y pasar unas veinte
 paginas de series distintas.
@@ -319,7 +341,8 @@ en `docs/CONTEXTO.md`, pero éstas son las que más fácil se tocan por error:
 
 ## Cómo se cierra una tanda aquí
 
-1. `python comprobar.py` tiene que decir **PROBLEMAS: 0**.
+1. `python comprobar.py` tiene que decir **PROBLEMAS: 0**. Desde el 12/09 solo
+   mira imports de Android/JVM en `commonMain`; lo demás lo caza Gradle.
 2. `./gradlew :app:assembleDebug :shared:testDebugUnitTest` verde y **sin un solo
    `w:`**.
 3. Si hay prueba nueva, lanzarla **por separado** con `--tests`, y comprobar con
