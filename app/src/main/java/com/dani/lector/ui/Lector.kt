@@ -32,6 +32,13 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Matrix
+import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.lerp
 import androidx.compose.ui.input.pointer.pointerInput
@@ -337,54 +344,78 @@ private fun Visor(
                 // volumen arriba = atras, volumen abajo = adelante
                 LaunchedEffect(estado) { mover = { subir -> avanzar(!subir) } }
 
+                // LA HOJA QUE SE DOBLA (tanda 33, DISENO §25). El pager se queda
+                // para el gesto y lo que cambia es como se pinta: la hoja de
+                // debajo QUIETA y la que se pasa ENCIMA, doblada segun el avance.
+                // Vale igual para el dedo, el toque, el volumen y el globo a
+                // globo: todos mueven el mismo avance. Con las animaciones del
+                // sistema apagadas, el paso de siempre.
+                val conPliegue = hayAnimaciones()
+                // La que se pasa es la de donde salio el gesto: settledPage no
+                // cambia hasta que el pager se para, asi que dar marcha atras a
+                // mitad de gesto sigue siendo la misma hoja. Salvo saliendo de la
+                // tarjeta del siguiente, que no se dobla: ahi vuelve la ultima
+                // pagina desdoblandose por encima, el paso de ida al reves.
+                val deArriba = minOf(estado.settledPage, hojas.size - 1)
+
                 HorizontalPager(
                     estado,
                     Modifier.fillMaxSize(),
                     userScrollEnabled = !ampliada
                 ) { i ->
-                    if (i >= hojas.size) {
-                        TarjetaSiguiente(vm, siguiente, onSiguiente, onAtras)
-                        return@HorizontalPager
-                    }
-                    val hoja = hojas[i]
-                    PaginaConZoom(
-                        vm, uri, hoja.map { paginas[it] },
-                        // con dos paginas a lo ancho, cada una necesita la mitad
-                        if (hoja.size > 1) ancho else ancho * 2,
-                        hoja.first() + 1,
-                        llenar = vm.llenar,
-                        // Ampliar a mano (doble toque o pellizco) cierra el globo:
-                        // son dos formas de acercarse y a la vez no caben.
-                        onZoom = { ampliada = it; if (it) globoAbierto = null },
-                        onToque = { fraccionX ->
-                            // tercios: los lados avanzan -una pagina, o un globo
-                            // con los bocadillos- y el centro saca los controles.
-                            // Con zoom puesto no se avanza, que ahi el dedo esta
-                            // para mover la imagen.
-                            when {
-                                ampliada -> alternarControles()
-                                fraccionX < 0.30f -> avanzar(false)
-                                fraccionX > 0.70f -> avanzar(true)
-                                else -> alternarControles()
-                            }
-                        },
-                        // La ULTIMA de la hoja: en doble pagina, la que estas
-                        // mirando de verdad es la de la derecha, que es la misma
-                        // que se apunta como leida.
-                        onMantener = { exportando = hoja.last() },
-                        transicion = Modifier.graphicsLayer {
-                            // giro y desvanecido durante el paso de pagina.
-                            // getOffsetFractionForPage es de Compose mas nuevo;
-                            // esto es lo mismo con la API estable.
-                            val f = (estado.currentPage - i) + estado.currentPageOffsetFraction
-                            val d = kotlin.math.abs(f).coerceAtMost(1f)
-                            alpha = 1f - d * 0.6f
-                            scaleX = 1f - d * 0.12f
-                            scaleY = 1f - d * 0.12f
-                            rotationY = f * -14f
-                            cameraDistance = 14f * densidad
+                    // Cuanto se ha ido esta hoja de su sitio: 0 quieta, 1 o -1
+                    // fuera. Se lee DENTRO de las lambdas de pintar, asi que cada
+                    // fotograma del paso solo repinta, no recompone.
+                    val desplazada = { (estado.currentPage - i) + estado.currentPageOffsetFraction }
+                    val trazos = remember(densidad) { TrazosDoblez(densidad) }
+                    Box(
+                        if (!conPliegue) Modifier
+                        // La de debajo QUIETA: se le anula lo que la mueve el
+                        // pager. Y la que ya ha salido del todo, invisible: con
+                        // el desplazamiento anulado caeria encima de las demas.
+                        else Modifier.zIndex(if (i == deArriba) 1f else 0f).graphicsLayer {
+                            val f = desplazada()
+                            translationX = f * size.width
+                            alpha = if (kotlin.math.abs(f) < 1f) 1f else 0f
                         }
-                    )
+                    ) {
+                        if (i >= hojas.size) TarjetaSiguiente(vm, siguiente, onSiguiente, onAtras)
+                        else {
+                            val hoja = hojas[i]
+                            PaginaConZoom(
+                                vm, uri, hoja.map { paginas[it] },
+                                // con dos paginas a lo ancho, cada una necesita la mitad
+                                if (hoja.size > 1) ancho else ancho * 2,
+                                hoja.first() + 1,
+                                llenar = vm.llenar,
+                                // Ampliar a mano (doble toque o pellizco) cierra el globo:
+                                // son dos formas de acercarse y a la vez no caben.
+                                onZoom = { ampliada = it; if (it) globoAbierto = null },
+                                onToque = { fraccionX ->
+                                    // tercios: los lados avanzan -una pagina, o un globo
+                                    // con los bocadillos- y el centro saca los controles.
+                                    // Con zoom puesto no se avanza, que ahi el dedo esta
+                                    // para mover la imagen.
+                                    when {
+                                        ampliada -> alternarControles()
+                                        fraccionX < 0.30f -> avanzar(false)
+                                        fraccionX > 0.70f -> avanzar(true)
+                                        else -> alternarControles()
+                                    }
+                                },
+                                // La ULTIMA de la hoja: en doble pagina, la que estas
+                                // mirando de verdad es la de la derecha, que es la misma
+                                // que se apunta como leida.
+                                onMantener = { exportando = hoja.last() },
+                                // Se dobla DENTRO del zoom (PaginaConZoom lo pone
+                                // despues de la escala): asi con "llenar" se dobla
+                                // la pagina tal y como se ve, no su tamaño sin
+                                // escalar.
+                                transicion = if (conPliegue && i == deArriba)
+                                    Modifier.hojaQueSeDobla(desplazada, trazos) else Modifier
+                            )
+                        }
+                    }
                 }
 
                 // EL GLOBO ABIERTO, en coordenadas de PANTALLA: fuera del
@@ -806,10 +837,13 @@ private fun PaginaConZoom(
         contentAlignment = Alignment.Center
     ) {
         Row(
-            transicion.graphicsLayer(
+            // El zoom por FUERA y la transicion —la hoja que se dobla— por
+            // DENTRO: el doblez se calcula sobre la pagina tal y como se ve,
+            // tambien con "llenar", que la agranda por encima de la pantalla.
+            Modifier.graphicsLayer(
                 scaleX = escala.value, scaleY = escala.value,
                 translationX = desX.value, translationY = desY.value
-            ),
+            ).then(transicion),
             verticalAlignment = Alignment.CenterVertically
         ) {
             nombres.forEachIndexed { i, n ->
@@ -822,6 +856,143 @@ private fun PaginaConZoom(
         }
     }
 }
+
+// LOS NUMEROS DE LA HOJA QUE SE DOBLA, puestos a ojo para tocarlos cuando Dani
+// lo pruebe. Ninguno sale de medir.
+//
+//  - REVERSO_ACLARADO: el blanco que lleva encima la solapa. Es el reverso del
+//    papel: el dibujo se transparenta, pero apagado. Sin esto la solapa parece
+//    otra pagina pegada encima y no la misma hoja vista por detras.
+//  - SOMBRA_OSCURA: el negro de la sombra junto al doblez, en lo mas oscuro.
+//  - SOMBRA_ANCHO_DP: lo que tarda en desvanecerse desde el doblez. Mas estrecha
+//    parece una raya; mas ancha, que la pagina de debajo esta sucia.
+private const val REVERSO_ACLARADO = 0.6f
+private const val SOMBRA_OSCURA = 0.35f
+private const val SOMBRA_ANCHO_DP = 28f
+
+/**
+ * Lo que se reutiliza de un fotograma a otro mientras se pasa la hoja: los dos
+ * Path, la matriz del reflejo y el degradado de la sombra. Pasar pagina son
+ * unos treinta fotogramas seguidos, y crear esto en cada uno seria basura para
+ * el recolector justo cuando se esta mirando si hay tirones (Fluidez).
+ */
+private class TrazosDoblez(densidad: Float) {
+    val plana = Path()
+    val solapa = Path()
+    val reflejo = Matrix()
+    val anchoSombra = SOMBRA_ANCHO_DP * densidad
+    // Del eje hacia fuera y en PIXELES: por eso se monta aqui, con la densidad,
+    // y no en un val de fichero como los degradados de fracciones.
+    val sombra = Brush.horizontalGradient(
+        listOf(Color.Black.copy(alpha = SOMBRA_OSCURA), Color.Transparent),
+        startX = 0f, endX = anchoSombra
+    )
+}
+
+/** El poligono en un Path que ya existe, sin crear otro. */
+private fun Path.poligono(puntos: List<Offset>) {
+    rewind()
+    for (k in 0 until puntos.size) {
+        val p = puntos[k]
+        if (k == 0) moveTo(p.x, p.y) else lineTo(p.x, p.y)
+    }
+    close()
+}
+
+/**
+ * La matriz que refleja sobre el eje del doblez, sacada de
+ * [HojaQueSeDobla.reflejar] con tres puntos: el origen y un paso por cada eje.
+ * Un reflejo es afin, asi que tres puntos lo fijan. Y asi no hay una segunda
+ * cuenta del reflejo que pueda discrepar de la que tiene prueba: si reflejar
+ * esta bien, esto tambien.
+ */
+private fun Matrix.reflejoSobre(desde: Offset, hasta: Offset) {
+    val o = HojaQueSeDobla.reflejar(Offset.Zero, desde, hasta)
+    val ex = HojaQueSeDobla.reflejar(Offset(1f, 0f), desde, hasta) - o
+    val ey = HojaQueSeDobla.reflejar(Offset(0f, 1f), desde, hasta) - o
+    reset()
+    values[Matrix.ScaleX] = ex.x
+    values[Matrix.SkewY] = ex.y
+    values[Matrix.SkewX] = ey.x
+    values[Matrix.ScaleY] = ey.y
+    values[Matrix.TranslateX] = o.x
+    values[Matrix.TranslateY] = o.y
+}
+
+/**
+ * La hoja que se pasa, doblada como papel segun cuanto se ha ido de su sitio.
+ * La geometria es de [HojaQueSeDobla], en comun; aqui solo se pinta:
+ *
+ *  - lo PLANO, recortado a su poligono;
+ *  - la SOLAPA, que es la MISMA pagina reflejada sobre el eje —el reverso del
+ *    papel—, recortada a la suya y aclarada;
+ *  - y una SOMBRA a lo largo del eje, hacia el lado que queda al descubierto:
+ *    la que echa el doblez sobre la pagina de debajo. Con un degradado y sin
+ *    blur, porque el blur pide API 31 y el minimo aqui es 26.
+ *
+ * El doblez es RECTO: la curvatura del papel pide shaders de tiempo de
+ * ejecucion, que en Compose llegan con API 33 (DISENO §25).
+ */
+private fun Modifier.hojaQueSeDobla(desplazada: () -> Float, t: TrazosDoblez) =
+    drawWithContent {
+        val f = desplazada()
+        val avance = kotlin.math.abs(f).coerceAtMost(1f)
+        // Quieta, tal cual y sin recortes: es lo que pasa casi todo el tiempo.
+        if (avance == 0f) {
+            drawContent()
+            return@drawWithContent
+        }
+        val p = HojaQueSeDobla.pliegue(size.width, size.height, avance, adelante = f > 0f)
+        if (p.plana.size >= 3) {
+            t.plana.poligono(p.plana)
+            clipPath(t.plana) { this@drawWithContent.drawContent() }
+        }
+        if (p.solapa.size < 3) return@drawWithContent
+        t.solapa.poligono(p.solapa)
+        t.reflejo.reflejoSobre(p.ejeDesde, p.ejeHasta)
+        clipPath(t.solapa) {
+            withTransform({ transform(t.reflejo) }) { this@drawWithContent.drawContent() }
+            drawRect(Color.White.copy(alpha = REVERSO_ACLARADO))
+        }
+
+        // La sombra, perpendicular al eje y hacia el lado CONTRARIO a la solapa:
+        // la solapa se dobla por encima de lo plano, asi que el otro lado es el
+        // que queda al descubierto, con la pagina de debajo.
+        val eje = p.ejeHasta - p.ejeDesde
+        val largo = eje.getDistance()
+        if (largo == 0f) return@drawWithContent
+        var nx = -eje.y / largo
+        var ny = eje.x / largo
+        var cx = 0f
+        var cy = 0f
+        for (k in 0 until p.solapa.size) {
+            cx += p.solapa[k].x
+            cy += p.solapa[k].y
+        }
+        cx /= p.solapa.size
+        cy /= p.solapa.size
+        if ((cx - p.ejeDesde.x) * nx + (cy - p.ejeDesde.y) * ny > 0f) {
+            nx = -nx
+            ny = -ny
+        }
+        val grados = Math.toDegrees(kotlin.math.atan2(ny, nx).toDouble()).toFloat()
+        // Un rectangulo que cubre el eje de punta a punta, girado para que su
+        // ancho vaya del eje hacia fuera: el degradado es el de siempre y lo
+        // unico que cambia por fotograma es la transformacion.
+        val cubre = size.width + size.height
+        // Entra y sale con el paso, 0 en los dos extremos. A fuerza fija saltaria
+        // de golpe al primer toque, y al final —con el eje ya en el borde
+        // izquierdo y la solapa fuera de la pantalla— dejaria una raya oscura en
+        // la pagina nueva que desapareceria de golpe al pararse el pager.
+        val fuerza = kotlin.math.sin(Math.PI * avance).toFloat()
+        withTransform({
+            translate(p.ejeDesde.x, p.ejeDesde.y)
+            rotate(grados, pivot = Offset.Zero)
+        }) {
+            drawRect(t.sombra, topLeft = Offset(0f, -cubre),
+                size = Size(t.anchoSombra, 2 * cubre), alpha = fuerza)
+        }
+    }
 
 /**
  * El globo abierto: el globo ampliado encima de la pagina, recortado por su
