@@ -1439,3 +1439,6 @@ debajo. Sustituye al giro con desvanecido y encogido que había.
 - **El riesgo que hay que medir**: es la animación más cara de la app, y
   `CONTEXTO.md` cuenta que una animación continua calentó el móvil. Esta solo
   corre mientras se pasa la página, pero se mira en el rastro de `Fluidez`.
+- **Pasando con toque, volumen o globo a globo dura ~0,5 s** (Dani, tras verla
+  en el móvil el 14/09/2026). Con la animación por defecto del pager eran ~0,2 s
+  y apenas se veía doblarse. Con el dedo va al ritmo del dedo.

@@ -5167,6 +5167,36 @@ el `zIndex` no ordenara las hojas del pager, la que se pasa quedaria debajo; y
 el coste de pintar la hoja dos veces con recorte se mira en la linea `fluidez`
 del rastro.
 
+**LO QUE ENSEÑO EL VIDEO DE DANI (14/09/2026, 20:51)**, Recharge #04 pags. 5
+y 6, mirado fotograma a fotograma (sacados con OpenCV instalado en una carpeta
+temporal: en el PC no hay ffmpeg):
+
+- **El doblez esta bien**: a mitad del paso la pag. 6 esta QUIETA debajo, la 5
+  se levanta por la esquina de abajo a la derecha con el eje en diagonal, y la
+  solapa es el reverso de LA MISMA pag. 5, reflejado y aclarado, ENCIMA. Los dos
+  riesgos de Paco (reflejo traspuesto, `zIndex`) no se dan.
+- **El orden de la pag. 5, arreglado en la 32, confirmado**: primero la pareja
+  "SI NOS PEGAMOS..." + "TIENEN INTELIGENCIA..." como un globo, luego "BIEN",
+  luego "DE MIEDO...".
+- **Pasado con un toque, el doblez dura ~0,2 s** (de la pag. 5 entera a la 6
+  entera en ~10 fotogramas a 53 fps): se ve poco. Es la animacion por defecto de
+  `animateScrollToPage`; con el dedo va al ritmo del dedo.
+- Sin ver: la sombra (a ese tamaño no se distingue) y el coste (falta la linea
+  `fluidez`).
+
+**Tanda 33b, Paco: el paso por toque dura ~0,5 s.** Solo habia dos
+`animateScrollToPage`, las dos en `avanzar` (toque, volumen y globo a globo);
+ahora van con `PASO_PAGINA = tween(500, CubicBezierEasing(0.42, 0, 0.58, 1))`,
+una ease-in-out simetrica: la esquina se levanta despacio, que es donde se ve el
+doblez; lo rapido es el medio, con la hoja casi de canto; y se posa despacio.
+Se descarto la lineal (arranca y para en seco, parece carton) y `FastOutSlowIn`
+(se come de golpe justo el principio). Sin animaciones del sistema, el paso de
+siempre. El dedo y el `scrollToPage` de miniaturas no cambian. **Pegas sin
+ver**: una curva que empieza con pendiente 0 tarda unos fotogramas en arrancar
+tras el toque; si se nota como retraso, se baja el primer numero (0.3, 0, 0.58,
+1) sin tocar la duracion. Y dos toques seguidos: el segundo interrumpe al
+primero, como ya pasaba, pero ahora hay mas tiempo para que ocurra.
+
 ### El motor de RAR para iOS: hay via, y se aplaza (07/09/2026)
 
 Dani eligio **buscar un motor de RAR nativo** en vez de dejar el CBR fuera del

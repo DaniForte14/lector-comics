@@ -2,6 +2,7 @@ package com.dani.lector.ui
 
 import android.app.Activity
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -318,6 +319,18 @@ private fun Visor(
                 // y con una sola pagina manda SecuenciaGlobos; si no, se pasa de
                 // pagina como siempre. Vale igual con el esqueleto, que solo pasa
                 // pagina, que con la regla de verdad.
+                // Con las animaciones del sistema puestas, la hoja se dobla al
+                // pasar (ver el pager, mas abajo).
+                val conPliegue = hayAnimaciones()
+
+                // Pasar por toque, volumen o globo a globo: con la hoja que se
+                // dobla, a PASO_PAGINA para que el doblez se vea; sin animaciones
+                // del sistema, el paso de siempre del pager. El arrastre con el
+                // dedo no pasa por aqui: va a su ritmo y el pager lo remata.
+                suspend fun pasarA(hoja: Int) =
+                    if (conPliegue) estado.animateScrollToPage(hoja, animationSpec = PASO_PAGINA)
+                    else estado.animateScrollToPage(hoja)
+
                 fun avanzar(adelante: Boolean) {
                     val hojaVista = estado.currentPage
                     val globoAGlobo = bocadillos && !ampliada &&
@@ -333,10 +346,10 @@ private fun Visor(
                     when (paso) {
                         is Paso.EnPagina -> globoAbierto = paso.globo?.let { hojaVista to it }
                         Paso.PaginaSiguiente -> alcance.launch {
-                            estado.animateScrollToPage((hojaVista + 1).coerceAtMost(hojas.size))
+                            pasarA((hojaVista + 1).coerceAtMost(hojas.size))
                         }
                         Paso.PaginaAnterior -> alcance.launch {
-                            estado.animateScrollToPage((hojaVista - 1).coerceAtLeast(0))
+                            pasarA((hojaVista - 1).coerceAtLeast(0))
                         }
                     }
                 }
@@ -350,7 +363,6 @@ private fun Visor(
                 // Vale igual para el dedo, el toque, el volumen y el globo a
                 // globo: todos mueven el mismo avance. Con las animaciones del
                 // sistema apagadas, el paso de siempre.
-                val conPliegue = hayAnimaciones()
                 // La que se pasa es la de donde salio el gesto: settledPage no
                 // cambia hasta que el pager se para, asi que dar marcha atras a
                 // mitad de gesto sigue siendo la misma hoja. Salvo saliendo de la
@@ -856,6 +868,19 @@ private fun PaginaConZoom(
         }
     }
 }
+
+// EL PASO DE PAGINA POR TOQUE, VOLUMEN O GLOBO A GLOBO (tanda 33b), para tocarlo
+// cuando Dani lo pruebe. El del pager por defecto dura ~0,2 s y el doblez apenas
+// se veia; Dani lo quiere en ~0,5.
+//
+// LA CURVA es la ease-in-out de siempre (0.42, 0, 0.58, 1), simetrica: la
+// esquina se levanta despacio, lo mas rapido es el medio —la hoja casi de canto,
+// que es lo que menos se mira— y se posa despacio, como el papel que cae
+// frenado por el aire. Una lineal arranca y para en seco, que en papel parece
+// carton. Y FastOutSlowIn, la de Material, se come de golpe justo el principio,
+// que es donde se ve el doblez.
+private const val PASO_PAGINA_MS = 500
+private val PASO_PAGINA = tween<Float>(PASO_PAGINA_MS, easing = CubicBezierEasing(0.42f, 0f, 0.58f, 1f))
 
 // LOS NUMEROS DE LA HOJA QUE SE DOBLA, puestos a ojo para tocarlos cuando Dani
 // lo pruebe. Ninguno sale de medir.
