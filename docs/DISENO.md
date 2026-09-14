@@ -1416,3 +1416,26 @@ de un cómic. Para eso existe la tanda 28, y lo dice el móvil de Dani.
   calle ya no se descarta —se queda cortado en el borde de su viñeta—, y el
   orden es por viñetas y, dentro, por filas. Una página sin calles lisas se
   trata como una sola viñeta, igual que antes.
+
+## 25. La hoja que se dobla al pasar página (14/09/2026)
+
+Dani pidió **la animación de pasar página de Google Play Libros**: su "efecto
+3D", la hoja que se dobla como papel siguiendo el dedo y deja ver la siguiente
+debajo. Sustituye al giro con desvanecido y encogido que había.
+
+- **Siempre, sin ajuste** (Dani: "que se muestre siempre y ya"). Con las
+  animaciones del sistema apagadas (`hayAnimaciones()`), pasa sin efecto.
+- **Solo en modo página.** La tira es un scroll vertical y no se pasa página.
+- **El `HorizontalPager` del lector se queda para el gesto.** Lo que cambia es
+  cómo se pinta: la hoja de debajo quieta, y la de encima doblada según el
+  avance del pager, también cuando pasa por un toque, por el volumen o por el
+  globo a globo. (El `beyondViewportPageCount = 1` que no hay que deshacer es el
+  del carrusel de PESTAÑAS, en `MainActivity`, no este.)
+- **Un doblez RECTO con sombra, no la curvatura del papel.** La curvatura de
+  verdad pide OpenGL o shaders de tiempo de ejecución, que en Compose llegan
+  con API 33, y aquí el mínimo es 26.
+- **La geometría en común (`ui/HojaQueSeDobla.kt`), pura y con pruebas**; pintar,
+  en `Lector.kt`.
+- **El riesgo que hay que medir**: es la animación más cara de la app, y
+  `CONTEXTO.md` cuenta que una animación continua calentó el móvil. Esta solo
+  corre mientras se pasa la página, pero se mira en el rastro de `Fluidez`.

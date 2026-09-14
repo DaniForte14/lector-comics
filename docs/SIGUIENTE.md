@@ -9,6 +9,25 @@ propósito.
 
 ---
 
+## Donde se paro el 14/09/2026
+
+**Tanda 33: la hoja que se dobla al pasar pagina**, como el "efecto 3D" de
+Play Libros (`DISENO.md` §25). Lo que tiene que mirar Dani (ANDROID), en
+cualquier comic en modo pagina:
+
+| Que hacer | Que tiene que pasar |
+|---|---|
+| Arrastrar despacio hacia la izquierda | la hoja de encima se levanta por la esquina de ABAJO a la derecha y deja ver la siguiente, QUIETA, debajo |
+| Mirar la solapa | es el reverso de la MISMA pagina (su trozo de la esquina, aclarado). **Si enseña otro trozo, el reflejo esta mal** |
+| Mirar cual va encima | la que se pasa, encima. **Si queda debajo, es el `zIndex`** |
+| Soltar a medias / volver atras | la hoja vuelve sin saltos; hacia atras se levanta por la esquina de abajo a la izquierda |
+| Toque, volumen, globo a globo | el mismo doblez, animado |
+| Pantalla completa | si la hoja se ve "pelarse desde abajo" y queda raro, se sube el angulo |
+
+Y pegar el rastro tras pasar unas cuantas: la linea `fluidez` dice si pesa.
+Numeros para tocar: `REVERSO_ACLARADO`, `SOMBRA_OSCURA`, `SOMBRA_ANCHO_DP` en
+`Lector.kt`.
+
 ## Donde se paro el 13/09/2026
 
 El Bubble Zoom va por la **tanda 31**. Lo que funciona en el movil de Dani

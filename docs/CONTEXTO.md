@@ -5106,6 +5106,67 @@ El rastro dice ahora `recorte (izq,arriba,ancho x alto)` o `sin recorte`, y
 `orden:` y `viñetas:` van ya en la pagina recortada. Por pagina siguen las mismas
 tres decodificaciones grandes que en la 29.
 
+CI verde en `258c97f` (12m30s): lo de la 32 compila en Kotlin/Native y sus
+pruebas pasan en el simulador de iOS.
+
+### Tanda 33: la hoja que se dobla al pasar pagina (14/09/2026)
+
+Dani pidio el "efecto 3D" de pasar pagina de Google Play Libros: siempre, sin
+ajuste. Diseño en `DISENO.md` §25. Contrato del coordinador en
+`shared/.../ui/HojaQueSeDobla.kt` (`Pliegue`, `pliegue`, `reflejar`); sesiones
+nuevas y sin contexto, asi que el primer mensaje les dijo quien era quien.
+
+**Lucia — la geometria (11 pruebas).** EL MODELO ES COGER LA ESQUINA CON EL
+PULGAR: la esquina de abajo a la derecha va por un arco hasta el borde
+izquierdo —s = 2·ancho·avance hacia la izquierda, h = ancho·0,37·sen(pi·avance)
+hacia arriba—, y **el eje es la mediatriz entre donde estaba la esquina y donde
+esta**, que es lo que hace el papel. De ahi sale todo sin ajustarlo a mano: al
+principio solo se levanta la esquina, el eje barre de derecha a izquierda, se
+inclina (30° sobre la vertical al empezar, ~20° a mitad) y acaba vertical.
+`plana` es la hoja por el lado sin la esquina; `solapa`, el trozo cortado con
+cada vertice reflejado. Atras es el espejo horizontal. La solapa SE SALE de la
+hoja por la izquierda y un poco por arriba, a proposito: en un visor de una
+pagina la hoja se va de la pantalla, y recortar es de quien pinta. Avance 1 va
+aparte porque sen(pi) en Float no da 0. Pruebas: continuidad de milesima en
+milesima (nunca mas de un 1% de la hoja), area monotona, suma de areas, espejo;
+mutaciones que tumban solo las suyas. Un fallo de LA PRUEBA, no de la geometria:
+comparar lados con productos vectoriales sin normalizar daba -4.500 para un
+punto sobre el eje; ahora mide distancias en px con 0,01 de margen.
+
+**Sin verificar (geometria):** como se ve, que no esta pintado; y en una
+pantalla muy alta (alto/ancho ~2,2) la esquina de arriba sigue plana hasta
+pasada la mitad: la hoja se pela desde abajo. Si queda raro, se sube el angulo.
+
+**Paco — pintarla (`Lector.kt`).** Fuera el giro con desvanecido del pager.
+Cada hoja va en una `Box` con `translationX = f * ancho`, que ANULA lo que la
+mueve el pager (la de debajo queda quieta), y `zIndex(1)` la que se pasa. **La
+de encima es la de `estado.settledPage`**, que no cambia hasta que el pager se
+para: asi `avance = |f|` y `adelante = f > 0` salen directos, y dar marcha
+atras a mitad de gesto es continuo. Vale igual para dedo, toque, volumen y
+globo a globo. `f` se lee dentro de las lambdas de pintar: cada fotograma
+repinta y no recompone.
+
+- `Modifier.hojaQueSeDobla`: quieta, `drawContent()` sin recortes; pasando,
+  `plana` con `clipPath`, y la solapa con `clipPath` + `withTransform(reflejo)
+  { drawContent() }` + blanco encima. **La matriz del reflejo sale del
+  `reflejar` de Lucia con tres puntos** (un reflejo es afin): no hay una segunda
+  cuenta que pueda discrepar de la que tiene prueba.
+- El doblez va DENTRO del zoom (`graphicsLayer(escala).then(transicion)`): si
+  no, en modo llenar se doblaria la pagina sin escalar.
+- **La sombra entra y sale con sen(pi·avance)**: fija, saltaria al primer toque
+  y dejaria una raya en la pagina nueva al pararse. Sin blur (API 31).
+- La tarjeta del siguiente no se dobla; al volver de ella, la ultima pagina se
+  desdobla. `alpha = 0` para |f| >= 1, por si una hoja ya pasada cayera encima.
+- Paths, Matrix y Brush reutilizados entre fotogramas.
+- Numeros para tocar: `REVERSO_ACLARADO = 0.6`, `SOMBRA_OSCURA = 0.35`,
+  `SOMBRA_ANCHO_DP = 28`.
+
+**Sin verificar, y es la tanda con mas riesgo:** nadie lo ha visto. Si el
+reflejo estuviera traspuesto, la solapa enseñaria otro trozo de la pagina; si
+el `zIndex` no ordenara las hojas del pager, la que se pasa quedaria debajo; y
+el coste de pintar la hoja dos veces con recorte se mira en la linea `fluidez`
+del rastro.
+
 ### El motor de RAR para iOS: hay via, y se aplaza (07/09/2026)
 
 Dani eligio **buscar un motor de RAR nativo** en vez de dejar el CBR fuera del
