@@ -5160,6 +5160,8 @@ repinta y no recompone.
 - Paths, Matrix y Brush reutilizados entre fotogramas.
 - Numeros para tocar: `REVERSO_ACLARADO = 0.6`, `SOMBRA_OSCURA = 0.35`,
   `SOMBRA_ANCHO_DP = 28`.
+- CI verde en `01efa6c`: `HojaQueSeDobla` compila en Kotlin/Native y sus 11
+  pruebas pasan en el simulador de iOS.
 
 **Sin verificar, y es la tanda con mas riesgo:** nadie lo ha visto. Si el
 reflejo estuviera traspuesto, la solapa enseñaria otro trozo de la pagina; si
@@ -5195,7 +5197,57 @@ siempre. El dedo y el `scrollToPage` de miniaturas no cambian. **Pegas sin
 ver**: una curva que empieza con pendiente 0 tarda unos fotogramas en arrancar
 tras el toque; si se nota como retraso, se baja el primer numero (0.3, 0, 0.58,
 1) sin tocar la duracion. Y dos toques seguidos: el segundo interrumpe al
-primero, como ya pasaba, pero ahora hay mas tiempo para que ocurra.
+primero, como ya pasaba, pero ahora hay mas tiempo para que ocurra. Dani lo dio
+por bueno ("bien asi"). CI verde en `72f0787`.
+
+**EL RASTRO DE LA 33 (14/09/2026, 20:49 y 21:02, debug):**
+
+- **La hoja que se dobla NO pesa**: mientras se pasan paginas, `fluidez` da 1-2
+  de 300 fotogramas por encima de 32 ms, el peor 35-70 ms. El tiron gordo (12-13
+  de 300, el peor 290-315 ms) sale SIEMPRE al abrir un comic, y ya estaba antes
+  del doblez (12/09: 15 de 300, 213 ms; 13/09: 12 de 300, 265 ms).
+- **LO QUE SI HA EMPEORADO: calcular los globos.** Recharge pags. 5 y 6,
+  0,5-0,8 s (en la tanda 28, ~0,06); Absolute Batman, cuando se calculan varias
+  paginas a la vez (13/09 01:37:09-10), de 1,4 a **3,3 s** por pagina, y en la
+  pag. 10 solo `Vinetas` se lleva 1,2 s. Sale de las tandas 29-32 (pagina sin
+  recortar, viñetas, lineas leidas enteras) y de que en Android cada pixel es un
+  `Bitmap.getPixel` suelto. Y **las paginas se lanzan todas a la vez** al
+  deslizar deprisa: cada `Deferred` de la cache sigue corriendo aunque ya no se
+  mire esa pagina, y compiten por la CPU.
+- **EL RIESGO**: `SecuenciaGlobos` trata "sin calcular" como "sin globos", asi
+  que un toque antes de que acabe el calculo PASA DE PAGINA saltandose sus
+  globos. Con 0,06 s no se notaba; con 0,5-3 s, si.
+
+### Tanda 34: la velocidad de los globos (14/09/2026)
+
+**Paco (`VistaModelo`, `Lector`):**
+
+- **La pagina de 1600 se copia a un IntArray con UN `getPixels`** y se lee de
+  ahi. En la 28 se rechazo por memoria (~15 MB) cuando cada lectura era barata;
+  desde la 29 no lo es. Un solo buffer, reutilizado y soltado al apagar los
+  bocadillos (con `tryLock`, para no quitarselo a quien lo lee).
+- **Los calculos en serie, con un `Mutex` y no con `limitedParallelism(1)`**: el
+  OCR suspende a medias, y con un despachador de un hilo la pagina siguiente
+  entraria en ese hueco y pisaria el buffer. La que se ve primero; la siguiente,
+  cuando la primera ya esta. Al cambiar de pagina se cancela lo que se ESTA
+  calculando y no es la que se ve o la siguiente; lo ya calculado se queda
+  (volver atras no puede costar otro OCR de segundos).
+- **El toque espera** (`withTimeoutOrNull(2000)` sobre un `snapshotFlow`), pero
+  **solo si los globos cambian la respuesta**: se le pregunta a `SecuenciaGlobos`
+  con 0 y con 1000 globos, y si da lo mismo no espera (atras desde la pagina
+  entera va a la anterior haya los que haya). Asi la regla no se copia en
+  `Lector`. Mientras espera, otro toque no encola nada. Sin aviso visual: si Dani
+  nota toques muertos, una chapa pequeña.
+- **La linea de diagnostico de viñetas calculaba `Vinetas.de` OTRA VEZ** (tanda
+  30, "para quitar cuando se sepa"): los 1,2 s de la pag. 10 de Batman eran esa
+  segunda pasada. Se quita.
+- **Encajonado**: `pixel` como `(Int, Int) -> Int` crea un `Integer` por cada
+  valor fuera de -128..127 en cada llamada, cientos de miles por pagina. Se
+  arregla en comun con un `fun interface` de parametros Int (Lucia).
+- Rastro por pagina: `espera`, `decodificar`, `OCR`, `copia`, `globos`, `total`.
+
+**Sin verificar**: cuanto se gana (el rastro nuevo contra el de hoy), la memoria
+en el movil, y el toque que espera en la mano.
 
 ### El motor de RAR para iOS: hay via, y se aplaza (07/09/2026)
 

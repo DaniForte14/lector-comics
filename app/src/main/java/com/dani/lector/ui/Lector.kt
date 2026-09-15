@@ -72,6 +72,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 
 enum class Modo { PAGINA, TIRA }
 
@@ -299,12 +301,20 @@ private fun Visor(
                     globoAbierto = null
                     val hojaVista = estado.currentPage
                     val p = hojas.getOrNull(hojaVista)?.singleOrNull()
+                    // Lo que ya no se mira deja de calcularse: solo cuentan la que
+                    // se ve y la siguiente. Deslizando deprisa se lanzaban muchas y
+                    // se quitaban la CPU unas a otras (tanda 34).
+                    vm.soloGlobosDe(uri,
+                        if (!bocadillos || p == null) emptySet()
+                        else setOfNotNull(paginas[p], paginas.getOrNull(p + 1)))
                     if (!bocadillos || p == null) return@LaunchedEffect
-                    // p y p+1: mientras se mira la pagina entera se calcula la
-                    // siguiente, y el medio segundo del OCR no se ve nunca.
-                    paginas.getOrNull(p + 1)?.let { vm.prepararGlobos(uri, it, p + 2) }
+                    // La que se ve PRIMERO, y la siguiente cuando ya esta: van en
+                    // serie, asi que la que se pide antes es la que se calcula
+                    // antes. Mientras se mira la pagina entera se calcula la
+                    // siguiente, y al pasar su medio segundo no se ve.
                     val g = vm.globosDe(uri, paginas[p], p + 1)
                     globosPagina = hojaVista to g
+                    paginas.getOrNull(p + 1)?.let { vm.prepararGlobos(uri, it, p + 2) }
                     // Y el detalle de ESTA pagina, que es de donde se recorta el
                     // globo: asi el primer toque no espera a decodificar. Va
                     // despues de los globos a proposito: la cache de detalle es
@@ -331,7 +341,12 @@ private fun Visor(
                     if (conPliegue) estado.animateScrollToPage(hoja, animationSpec = PASO_PAGINA)
                     else estado.animateScrollToPage(hoja)
 
-                fun avanzar(adelante: Boolean) {
+                // Un toque que llega ANTES que los globos de la pagina espera por
+                // ellos (tanda 34): sin esto, para SecuenciaGlobos "sin calcular"
+                // es "sin globos", y el toque pasaba de pagina saltandoselos.
+                var esperandoGlobos by remember { mutableStateOf(false) }
+
+                fun decidir(adelante: Boolean) {
                     val hojaVista = estado.currentPage
                     val globoAGlobo = bocadillos && !ampliada &&
                         hojas.getOrNull(hojaVista)?.size == 1
@@ -351,6 +366,41 @@ private fun Visor(
                         Paso.PaginaAnterior -> alcance.launch {
                             pasarA((hojaVista - 1).coerceAtLeast(0))
                         }
+                    }
+                }
+
+                fun avanzar(adelante: Boolean) {
+                    // Esperando, un segundo toque (o el volumen) no encola otro
+                    // paso: se decide una vez, con los globos ya puestos.
+                    if (esperandoGlobos) return
+                    val hojaVista = estado.currentPage
+                    val globoAGlobo = bocadillos && !ampliada &&
+                        hojas.getOrNull(hojaVista)?.size == 1
+                    val listos = globosPagina?.first == hojaVista
+                    val actual = globoAbierto?.takeIf { it.first == hojaVista }?.second
+                    // Solo se espera si los globos CAMBIAN la respuesta. Atras desde
+                    // la pagina entera va a la anterior haya los que haya, y esperar
+                    // ahi seria un toque parado para nada. Se le pregunta a la regla
+                    // con cero globos y con muchos, en vez de copiar aqui cuando
+                    // importan: si la regla cambia, esto sigue valiendo.
+                    val importan = SecuenciaGlobos.paso(actual, 0, adelante) !=
+                        SecuenciaGlobos.paso(actual, 1000, adelante)
+                    if (!globoAGlobo || listos || !importan) {
+                        decidir(adelante)
+                        return
+                    }
+                    esperandoGlobos = true
+                    alcance.launch {
+                        try {
+                            withTimeoutOrNull(ESPERA_GLOBOS_MS) {
+                                snapshotFlow { globosPagina?.first == hojaVista }.first { it }
+                            }
+                        } finally {
+                            esperandoGlobos = false
+                        }
+                        // Si mientras tanto se ha deslizado a otra, el toque ya no
+                        // era para esta.
+                        if (estado.currentPage == hojaVista) decidir(adelante)
                     }
                 }
 
@@ -880,6 +930,13 @@ private fun PaginaConZoom(
 // carton. Y FastOutSlowIn, la de Material, se come de golpe justo el principio,
 // que es donde se ve el doblez.
 private const val PASO_PAGINA_MS = 500
+
+// LO QUE UN TOQUE ESPERA A LOS GLOBOS de la pagina que se ve (tanda 34). Casi
+// siempre llegan antes: la que se ve se calcula la primera, desde que aparece.
+// El tope es para la que tarda de mas —Absolute Batman llego a 3 s—: pasado, se
+// pasa de pagina como si no tuviera globos. Un toque parado mucho mas que esto
+// se lee como que la app se ha colgado, que es peor que saltarse los globos.
+private const val ESPERA_GLOBOS_MS = 2000L
 private val PASO_PAGINA = tween<Float>(PASO_PAGINA_MS, easing = CubicBezierEasing(0.42f, 0f, 0.58f, 1f))
 
 // LOS NUMEROS DE LA HOJA QUE SE DOBLA, puestos a ojo para tocarlos cuando Dani

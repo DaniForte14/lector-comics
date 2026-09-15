@@ -15,8 +15,10 @@ sealed class Paso {
  * - Adelante: pagina entera -> globo 0 -> ... -> el ultimo -> pagina siguiente.
  * - Atras: globo i -> i-1; globo 0 -> pagina entera; pagina entera -> pagina
  *   anterior.
- * - Una pagina sin globos, o sin calcular todavia, pasa como si no hubiera
- *   bocadillos.
+ * - Una pagina sin globos pasa como si no hubiera bocadillos. Si sus globos
+ *   aun no estan calculados, el toque ESPERA a que lo esten, con un tope de
+ *   unos 2 s; eso lo hace el lector en `:app`, no esta regla, que solo ve el
+ *   `total` cuando ya lo hay.
  *
  * UN GLOBO QUE YA NO EXISTE cuenta como "pasado el ultimo". Pasa si la pagina
  * se recalcula con menos globos mientras se lee (`actual >= total`): adelante

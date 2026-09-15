@@ -70,7 +70,7 @@ object Vinetas {
      */
     private const val PROFUNDIDAD = 5
 
-    fun de(ancho: Int, alto: Int, pixel: (x: Int, y: Int) -> Int): List<Recuadro> {
+    fun de(ancho: Int, alto: Int, pixel: LectorPixel): List<Recuadro> {
         val pagina = Recuadro(0, 0, ancho, alto)
         if (ancho < 60 || alto < 60) return listOf(pagina)
         val c = Cortador(ancho, alto, pixel)
@@ -89,7 +89,7 @@ object Vinetas {
         return maxOf(r, g, b) - minOf(r, g, b) <= NEUTRO
     }
 
-    private class Cortador(val ancho: Int, val alto: Int, val pixel: (x: Int, y: Int) -> Int) {
+    private class Cortador(val ancho: Int, val alto: Int, val pixel: LectorPixel) {
         /**
          * Lo que tiene que medir una calle, en pixeles. Una calle de verdad son
          * entre el 1 y el 3% del ancho; por debajo de esto es el hueco entre dos
@@ -148,11 +148,11 @@ object Vinetas {
             val tocaFin = if (filas) r.abajo == alto else r.der == ancho
             if (tocaIni && a >= grosor) {
                 ini = a
-                while (ini > 0 && !densa(r, filas, ini - 1)) ini--
+                while (ini > 0 && !densa(r, filas, ini - 1, colores[ini - 1])) ini--
             }
             if (tocaFin && n - 1 - b >= grosor) {
                 fin = b + 1
-                while (fin < n && !densa(r, filas, fin)) fin++
+                while (fin < n && !densa(r, filas, fin, colores[fin])) fin++
             }
             if (!cortar) return listOf(pieza(r, filas, ini, fin))
 
@@ -174,11 +174,11 @@ object Vinetas {
                 if (!calle[i]) { i++; continue }
                 var e = i
                 while (e + 1 <= b && calle[e + 1]) e++
-                if (e - i + 1 <= maximo && densa(r, filas, (i + e) / 2)) {
+                if (e - i + 1 <= maximo && densa(r, filas, (i + e) / 2, colores[(i + e) / 2])) {
                     var hasta = i
-                    while (hasta < e && !densa(r, filas, hasta)) hasta++
+                    while (hasta < e && !densa(r, filas, hasta, colores[hasta])) hasta++
                     var sigue = e + 1
-                    while (sigue > hasta + 1 && !densa(r, filas, sigue - 1)) sigue--
+                    while (sigue > hasta + 1 && !densa(r, filas, sigue - 1, colores[sigue - 1])) sigue--
                     if (hasta - desde >= minimo && fin - sigue >= minimo) {
                         piezas += pieza(r, filas, desde, hasta)
                         desde = sigue
@@ -231,9 +231,13 @@ object Vinetas {
         /**
          * Si la linea [i] es calle LEYENDOLA ENTERA, sin perdonar un pixel: lo
          * que se busca es justo la linea fina que las muestras se saltan.
+         *
+         * [color] es el de la pasada rala de esa misma linea, que quien llama ya
+         * tiene: hasta la tanda 34 se volvia a calcular aqui, y eran otras 32
+         * lecturas por linea para sacar lo mismo.
          */
-        fun densa(r: Recuadro, filas: Boolean, i: Int): Boolean {
-            val color = colorLiso(r, filas, i) ?: return false
+        fun densa(r: Recuadro, filas: Boolean, i: Int, color: Int?): Boolean {
+            if (color == null) return false
             val largo = if (filas) r.ancho else r.alto
             for (t in 0 until largo) {
                 if (distanciaRgb(muestra(r, filas, i, t), color) > TOLERANCIA) return false
@@ -244,6 +248,20 @@ object Vinetas {
         fun muestra(r: Recuadro, filas: Boolean, i: Int, t: Int) =
             if (filas) pixel(r.izq + t, r.arriba + i) else pixel(r.izq + i, r.arriba + t)
     }
+}
+
+/**
+ * Como se lee un pixel de la pagina: su color ARGB en (x, y).
+ *
+ * UNA INTERFAZ Y NO UN `(Int, Int) -> Int`: una lambda generica, en la JVM,
+ * encajona x, y y el color en cada llamada, y fuera de -128..127 cada
+ * encajonado es un objeto nuevo. Son cientos de miles de llamadas por pagina
+ * (lo midio Paco en el movil). Con parametros Int no se crea ninguno. Y con
+ * `invoke` se sigue llamando `pixel(x, y)`, y una lambda sigue valiendo donde
+ * se pide un LectorPixel.
+ */
+fun interface LectorPixel {
+    operator fun invoke(x: Int, y: Int): Int
 }
 
 /** Suma de las diferencias de los tres canales, como [Recorte]. La usan [Vinetas] y [Bocadillos]. */

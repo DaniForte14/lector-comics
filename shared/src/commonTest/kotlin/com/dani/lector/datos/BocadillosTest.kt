@@ -185,6 +185,25 @@ class BocadillosTest {
         assertTrue(p.lecturas < 1000 * 1000 / 10, "se leyeron ${p.lecturas} pixeles")
     }
 
+    @Test fun `cada pixel de la caja del texto se lee una sola vez`() {
+        // Tanda 34: el color del globo se sacaba muestreando la caja del texto, y
+        // luego el relleno volvia a leer esos mismos pixeles como semillas. Ahora
+        // la caja se lee una vez y de ahi salen las dos cosas. Con las viñetas
+        // puestas a mano, para que las lecturas de Vinetas no se mezclen.
+        val p = Pagina(400, 300, DIBUJO)
+        p.globo(100, 80, 300, 180)
+        val l = p.linea(140, 124, 260, 136)
+        val veces = IntArray(400 * 300)
+        val g = Bocadillos.globosEn(listOf(l), 400, 300, listOf(Recuadro(0, 0, 400, 300))) { x, y ->
+            veces[y * 400 + x]++
+            p.px[y * 400 + x]
+        }
+        assertEquals(listOf(Recuadro(100, 80, 300, 180)), g.map { it.recuadro })
+        for (y in l.arriba until l.abajo) for (x in l.izq until l.der) {
+            assertEquals(1, veces[y * 400 + x], "el pixel ($x, $y) se leyo ${veces[y * 400 + x]} veces")
+        }
+    }
+
     @Test fun `las filas no se encadenan por un globo alto`() {
         // La doble pagina de Green Lantern Corps Recharge, en el movil: sin
         // viñetas, un globo alto estiraba la fila hacia abajo y arrastraba a

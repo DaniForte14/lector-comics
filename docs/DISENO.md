@@ -1411,6 +1411,11 @@ de un cómic. Para eso existe la tanda 28, y lo dice el móvil de Dani.
 - **El globo se recorta por su contorno**, un polígono (`Globo.contorno`) sacado
   del mismo relleno, y no por el recuadro, que se llevaría las esquinas del
   dibujo de alrededor.
+- **Un toque ESPERA a los globos de la página** (tanda 34, 14/09/2026). Hasta
+  entonces, "sin calcular" contaba como "sin globos" y el toque pasaba de
+  página saltándoselos; con el cálculo en 0,06 s no se notaba, y desde la 29
+  llegó a tardar segundos. Con un tope (~2 s): pasado, pasa de página como
+  antes.
 - **Primero se detectan las viñetas** (pedido por Dani a mitad de la tanda 29,
   tras ver Absolute Batman #01 p.5): el globo que rompe el marco y se abre a la
   calle ya no se descarta —se queda cortado en el borde de su viñeta—, y el

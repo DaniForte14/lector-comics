@@ -114,7 +114,7 @@ object Bocadillos {
     fun globos(
         lineas: List<Recuadro>,
         ancho: Int, alto: Int,
-        pixel: (x: Int, y: Int) -> Int
+        pixel: LectorPixel
     ): List<Globo> {
         // Sin texto no se buscan ni las viñetas: una pagina sin lineas no lee
         // ni un pixel.
@@ -131,7 +131,7 @@ object Bocadillos {
         lineas: List<Recuadro>,
         ancho: Int, alto: Int,
         vinetas: List<Recuadro>,
-        pixel: (x: Int, y: Int) -> Int
+        pixel: LectorPixel
     ): List<Globo> {
         val dentro = enLaPagina(lineas, ancho, alto)
         if (dentro.isEmpty()) return emptyList()
@@ -238,10 +238,14 @@ object Bocadillos {
      */
     private fun globoDe(
         bloque: List<Recuadro>, todas: List<Recuadro>, ventanas: List<Pair<Recuadro, Recuadro>>,
-        marco: Recuadro, ancho: Int, alto: Int, pixel: (x: Int, y: Int) -> Int
+        marco: Recuadro, ancho: Int, alto: Int, pixel: LectorPixel
     ): Globo? {
         val caja = envolvente(bloque)
-        val fondo = claroDominante(caja, pixel) ?: return null
+        // La caja del texto se lee UNA vez: de ella salen el color del globo y
+        // las semillas del relleno, que hasta la tanda 34 leian los mismos
+        // pixeles dos veces.
+        val enCaja = IntArray(caja.ancho * caja.alto) { pixel(caja.izq + it % caja.ancho, caja.arriba + it / caja.ancho) }
+        val fondo = claroDominante(caja) { x, y -> enCaja[(y - caja.arriba) * caja.ancho + (x - caja.izq)] } ?: return null
 
         val linea = bloque.maxOf { it.alto }
         // DOS GLOBOS UNIDOS POR UN PICO pueden medir mas que la ventana de
@@ -300,7 +304,12 @@ object Bocadillos {
             if (x < v.izq || x >= v.der || y < v.arriba || y >= v.abajo) return
             val i = (y - v.arriba) * an + (x - v.izq)
             if (estado[i] != SIN_MIRAR) return
-            if (distanciaRgb(pixel(x, y), fondo) <= TOLERANCIA) {
+            val color = if (x >= caja.izq && x < caja.der && y >= caja.arriba && y < caja.abajo) {
+                enCaja[(y - caja.arriba) * caja.ancho + (x - caja.izq)]
+            } else {
+                pixel(x, y)
+            }
+            if (distanciaRgb(color, fondo) <= TOLERANCIA) {
                 estado[i] = GLOBO
                 if (tope == pila.size) pila = pila.copyOf(tope * 2)
                 pila[tope++] = i
@@ -658,7 +667,7 @@ object Bocadillos {
      * media de la casilla que gana. Muestreando, con unas 64 x 64 muestras como
      * mucho: para saber que color manda no hace falta mirarlos todos.
      */
-    private fun claroDominante(caja: Recuadro, pixel: (x: Int, y: Int) -> Int): Int? {
+    private fun claroDominante(caja: Recuadro, pixel: LectorPixel): Int? {
         val cuenta = IntArray(4096)
         val sumaR = IntArray(4096)
         val sumaG = IntArray(4096)
