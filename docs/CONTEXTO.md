@@ -5336,6 +5336,46 @@ de Google Fonts: sin red sale la del sistema, que la propia guia trae de reserva
 todo en el movil. Que se vea, el tema claro u oscuro que coja el `WebView`, y
 que el gesto de atras la cierre sin salir del lector.
 
+### Tanda 37: la guia desde la carpeta, y tachar lo leido (15/09/2026)
+
+Dani, tras probar la 36 ("funciona"): poder abrirla desde otro sitio, y tachar
+lo leido tocandolo. Eligio **la carpeta del personaje** y **a mano**: el cruce
+con Comic Vine ya se vio que no casaba bien con sus carpetas.
+
+- **`PantallaGuia` sale de `Lector.kt` a `ui/Guia.kt`** y pasa a ser un
+  `Dialog` a pantalla completa (`usePlatformDefaultWidth = false`). Es su
+  propia ventana, asi que se llama desde el visor y desde la carpeta sin
+  envolver ninguna pantalla en un `Box`, y atras lo cierra solo. En la 36 era
+  una capa en un `Box` del visor; con dos sitios, eso obligaba a reindentar
+  `PantallaCarpeta` entera.
+- **En la carpeta**: una `TituloFila("Orden de lectura")` con chevron, encima
+  de las filas de subcarpetas, si `Guias.de(ruta)` casa. Sale en la carpeta del
+  personaje y en las de sus series.
+- **Tachar**: `assets/guias/marcar.js`, que `PantallaGuia` mete antes de
+  `</body>` al abrir la guia (`loadDataWithBaseURL`); asi los HTML siguen siendo
+  copias exactas de los artefactos. Un toque en una lectura (GL: cada bloque y
+  cada numero de las cajas de mes; Barry y Wally: cada arco) la tacha y la deja
+  al 40%; otro la desmarca. Las marcas van en el `localStorage` del WebView (por
+  eso JavaScript y DOM storage encendidos), por guia (`document.title`) y por el
+  TEXTO de cada lectura, no por su posicion: si se vuelve a copiar una guia
+  corregida, lo marcado se queda mientras no cambie ese texto.
+
+**Lo que se acepta**: las marcas no estan en los JSON de la app. No van en la
+copia de seguridad, se pierden con "borrar datos" y no pasaran al iPad. Si
+importa, se pasan a `Preferencias` con un `addJavascriptInterface`.
+
+**Comprobado**: `comprobar.py` PROBLEMAS: 0; `:app:assembleDebug
+:shared:testDebugUnitTest` verde; los tres ficheros en el APK. El script, con
+las guias montadas como las monta la app, en el navegador de la sesion
+(Chromium, el motor del WebView): marca, tacha (`line-through`, opacidad 0,4),
+guarda, sobrevive a recargar y desmarca, en las dos guias (177 marcables en GL,
+31 arcos en Barry y Wally), y las claves de una guia no pisan a la otra. CI
+verde, iOS incluido, en `826e5c7` (tandas 34 y 35) y `58cde6b` (36). **Sin
+comprobar**: en el movil. Que `localStorage` persista con la base
+`file:///android_asset/` del WebView (en el navegador se probo servido por
+http), el `Dialog` sobre el visor a pantalla completa (puede asomar la barra de
+estado) y la fila de la carpeta.
+
 ### El motor de RAR para iOS: hay via, y se aplaza (07/09/2026)
 
 Dani eligio **buscar un motor de RAR nativo** en vez de dejar el CBR fuera del

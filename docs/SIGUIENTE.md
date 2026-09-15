@@ -36,6 +36,9 @@ Dani (ANDROID):
 | Acabar el ultimo de la carpeta | sale igual, debajo de "Volver a la biblioteca" |
 | Acabar un Flash | la guia de Barry y Wally |
 | Acabar un Daredevil | no sale el boton |
+| Entrar en la carpeta de Green Lantern, o de una de sus series (tanda 37) | arriba sale "Orden de lectura ›", y abre la misma guia |
+| Tocar una lectura de la guia | se tacha y se oscurece; otro toque la desmarca |
+| Cerrar la guia y volver a abrirla, o cerrar la app | lo tachado sigue tachado. **Si se pierde, es el `localStorage` del WebView** |
 
 Sin comprobar: el tema (claro u oscuro) que coge el visor de la guia, y que sin
 red sus fuentes salen con la del sistema.

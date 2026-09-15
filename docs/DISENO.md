@@ -1465,3 +1465,19 @@ opción aquí para consultar el artefacto"*.
   atrás, como todo en Android, y vuelves a la tarjeta.
 - **Se enseña tal cual, con su propio aspecto.** La guía es una página escrita a
   mano, y la app no responde de sus cifras (`CONTEXTO.md`, tandas 35 y 36).
+- **También desde la carpeta del personaje** (tanda 37), con una fila "Orden de
+  lectura ›" encima de sus series: es donde se decide qué leer.
+
+## 27. Tachar lo leído en la guía (15/09/2026)
+
+Dani: *"voy a la infografía, le doy y se tacha el título y se pone más
+oscurito"*.
+
+- **Un toque tacha, otro desmarca.** Sin botón ni casilla: la lectura entera es
+  el área táctil, como en la rejilla de cómics.
+- **Tachado Y al 40% de opacidad.** El tachado dice "hecho" aunque no se
+  distinga el color; la opacidad es lo que deja ver de un vistazo cuánto queda
+  al bajar por la guía.
+- **Se marca lo que se lee de una sentada**: en Green Lantern, cada bloque y
+  cada número de las cajas de mes (en los cruces se lee número a número); en
+  Barry y Wally, cada arco.

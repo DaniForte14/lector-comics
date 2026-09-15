@@ -1,5 +1,7 @@
 package com.dani.lector.ui
 
+import com.dani.lector.datos.Guias
+
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -86,6 +88,11 @@ fun PantallaCarpeta(
     // El ultimo terminado, el actual y el siguiente. Solo se pide en la raiz:
     // es la fila de "tu recorrido" y ahi es donde se pinta.
     var recorrido by remember { mutableStateOf<Triple<Comic?, Comic?, Comic?>?>(null) }
+    // La guia de lectura de esta carpeta, si la hay (tanda 37). En la raiz la
+    // ruta esta vacia y no casa con ninguna.
+    val guia = remember(ruta) { Guias.de(ruta) }
+    var guiaAbierta by remember { mutableStateOf<String?>(null) }
+    guiaAbierta?.let { PantallaGuia(it) { guiaAbierta = null } }
 
     // El buscador mira TODA la biblioteca, no solo esta carpeta: si sabes lo
     // que quieres, no tiene sentido obligarte a navegar hasta el.
@@ -417,6 +424,11 @@ fun PantallaCarpeta(
             if (restantes.isNotEmpty()) {
                 item { TituloFila("En curso") }
                 item { FilaPortadas(vm, restantes, onLeer, onMenu) }
+            }
+
+            // ── la guia de lectura del personaje, antes que sus series ──
+            if (guia != null) item {
+                TituloFila("Orden de lectura") { guiaAbierta = guia }
             }
 
             // ── una fila por carpeta ──
