@@ -11,12 +11,21 @@ propósito.
 
 ## Donde se paro el 15/09/2026
 
-**Tanda 34: el orden de lectura, enlazado desde la tarjeta del final.** Dani
+**Tanda 34: la velocidad de los globos** (detalle en `CONTEXTO.md`). Lo que tiene
+que mirar Dani (ANDROID), con "Bocadillos" encendido:
+
+| Que hacer | Que tiene que pasar |
+|---|---|
+| Pasar deprisa varias paginas de Absolute Batman #01 y pegar el rastro | las lineas `globos:` traen `espera` y `total` por pagina: se comparan con los 1,4-3,3 s de antes |
+| Tocar el tercio derecho nada mas llegar a una pagina | espera a sus globos (2 s como mucho) y sale el primero, en vez de pasar de pagina saltandoselos |
+| Si un toque se queda "muerto" | es esa espera; si molesta, se le pone una chapa |
+
+**Tanda 35: el orden de lectura, enlazado desde la tarjeta del final.** Dani
 tiene dos guias hechas como artefactos de claude.ai (Green Lantern y Barry y
 Wally) y queria consultarlas al acabar un comic. Si la ruta de la carpeta dice
 "lantern" o "flash", la tarjeta del final lleva un boton secundario **"Orden de
 lectura"** que abre la guia en el navegador. Se enlaza y no se mete en la app, y
-el porque esta en `CONTEXTO.md` (tanda 34). Lo que tiene que mirar Dani
+el porque esta en `CONTEXTO.md` (tanda 35). Lo que tiene que mirar Dani
 (ANDROID):
 
 | Que hacer | Que tiene que pasar |

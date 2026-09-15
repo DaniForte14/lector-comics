@@ -1462,4 +1462,4 @@ opción aquí para consultar el artefacto"*.
   tener botón.
 - **Se abre fuera, en el navegador.** La guía es una página escrita a mano, con
   su propio aspecto, y la app no responde de sus cifras (`CONTEXTO.md`, tanda
-  34).
+  35).

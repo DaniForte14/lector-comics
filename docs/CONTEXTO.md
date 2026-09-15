@@ -5249,7 +5249,18 @@ por bueno ("bien asi"). CI verde en `72f0787`.
 **Sin verificar**: cuanto se gana (el rastro nuevo contra el de hoy), la memoria
 en el movil, y el toque que espera en la mano.
 
-### Tanda 34: el orden de lectura, enlazado y no metido (15/09/2026)
+**Commiteada por el coordinador el 15/09/2026** (`da4588b`), a peticion de Dani,
+porque se quedo sin commitear. Antes se quito lo que la propia tanda marcaba como
+no entregable: los contadores `TEMPORAL` de `Bocadillos` y `Vinetas`, que sumaban
+dentro de los bucles calientes, y las dos sondas de `androidUnitTest`
+(`SondaTemporalTest`, `SondaTiempoTest`), que leen los CBZ de `Descargas`. Las
+sondas estan guardadas en el scratchpad de la sesion `view-artifacts-5c96d7`
+(`sondas-tanda34/`); sin los contadores, la primera ya no compila.
+
+### Tanda 35: el orden de lectura, enlazado y no metido (15/09/2026)
+
+Se escribio a la vez que la 34, en otra sesion, y su commit (`7033427`) dice
+"Tanda 34"; aqui es la 35.
 
 Dani tiene dos guias de lectura hechas como artefactos de claude.ai: Green
 Lantern, a partir de *The Book of Oa* de r/Greenlantern, y Barry y Wally. Queria
