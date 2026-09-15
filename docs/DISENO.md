@@ -1447,3 +1447,19 @@ debajo. Sustituye al giro con desvanecido y encogido que había.
 - **Pasando con toque, volumen o globo a globo dura ~0,5 s** (Dani, tras verla
   en el móvil el 14/09/2026). Con la animación por defecto del pager eran ~0,2 s
   y apenas se veía doblarse. Con el dedo va al ritmo del dedo.
+
+## 26. El orden de lectura, en la tarjeta del final (15/09/2026)
+
+Dani, sobre la tarjeta SIGUIENTE: *"cuando acabo un cómic, que aparezca una
+opción aquí para consultar el artefacto"*.
+
+- **Un `Boton` secundario debajo de "Leer"**, no al lado ni en su lugar: lo
+  normal al acabar es seguir, y el botón amarillo sigue siendo el único que
+  grita.
+- **También en "Has terminado"**: al acabar la carpeta es cuando más falta saber
+  qué viene después.
+- **Solo si la carpeta tiene guía.** Un botón que no lleva a nada es peor que no
+  tener botón.
+- **Se abre fuera, en el navegador.** La guía es una página escrita a mano, con
+  su propio aspecto, y la app no responde de sus cifras (`CONTEXTO.md`, tanda
+  34).

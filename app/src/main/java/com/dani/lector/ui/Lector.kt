@@ -50,6 +50,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -66,6 +67,7 @@ import com.dani.lector.datos.Paso
 import com.dani.lector.datos.SecuenciaGlobos
 import com.dani.lector.datos.Rastro
 import com.dani.lector.datos.Exportar
+import com.dani.lector.datos.Guias
 import com.dani.lector.datos.Salto
 import com.dani.lector.datos.Paginas
 import kotlinx.coroutines.Dispatchers
@@ -205,6 +207,7 @@ private fun Visor(
     // rellenaria sola delante de tus narices.
     var siguiente by remember(uri) { mutableStateOf<Comic?>(null) }
     LaunchedEffect(uri) { siguiente = vm.siguienteComic(comic) }
+    val guia = remember(comic.carpeta) { Guias.de(comic.carpeta) }
 
     val alcance = rememberCoroutineScope()
 
@@ -441,7 +444,7 @@ private fun Visor(
                             alpha = if (kotlin.math.abs(f) < 1f) 1f else 0f
                         }
                     ) {
-                        if (i >= hojas.size) TarjetaSiguiente(vm, siguiente, onSiguiente, onAtras)
+                        if (i >= hojas.size) TarjetaSiguiente(vm, siguiente, guia, onSiguiente, onAtras)
                         else {
                             val hoja = hojas[i]
                             PaginaConZoom(
@@ -556,7 +559,7 @@ private fun Visor(
                     // en modo tira la tarjeta va al final del scroll, igual
                     item {
                         Box(Modifier.fillMaxWidth().height(420.dp)) {
-                            TarjetaSiguiente(vm, siguiente, onSiguiente, onAtras)
+                            TarjetaSiguiente(vm, siguiente, guia, onSiguiente, onAtras)
                         }
                     }
                 }
@@ -725,9 +728,12 @@ private fun Miniatura(
 private fun TarjetaSiguiente(
     vm: VistaModelo,
     siguiente: Comic?,
+    /** La guia de lectura de esta carpeta, si hay (ver [Guias]). */
+    guia: String?,
     onSiguiente: (Comic) -> Unit,
     onAtras: () -> Unit
 ) {
+    val enlaces = LocalUriHandler.current
     Column(
         Modifier.fillMaxSize().background(Tinta).padding(28.dp),
         verticalArrangement = Arrangement.Center,
@@ -752,6 +758,14 @@ private fun TarjetaSiguiente(
                 modifier = Modifier.padding(top = 16.dp))
             Spacer(Modifier.height(20.dp))
             Boton("Leer") { onSiguiente(siguiente) }
+        }
+        // Secundario y debajo: lo normal al terminar es seguir, no consultar.
+        // Va en las dos ramas porque al acabar la carpeta es cuando mas falta
+        // saber que viene despues.
+        if (guia != null) {
+            Boton("Orden de lectura", Modifier.padding(top = 12.dp), relleno = false) {
+                enlaces.openUri(guia)
+            }
         }
     }
 }

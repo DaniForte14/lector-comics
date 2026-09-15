@@ -5249,6 +5249,50 @@ por bueno ("bien asi"). CI verde en `72f0787`.
 **Sin verificar**: cuanto se gana (el rastro nuevo contra el de hoy), la memoria
 en el movil, y el toque que espera en la mano.
 
+### Tanda 34: el orden de lectura, enlazado y no metido (15/09/2026)
+
+Dani tiene dos guias de lectura hechas como artefactos de claude.ai: Green
+Lantern, a partir de *The Book of Oa* de r/Greenlantern, y Barry y Wally. Queria
+abrirlas desde la tarjeta que sale al acabar un comic.
+
+**Se enlazan, no se meten.** Por tres razones:
+
+- **El 02/09 ya salio de la app un orden de lectura entero** porque no se usaba
+  (ver "La amputacion"). Meter una guia de verdad son tres tandas (datos, casar
+  series, pantalla); antes de pagarlas, que se vea si esta vez se usa.
+- **Las guias son criterio y las escribio un modelo.** Los rangos y las fechas
+  no se han cruzado con Comic Vine, y hay creditos "Sin confirmar". Fuera de la
+  app no rompen el principio rector: la app no enseña ninguna cifra que no sea
+  suya.
+- Corregir una guia no pide compilar.
+
+Lo que hay: **`datos/Guias.kt`** (comun) da la URL por palabra en la ruta de la
+carpeta ("lantern", "flash"), con 5 pruebas en `GuiasTest`. **`TarjetaSiguiente`**
+(`Lector.kt`) pinta un `Boton` secundario "Orden de lectura" en las dos ramas
+(hay siguiente / has terminado) y lo abre con `LocalUriHandler`, que existe en
+Compose Multiplatform: cuando la tarjeta se mude, en iOS vale igual.
+
+**Si se decide meterlas de verdad**, el plan hablado con Dani: las guias como
+datos de Kotlin en `shared`, casadas con las carpetas por el `volumenId` de
+`SeriesRemotas` (no por nombre), una funcion pura `cruzar` que diga de cada
+lectura si la tienes, si esta leida o si te falta, y un "sigue por aqui" con la
+regla de `Siguiente`; la pantalla, por meses como el §12 de `DISENO.md`. Trampas
+ya vistas: Annual, #0, #23.1 (no cabe en `Comic.numero: Int?`), especiales sin
+numero, Flash vol. 5 que salta del #88 al #750, rangos abiertos ("#1 en
+adelante"). El codigo del orden viejo esta en git, en `83b29d3`.
+
+**Una trampa de worktree**: `local.properties` no esta (git lo ignora), y Gradle
+no encuentra el SDK. Se compila con `ANDROID_HOME` apuntando al SDK, sin copiar
+el fichero, que lleva la clave de Comic Vine.
+
+**Comprobado**: `comprobar.py` PROBLEMAS: 0; `:app:assembleDebug
+:shared:testDebugUnitTest` verde, y el unico `w:` es el aviso de compatibilidad
+KMP / AGP 8.7.2, que no sale de este cambio; `GuiasTest` lanzado por separado, y
+el filtro comprobado con una clase que no existe. **Sin comprobar**: nada en el
+movil. Los artefactos son privados, asi que sin sesion de claude.ai en el
+navegador del movil piden iniciar sesion; y si esta instalada la app de Claude,
+puede quedarse con el enlace.
+
 ### El motor de RAR para iOS: hay via, y se aplaza (07/09/2026)
 
 Dani eligio **buscar un motor de RAR nativo** en vez de dejar el CBR fuera del
