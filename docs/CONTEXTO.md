@@ -5304,6 +5304,38 @@ movil. Los artefactos son privados, asi que sin sesion de claude.ai en el
 navegador del movil piden iniciar sesion; y si esta instalada la app de Claude,
 puede quedarse con el enlace.
 
+### Tanda 36: la guia, dentro de la app (15/09/2026)
+
+Dani lo probo: el boton de la 35 abria **la app de Claude**, fuera del lector, y
+pidio que se viera dentro ("descargandolo o lo que sea").
+
+- **Los dos artefactos, copiados al APK** en `app/src/main/assets/guias/`
+  (`green-lantern.html`, 56 KB; `barry-y-wally.html`, 42 KB), bajados con la
+  accion `read_file` del artefacto (`index.html`). `Guias.de` devuelve ya la
+  ruta dentro de `assets`, no la URL; las URL quedan en el comentario de
+  `Guias`, para volver a copiarlos.
+- **`PantallaGuia`, en `Lector.kt`**: un `WebView` a pantalla completa ENCIMA
+  del visor (un `Box` en `PantallaLector`), con `BackHandler` para cerrarla. Al
+  cerrarla sigues en la tarjeta del final, sin recargar el comic.
+- **Sin JavaScript** (los dos HTML no llevan; comprobado con grep) y **sin
+  `WebViewClient`**: asi un enlace de dentro, el post de Reddit, sale al
+  navegador en vez de navegar dentro del visor.
+- **Descartado: cargar la URL de claude.ai en el `WebView`.** El artefacto es
+  privado, pediria iniciar sesion dentro de la app, y Google no deja iniciar
+  sesion desde un `WebView`.
+
+**Lo que se pierde**: una guia corregida ya no se ve sin compilar; hay que
+volver a copiar su `index.html`. Y **las fuentes** (Michroma, Archivo...) vienen
+de Google Fonts: sin red sale la del sistema, que la propia guia trae de reserva.
+
+**iOS**: `PantallaLector` sigue en `:app`. Cuando se mude, la guia necesita un
+`WKWebView` detras de un `expect/actual`; `Guias` ya es comun.
+
+**Comprobado**: `comprobar.py` PROBLEMAS: 0; `:app:assembleDebug
+:shared:testDebugUnitTest` verde (solo el `w:` de KMP / AGP). **Sin comprobar**:
+todo en el movil. Que se vea, el tema claro u oscuro que coja el `WebView`, y
+que el gesto de atras la cierre sin salir del lector.
+
 ### El motor de RAR para iOS: hay via, y se aplaza (07/09/2026)
 
 Dani eligio **buscar un motor de RAR nativo** en vez de dejar el CBR fuera del

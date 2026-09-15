@@ -1,0 +1,1034 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Barry &amp; Wally, en orden</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..900;1,62..125,400..900&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400&display=swap">
+<style>
+  :root {
+    --ground: #F6F4F4;
+    --ink: #1F1618;
+    --muted: #66595B;
+    --rule: #DCD3D4;
+    --band: #ECE6E6;
+    --barry: #C8141F;
+    --barry-ink: #B0101B;
+    --wally: #E6A400;
+    --wally-ink: #8A5800;
+    --pill: #1F1618;
+    --pill-ink: #F6F4F4;
+    --display: "Archivo", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+    --serif: "Newsreader", Georgia, "Times New Roman", serif;
+    --lgap: 2.5rem;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #151012;
+      --ink: #F2EBEB;
+      --muted: #A8999B;
+      --rule: #34292B;
+      --band: #231A1C;
+      --barry: #FF5C61;
+      --barry-ink: #FF7C80;
+      --wally: #F4B73A;
+      --wally-ink: #F4B73A;
+      --pill: #F2EBEB;
+      --pill-ink: #151012;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #151012;
+    --ink: #F2EBEB;
+    --muted: #A8999B;
+    --rule: #34292B;
+    --band: #231A1C;
+    --barry: #FF5C61;
+    --barry-ink: #FF7C80;
+    --wally: #F4B73A;
+    --wally-ink: #F4B73A;
+    --pill: #F2EBEB;
+    --pill-ink: #151012;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 1.0625rem;
+    line-height: 1.5;
+    padding-inline: clamp(1rem, 4vw, 3rem);
+    padding-block: 0 4rem;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 74rem; margin-inline: auto; }
+  h1, h2, h3, p, dl, dd { margin: 0; }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    padding-block: clamp(2.5rem, 7vw, 5rem) 2.5rem;
+    display: grid;
+    gap: 1.75rem;
+  }
+  h1 {
+    font-family: var(--display);
+    font-stretch: 62%;
+    font-weight: 900;
+    font-style: italic;
+    text-transform: uppercase;
+    font-size: clamp(3.25rem, 10vw + 0.5rem, 8.5rem);
+    line-height: 0.86;
+    letter-spacing: -0.005em;
+    text-wrap: balance;
+    /* estela de velocidad: afterimage oro (Kid Flash) + escarlata (Barry) */
+    text-shadow: -0.045em 0 0 var(--wally), -0.09em 0 0 var(--barry);
+    padding-left: 0.1em;
+  }
+  .lede {
+    max-width: 38rem;
+    font-size: 1.25rem;
+    line-height: 1.45;
+    text-wrap: pretty;
+  }
+  .hero-foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem 3rem;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--rule);
+  }
+
+  /* Leyenda */
+  .legend {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(13.5rem, 1fr));
+    gap: 0.75rem 2rem;
+    flex: 1 1 32rem;
+    font-family: var(--display);
+    font-size: 0.9375rem;
+    line-height: 1.35;
+  }
+  .legend div { display: flex; gap: 0.75rem; align-items: flex-start; }
+  .legend dt { flex: none; width: 2.25rem; height: 1.25rem; display: grid; place-items: center; }
+  .legend dd { color: var(--muted); }
+  .legend dd b { color: var(--ink); font-weight: 650; }
+  .sw-line { width: 2.25rem; height: 0; border-top: 3px solid; }
+  .sw-b { border-color: var(--barry); }
+  .sw-w { border-color: var(--wally); }
+  .sw-off { border-top-style: dashed; border-color: var(--muted); opacity: 0.6; }
+  .sw-band {
+    width: 2.25rem; height: 1rem; border-radius: 3px;
+    background: linear-gradient(90deg, var(--barry) 50%, var(--wally) 50%) top / 100% 3px no-repeat, var(--band);
+  }
+  .bolt { width: 0.9rem; height: 1.1rem; fill: var(--ink); flex: none; }
+
+  /* Filtro (sin JS) */
+  .filter { border: 0; padding: 0; margin: 0; min-width: 0; }
+  .filter legend {
+    font-family: var(--display);
+    font-size: 0.9375rem;
+    font-weight: 650;
+    padding: 0;
+    margin-bottom: 0.625rem;
+  }
+  .pills { display: flex; flex-wrap: wrap; gap: 0.375rem; }
+  .pills input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .pills label {
+    font-family: var(--display);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    padding: 0.5rem 0.95rem;
+    min-height: 2.5rem;
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+  }
+  .pills label:hover { border-color: var(--muted); }
+  .pills input:checked + label { background: var(--pill); color: var(--pill-ink); border-color: var(--pill); }
+  .pills input:focus-visible + label { outline: 2px solid var(--barry); outline-offset: 2px; }
+
+  /* ---------- Pista ---------- */
+  .lanes-head,
+  .row {
+    display: grid;
+    grid-template-columns: 5.5rem 1fr 1fr;
+    column-gap: var(--lgap);
+  }
+  .lanes-head {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--ground);
+    border-bottom: 1px solid var(--rule);
+    padding-block: 0.75rem;
+    font-family: var(--display);
+    font-stretch: 75%;
+    font-weight: 800;
+    font-size: 1.125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .lanes-head span:first-child { color: var(--muted); font-weight: 600; font-size: 0.875rem; align-self: end; }
+  .lanes-head .hb { color: var(--barry-ink); }
+  .lanes-head .hw { color: var(--wally-ink); }
+
+  .era { padding-top: 3rem; }
+  .era-head {
+    display: grid;
+    grid-template-columns: 5.5rem 1fr;
+    column-gap: var(--lgap);
+    padding-bottom: 1rem;
+    align-items: baseline;
+  }
+  .era-yrs {
+    font-family: var(--display);
+    font-stretch: 70%;
+    font-weight: 700;
+    font-size: 0.9375rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .era h2 {
+    font-family: var(--display);
+    font-stretch: 62%;
+    font-weight: 850;
+    font-style: italic;
+    text-transform: uppercase;
+    font-size: clamp(2rem, 3.5vw + 0.75rem, 3rem);
+    line-height: 0.95;
+    text-wrap: balance;
+  }
+  .era-note {
+    grid-column: 2;
+    margin-top: 0.5rem;
+    max-width: 40rem;
+    color: var(--muted);
+    text-wrap: pretty;
+  }
+
+  .yr {
+    font-family: var(--display);
+    font-stretch: 70%;
+    font-weight: 700;
+    font-size: 1.0625rem;
+    font-variant-numeric: tabular-nums;
+    padding-top: 1.35rem;
+    color: var(--ink);
+  }
+  .lane { position: relative; padding-left: 1.75rem; }
+  .lane::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    border-left: 3px solid var(--c);
+  }
+  .lane.b { --c: var(--barry); --c-ink: var(--barry-ink); }
+  .lane.w { --c: var(--wally); --c-ink: var(--wally-ink); }
+  .lane.off::before { border-left-style: dashed; border-color: var(--muted); opacity: 0.45; }
+
+  .entry { padding-block: 1.25rem 2rem; display: grid; gap: 0.75rem; }
+  .lane:not(.both) > .entry::before {
+    content: "";
+    position: absolute;
+    left: -4px;
+    top: 1.55rem;
+    width: 11px; height: 11px;
+    border-radius: 50%;
+    background: var(--ground);
+    box-shadow: 0 0 0 3px var(--c);
+  }
+  .row[data-corta] .lane > .entry::before { background: var(--c); }
+
+  .e-head { display: grid; gap: 0.2rem; }
+  .iss {
+    font-family: var(--display);
+    font-stretch: 62%;
+    font-weight: 800;
+    font-size: 1.875rem;
+    line-height: 1;
+    color: var(--c-ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .entry h3 {
+    font-family: var(--display);
+    font-stretch: 85%;
+    font-weight: 750;
+    font-size: 1.375rem;
+    line-height: 1.15;
+    text-wrap: balance;
+  }
+  .series {
+    font-family: var(--display);
+    font-size: 0.9375rem;
+    color: var(--muted);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.75rem;
+  }
+  .short {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--ink);
+    font-weight: 650;
+  }
+  .y-inline, .chip { display: none; }
+
+  .cred {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.15rem 0.875rem;
+    font-family: var(--display);
+    font-size: 0.9375rem;
+    line-height: 1.4;
+  }
+  .cred dt { color: var(--muted); }
+  .cred dd { font-weight: 600; }
+  .why { max-width: 34rem; text-wrap: pretty; }
+
+  /* Zona de relevo: arcos que tocan a los dos */
+  .lane.both { grid-column: 2 / 4; padding-left: 0; }
+  .lane.both::before { border-color: var(--rbc, var(--barry)); border-left-style: var(--rbs, solid); opacity: var(--rbo, 1); }
+  .lane.both::after {
+    content: "";
+    position: absolute;
+    left: calc(50% + var(--lgap) / 2);
+    top: 0; bottom: 0;
+    border-left: 3px solid var(--wally);
+  }
+  .lane.both.b-off { --rbc: var(--muted); --rbs: dashed; --rbo: 0.45; }
+  .lane.both.w-off::after { border-left-style: dashed; border-color: var(--muted); opacity: 0.45; }
+  .band {
+    position: relative;
+    z-index: 1;
+    margin-block: 0.75rem;
+    margin-left: -0.75rem;
+    padding: 1.5rem 1.5rem 1.625rem;
+    border-radius: 6px;
+    background:
+      linear-gradient(90deg, var(--barry) 50%, var(--wally) 50%) top / 100% 4px no-repeat,
+      var(--band);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    column-gap: var(--lgap);
+    --c-ink: var(--ink);
+  }
+
+  /* Ampliada: canon no imprescindible */
+  .amp-tag {
+    font-family: var(--display);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--muted);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 0.05rem 0.4rem;
+  }
+  .row[data-amp] .lane:not(.both) > .entry::before {
+    width: 7px; height: 7px;
+    left: -2px;
+    top: 1.7rem;
+    box-shadow: 0 0 0 2px var(--c);
+  }
+  .row[data-amp] .iss { color: var(--muted); }
+
+  /* ---------- Filtros ---------- */
+  body:not(:has(#f-amp:checked)) .row[data-amp] { display: none; }
+  body:has(#f-corta:checked) .row:not([data-corta]) { display: none; }
+  body:has(#f-corta:checked) .era:not(:has(.row[data-corta])) { display: none; }
+  body:has(#f-barry:checked) .row[data-lane="w"] { display: none; }
+  body:has(#f-barry:checked) .era:not(:has(.row:not([data-lane="w"]))) { display: none; }
+  body:has(#f-wally:checked) .row[data-lane="b"] { display: none; }
+  body:has(#f-wally:checked) .era:not(:has(.row:not([data-lane="b"])))  { display: none; }
+
+  /* ---------- Pie ---------- */
+  .notes {
+    margin-top: 4rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--rule);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+    gap: 1.5rem 3rem;
+  }
+  .notes h2 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+  }
+  .notes p, .vols { color: var(--muted); font-size: 0.9375rem; max-width: 36rem; }
+  .vols { display: grid; grid-template-columns: auto 1fr; gap: 0.2rem 0.875rem; font-family: var(--display); font-variant-numeric: tabular-nums; }
+  .vols dt { color: var(--ink); font-weight: 650; }
+
+  /* ---------- Móvil ---------- */
+  @media (max-width: 760px) {
+    :root { --lgap: 1.25rem; }
+    .lanes-head, .yr { display: none; }
+    .row { grid-template-columns: 1fr; }
+    .lane:empty { display: none; }
+    .lane.both { grid-column: 1; }
+    .lane.both::after { left: 9px; }
+    .lane.both::before { border-color: var(--barry); border-left-style: solid; opacity: 1; }
+    .band { grid-template-columns: 1fr; margin-left: -0.5rem; padding-left: 1.75rem; }
+    .era-head { grid-template-columns: 1fr; }
+    .era-note { grid-column: 1; }
+    .era-yrs { order: -1; }
+    .y-inline { display: inline; }
+    .chip {
+      display: inline-block;
+      justify-self: start;
+      font-family: var(--display);
+      font-size: 0.8125rem;
+      font-weight: 700;
+      color: var(--c-ink);
+      margin-bottom: 0.25rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <h1>Barry &amp; Wally, en orden</h1>
+    <p class="lede">Los dos Flash de la era moderna, desde que Barry muere en <i>Crisis</i> (1985) hasta hoy. Solo los arcos imprescindibles, con serie, volumen, números y equipo creativo.</p>
+
+    <div class="hero-foot">
+      <dl class="legend">
+        <div><dt><span class="sw-line sw-b"></span></dt><dd><b>Barry Allen</b>, el Flash que muere y vuelve</dd></div>
+        <div><dt><span class="sw-line sw-w"></span></dt><dd><b>Wally West</b>, de Kid Flash a Flash titular</dd></div>
+        <div><dt><span class="sw-line sw-off"></span></dt><dd><b>Carril discontinuo</b>: muerto o borrado de la historia</dd></div>
+        <div><dt><span class="sw-band"></span></dt><dd><b>Zona de relevo</b>: arcos clave para los dos</dd></div>
+        <div><dt><svg class="bolt" viewBox="0 0 12 16" aria-hidden="true"><path d="M7.5 0 0 9h4.5L3.5 16 12 6H7l.5-6Z"/></svg></dt><dd><b>Ruta corta</b>: 8 lecturas si vas con prisa</dd></div>
+        <div><dt><span class="amp-tag">+</span></dt><dd><b>Ampliada</b>: arcos canon que rellenan los huecos de Wally</dd></div>
+      </dl>
+
+      <fieldset class="filter">
+        <legend>Mostrar</legend>
+        <div class="pills">
+          <input type="radio" name="f" id="f-todo" checked><label for="f-todo">Imprescindibles</label>
+          <input type="radio" name="f" id="f-amp"><label for="f-amp">Ampliada</label>
+          <input type="radio" name="f" id="f-corta"><label for="f-corta">Ruta corta</label>
+          <input type="radio" name="f" id="f-barry"><label for="f-barry">Solo Barry</label>
+          <input type="radio" name="f" id="f-wally"><label for="f-wally">Solo Wally</label>
+        </div>
+      </fieldset>
+    </div>
+  </header>
+
+  <main>
+    <div class="lanes-head" aria-hidden="true"><span>Año</span><span class="hb">Barry Allen</span><span class="hw">Wally West</span></div>
+
+    <!-- 1 · La frontera -->
+    <section class="era">
+      <div class="era-head">
+        <span class="era-yrs">Etapa 1 (1985–86)</span>
+        <h2>Punto de partida</h2>
+        <p class="era-note">Aquí empieza la guía. Un solo cómic: <i>Crisis on Infinite Earths</i>, que cierra la Edad de Bronce y abre la moderna.</p>
+      </div>
+
+      <div class="row" data-lane="both" data-corta>
+        <div class="yr">1985–86</div>
+        <div class="lane both">
+          <article class="entry band">
+            <div class="e-head">
+              <span class="chip">Barry y Wally</span>
+              <p class="iss">#1–12 (clave: #8)</p>
+              <h3>Crisis on Infinite Earths</h3>
+              <p class="series"><span>Maxiserie<span class="y-inline">, 1985–86</span></span><span class="short"><svg class="bolt" viewBox="0 0 12 16" aria-hidden="true"><path d="M7.5 0 0 9h4.5L3.5 16 12 6H7l.5-6Z"/></svg>Ruta corta</span></p>
+            </div>
+            <div class="e-body entry" style="padding:0">
+              <dl class="cred"><dt>Guion</dt><dd>Marv Wolfman</dd><dt>Dibujo</dt><dd>George Pérez</dd></dl>
+              <p class="why">Barry muere en el #8 salvando el multiverso. Wally, hasta entonces Kid Flash, hereda el traje al final de la serie.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2 · Etapa Wally -->
+    <section class="era">
+      <div class="era-head">
+        <span class="era-yrs">Etapa 2 (1987–2006)</span>
+        <h2>Wally, el Flash titular</h2>
+        <p class="era-note">Barry está muerto toda esta etapa. Mark Waid y Geoff Johns convierten a Wally en uno de los mejores personajes de DC.</p>
+      </div>
+
+      <div class="row" data-lane="w">
+        <div class="yr">1992</div>
+        <div class="lane b off"></div>
+        <div class="lane w">
+          <article class="entry">
+            <div class="e-head">
+              <span class="chip">Wally</span>
+              <p class="iss">#62–65</p>
+              <h3>Born to Run</h3>
+              <p class="series"><span>The Flash vol. 2<span class="y-inline">, 1992</span></span></p>
+            </div>
+            <dl class="cred"><dt>Guion</dt><dd>Mark Waid</dd><dt>Dibujo</dt><dd>Greg LaRocque</dd></dl>
+            <p class="why">El año uno de Wally: cómo el sobrino de Iris se convierte en Kid Flash. Buen primer tebeo si empiezas por él.</p>
+          </article>
+        </div>
+      </div>
+
+      <div class="row" data-lane="w" data-corta>
+        <div class="yr">1993</div>
+        <div class="lane b off"></div>
+        <div class="lane w">
+          <article class="entry">
+            <div class="e-head">
+              <span class="chip">Wally</span>
+              <p class="iss">#74–79</p>
+              <h3>The Return of Barry Allen</h3>
+              <p class="series"><span>The Flash vol. 2<span class="y-inline">, 1993</span></span><span class="short"><svg class="bolt" viewBox="0 0 12 16" aria-hidden="true"><path d="M7.5 0 0 9h4.5L3.5 16 12 6H7l.5-6Z"/></svg>Ruta corta</span></p>
+            </div>
+            <dl class="cred"><dt>Guion</dt><dd>Mark Waid</dd><dt>Dibujo</dt><dd>Greg LaRocque</dd></dl>
+            <p class="why">Barry parece volver… y no es quien dice ser. Wally deja por fin de vivir a la sombra de su mentor.</p>
+          </article>
+        </div>
+      </div>
+
+      <div class="row" data-lane="w" data-corta>
+        <div class="yr">1994–95</div>
+        <div class="lane b off"></div>
+        <div class="lane w">
+          <article class="entry">
+            <div class="e-head">
+              <span class="chip">Wally</span>
+              <p class="iss">#0, #95–100</p>
+              <h3>Terminal Velocity</h3>
+              <p class="series"><span>The Flash vol. 2<span class="y-inline">, 1994–95</span></span><span class="short"><svg class="bolt" viewBox="0 0 12 16" aria-hidden="true"><path d="M7.5 0 0 9h4.5L3.5 16 12 6H7l.5-6Z"/></svg>Ruta corta</span></p>
+            </div>
+            <dl class="cred"><dt>Guion</dt><dd>Mark Waid</dd><dt>Dibujo</dt><dd>Salvador Larroca</dd></dl>
+            <p class="why">Wally se enfrenta a la Speed Force y sale convertido en el más rápido. Aquí se asienta la mitología moderna de los velocistas.</p>
+          </article>
+        </div>
+      </div>
+
+      <div class="row" data-lane="w">
+        <div class="yr">1996</div>
+        <div class="lane b off"></div>
+        <div class="lane w">
+          <article class="entry">
+            <div class="e-head">
+              <span class="chip">Wally</span>
+              <p class="iss">#108–111</p>
+              <h3>Dead Heat</h3>
+              <p class="series"><span>The Flash vol. 2 + Impulse #10–11<span class="y-inline">, 1996</span></span></p>
+            </div>
+            <dl class="cred"><dt>Guion</dt><dd>Mark Waid y Brian Augustyn</dd><dt>Dibujo</dt><dd>Oscar Jiménez</dd></dl>
+            <p class="why">Savitar va a por todos los velocistas. Evento corto con toda la familia Flash.</p>
+          </article>
+        </div>
+      </div>
+
+      <div class="row" data-lane="w" data-amp>
+        <div class="yr">1996</div>
+        <div class="lane b off"></div>
+        <div class="lane w">
+          <article class="entry">
+            <div class="e-head">
+              <span class="chip">Wally</span>
+              <p class="iss">#112–118</p>
+              <h3>Race Against Time</h3>
+              <p class="series"><span>The Flash vol. 2<span class="y-inline">, 1996</span></span><span class="amp-tag">Ampliada</span></p>
+            </div>
+            <dl class="cred"><dt>Guion</dt><dd>Mark Waid y Brian Augustyn</dd><dt>Dibujo</dt><dd>Oscar Jiménez, Anthony Castrillo, Jim Cheung y Sergio Cariello</dd></dl>
+            <p class="why">Secuela directa de Dead Heat: Wally queda atrapado en el futuro y otro Flash ocupa su lugar.</p>
+          </article>
+        </div>
+      </div>
+
+      <div class="row" data-lane="w" data-amp>
+        <div class="yr">1996–97</div>
+        <div class="lane b off"></div>
+        <div class="lane w">
+          <article class="entry">
+            <div class="e-head">
+              <span class="chip">Wally</span>
+              <p class="iss">#119–129</p>
+              <h3>Entre sagas</h3>
+              <p class="series"><span>The Flash vol. 2<span class="y-inline">, 1996–97</span></span><span class="amp-tag">Ampliada</span></p>
+            </div>
+            <dl class="cred"><dt>Guion</dt><dd>Mark Waid y Brian Augustyn</dd><dt>Dibujo</dt><dd>Paul Ryan</dd></dl>
+            <p class="why">Números sueltos y arcos cortos: tie-in de Final Night (#119), Presidential Race (#120–121) y Hell to Pay contra Neron (#127–129).</p>
+          </article>
+        </div>
+      </div>
+
+      <div class="row" data-lane="w" data-amp>
+        <div class="yr">1997–98</div>
+        <div class="lane b off"></div>
+        <div class="lane w">
+          <article class="entry">
+            <div class="e-head">
+              <span class="chip">Wally</span>
+              <p class="iss">#130–141</p>
+              <h3>Emergency Stop y The Human Race</h3>
+              <p class="series"><span>The Flash vol. 2<span class="y-inline">, 1997–98</span></span><span class="amp-tag">Ampliada</span></p>
+            </div>
+            <dl class="cred"><dt>Guion</dt><dd>Grant Morrison y Mark Millar</dd><dt>Dibujo</dt><dd>Paul Ryan y otros</dd></dl>
+            <p class="why">La etapa más cercana a imprescindible de esta lista. Wally estrena el traje de Speed Force en el #131.</p>
+          </article>
+        </div>
+      </div>
+
+      <div class="row" data-lane="w" data-amp>
+        <div class="yr">1998</div>
+        <div class="lane b off"></div>
+        <div class="lane w">
+          <article class="entry">
+            <div class="e-head">
+              <span class="chip">Wally</span>
+              <p class="iss">#142–144</p>
+              <h3>La boda de Wally y Linda</h3>
+              <p class="series"><span>The Flash vol. 2<span class="y-inline">, 1998</span></span><span class="amp-tag">Ampliada</span></p>
+            </div>
+            <dl class="cred"><dt>Guion</dt><dd>Mark Waid y Brian Augustyn</dd><dt>Dibujo</dt><dd>Pop Mhan y otros</dd></dl>
+            <p class="why">Vuelven Waid y Augustyn: Wally y Linda Park se casan en el #142 y la historia enlaza con Chain Lightning.</p>
+          </article>
+        </div>
+      </div>
+
+      <div class="row" data-lane="w">
+        <div class="yr">1999</div>
+        <div class="lane b off"></div>
+        <div class="lane w">
+          <article class="entry">
+            <div class="e-head">
+              <span class="chip">Wally</span>
+              <p class="iss">#145–150</p>
+              <h3>Chain Lightning</h3>
+              <p class="series"><span>The Flash vol. 2<span class="y-inline">, 1999</span></span></p>
+            </div>
+            <dl class="cred"><dt>Guion</dt><dd>Mark Waid y Brian Augustyn</dd><dt>Dibujo</dt><dd>Paul Pelletier</dd></dl>
+            <p class="why">Cobalt Blue y la despedida de Waid: cierra una década de historias.</p>
+          </article>
+        </div>
+      </div>
+
+      <div class="row" data-lane="w" data-amp>
+        <div class="yr">1999–2000</div>
+        <div class="lane b off"></div>
+        <div class="lane w">
+          <article class="entry">
+            <div class="e-head">
+              <span class="chip">Wally</span>
+              <p class="iss">#152–159</p>
+              <h3>La saga de Dark Flash</h3>
+              <p class="series"><span>The Flash vol. 2<span class="y-inline">, 1999–2000</span></span><span class="amp-tag">Ampliada</span></p>
+            </div>
+            <dl class="cred"><dt>Guion</dt><dd>Mark Waid y Brian Augustyn</dd><dt>Dibujo</dt><dd>Paul Pelletier</dd></dl>
+            <p class="why">Walter West, un Wally de otra realidad más oscuro, ocupa su puesto. Asoma al final del #150.</p>
+          </article>
+        </div>
+      </div>
+
+      <div class="row" data-lane="w" data-amp>
+        <div class="yr">2000</div>
+        <div class="lane b off"></div>
+        <div class="lane w">
+          <article class="entry">
+            <div class="e-head">
+              <span class="chip">Wally</span>
+              <p class="iss">#160–163</p>
+              <h3>Transición a Johns</h3>
+              <p class="series"><span>The Flash vol. 2<span class="y-inline">, 2000</span></span><span class="amp-tag">Ampliada</span></p>
+            </div>
+            <dl class="cred"><dt>Guion</dt><dd>Brian Augustyn (#160), Pat McGreal (#161, #163), Waid y Augustyn (#162)</dd><dt>Dibujo</dt><dd>Scott Kolins (#160), Paul Pelletier (#161–162), Ron Lim (#163)</dd></dl>
+            <p class="why">Números de relleno entre la salida de Waid y la llegada de Geoff Johns. Prescindibles, aunque el #160 ya junta a Kolins con Wally.</p>
+          </article>
+        </div>
+      </div>
+
+      <div class="row" data-lane="w">
+        <div class="yr">2000</div>
+        <div class="lane b off"></div>
+        <div class="lane w">
+          <article class="entry">
+            <div class="e-head">
+              <span class="chip">Wally</span>
+              <p class="iss">#164–169</p>
+              <h3>Wonderland</h3>
+              <p class="series"><span>The Flash vol. 2<span class="y-inline">, 2000</span></span></p>
+            </div>
+            <dl class="cred"><dt>Guion</dt><dd>Geoff Johns</dd><dt>Dibujo</dt><dd>Angel Unzueta</dd></dl>
+            <p class="why">Arranca la etapa Johns: Wally despierta en un mundo donde nadie recuerda a Flash.</p>
+          </article>
+        </div>
+      </div>
+
+      <div class="row" data-lane="w">
+        <div class="yr">2001–02</div>
+        <div class="lane b off"></div>
+        <div class="lane w">
+          <article class="entry">
+            <div class="e-head">
+              <span class="chip">Wally</span>
+              <p class="iss">#170–182</p>
+              <h3>Blood Will Run y Rogues</h3>
+              <p class="series"><span>The Flash vol. 2<span class="y-inline">, 2001–02</span></span></p>
+            </div>
+            <dl class="cred"><dt>Guion</dt><dd>Geoff Johns</dd><dt>Dibujo</dt><dd>Scott Kolins</dd></dl>
+            <p class="why">Johns reconstruye a los Rogues como una banda de barrio con código propio. Los villanos que conoces hoy salen de aquí.</p>
+          </article>
+        </div>
+      </div>
+
+      <div class="row" data-lane="w" data-corta>
+        <div class="yr">2003</div>
+        <div class="lane b off"></div>
+        <div class="lane w">
+          <article class="entry">
+            <div class="e-head">
+              <span class="chip">Wally</span>
+              <p class="iss">#192–200</p>
+              <h3>Blitz</h3>
+              <p class="series"><span>The Flash vol. 2<span class="y-inline">, 2003</span></span><span class="short"><svg class="bolt" viewBox="0 0 12 16" aria-hidden="true"><path d="M7.5 0 0 9h4.5L3.5 16 12 6H7l.5-6Z"/></svg>Ruta corta</span></p>
+            </div>
+            <dl class="cred"><dt>Guion</dt><dd>Geoff Johns</dd><dt>Dibujo</dt><dd>Scott Kolins</dd></dl>
+            <p class="why">Nace Zoom (Hunter Zolomon) y Wally paga el precio más alto. El mejor arco de la etapa.</p>
+          </article>
+        </div>
+      </div>
+
+      <div class="row" data-lane="w">
+        <div class="yr">2005</div>
+        <div class="lane b off"></div>
+        <div class="lane w">
+          <article class="entry">
+            <div class="e-head">
+              <span class="chip">Wally</span>
+              <p class="iss">#220–225</p>
+              <h3>Rogue War</h3>
+              <p class="series"><span>The Flash vol. 2<span class="y-inline">, 2005</span></span></p>
+            </div>
+            <dl class="cred"><dt>Guion</dt><dd>Geoff Johns</dd><dt>Dibujo</dt><dd>Howard Porter</dd></dl>
+            <p class="why">Guerra abierta entre Rogues activos y reformados. Cierre de Johns en la serie.</p>
+          </article>
+        </div>
+      </div>
+
+      <div class="row" data-lane="w">
+        <div class="yr">2005–06</div>
+        <div class="lane b off"></div>
+        <div class="lane w">
+          <article class="entry">
+            <div class="e-head">
+              <span class="chip">Wally</span>
+              <p class="iss">#1–7</p>
+              <h3>Infinite Crisis</h3>
+              <p class="series"><span>Miniserie<span class="y-inline">, 2005–06</span></span></p>
+            </div>
+            <dl class="cred"><dt>Guion</dt><dd>Geoff Johns</dd><dt>Dibujo</dt><dd>Phil Jiménez, con George Pérez e Ivan Reis</dd></dl>
+            <p class="why">Wally y su familia desaparecen en la Speed Force. Fin de su etapa como protagonista.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3 · Vuelve Barry -->
+    <section class="era">
+      <div class="era-head">
+        <span class="era-yrs">Etapa 3 (2008–2011)</span>
+        <h2>Vuelve Barry</h2>
+        <p class="era-note">Wally sigue en activo, pero DC recupera a Barry como Flash principal.</p>
+      </div>
+
+      <div class="row" data-lane="b">
+        <div class="yr">2008–09</div>
+        <div class="lane b">
+          <article class="entry">
+            <div class="e-head">
+              <span class="chip">Barry</span>
+              <p class="iss">#1–7 (clave: #2)</p>
+              <h3>Final Crisis</h3>
+              <p class="series"><span>Miniserie<span class="y-inline">, 2008–09</span></span></p>
+            </div>
+            <dl class="cred"><dt>Guion</dt><dd>Grant Morrison</dd><dt>Dibujo</dt><dd>J.G. Jones y Doug Mahnke</dd></dl>
+            <p class="why">Barry sale de la Speed Force en el #2. Lectura densa: basta con saber que vuelve.</p>
+          </article>
+        </div>
+        <div class="lane w"></div>
+      </div>
+
+      <div class="row" data-lane="both" data-corta>
+        <div class="yr">2009–10</div>
+        <div class="lane both">
+          <article class="entry band">
+            <div class="e-head">
+              <span class="chip">Barry y Wally</span>
+              <p class="iss">#1–6</p>
+              <h3>The Flash: Rebirth</h3>
+              <p class="series"><span>Miniserie<span class="y-inline">, 2009–10</span></span><span class="short"><svg class="bolt" viewBox="0 0 12 16" aria-hidden="true"><path d="M7.5 0 0 9h4.5L3.5 16 12 6H7l.5-6Z"/></svg>Ruta corta</span></p>
+            </div>
+            <div class="e-body entry" style="padding:0">
+              <dl class="cred"><dt>Guion</dt><dd>Geoff Johns</dd><dt>Dibujo</dt><dd>Ethan Van Sciver</dd></dl>
+              <p class="why">Barry regresa de verdad, con el origen que usan hoy tele y cine: Eobard Thawne mató a su madre. Wally y toda la familia Flash comparten viñetas.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <div class="row" data-lane="b">
+        <div class="yr">2010–11</div>
+        <div class="lane b">
+          <article class="entry">
+            <div class="e-head">
+              <span class="chip">Barry</span>
+              <p class="iss">#1–12</p>
+              <h3>The Dastardly Death of the Rogues y Road to Flashpoint</h3>
+              <p class="series"><span>The Flash vol. 3<span class="y-inline">, 2010–11</span></span></p>
+            </div>
+            <dl class="cred"><dt>Guion</dt><dd>Geoff Johns</dd><dt>Dibujo</dt><dd>Francis Manapul y Scott Kolins</dd></dl>
+            <p class="why">Barry, forense en Central City, contra unos Rogues del futuro. Enlaza directo con Flashpoint.</p>
+          </article>
+        </div>
+        <div class="lane w"></div>
+      </div>
+    </section>
+
+    <!-- 4 · Flashpoint -->
+    <section class="era">
+      <div class="era-head">
+        <span class="era-yrs">Etapa 4 (2011–2016)</span>
+        <h2>El reinicio de DC</h2>
+        <p class="era-note">El reinicio borra a Wally de la historia durante cinco años. Barry queda como único Flash.</p>
+      </div>
+
+      <div class="row" data-lane="both" data-corta>
+        <div class="yr">2011</div>
+        <div class="lane both">
+          <article class="entry band">
+            <div class="e-head">
+              <span class="chip">Barry y Wally</span>
+              <p class="iss">#1–5</p>
+              <h3>Flashpoint</h3>
+              <p class="series"><span>Miniserie<span class="y-inline">, 2011</span></span><span class="short"><svg class="bolt" viewBox="0 0 12 16" aria-hidden="true"><path d="M7.5 0 0 9h4.5L3.5 16 12 6H7l.5-6Z"/></svg>Ruta corta</span></p>
+            </div>
+            <div class="e-body entry" style="padding:0">
+              <dl class="cred"><dt>Guion</dt><dd>Geoff Johns</dd><dt>Dibujo</dt><dd>Andy Kubert</dd></dl>
+              <p class="why">Barry salva a su madre y rompe la línea temporal. El arreglo reinicia todo el universo DC y deja a Wally fuera de la existencia.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <div class="row" data-lane="b">
+        <div class="yr">2011–13</div>
+        <div class="lane b">
+          <article class="entry">
+            <div class="e-head">
+              <span class="chip">Barry</span>
+              <p class="iss">#1–25</p>
+              <h3>Move Forward → Reverse</h3>
+              <p class="series"><span>The Flash vol. 4 (New 52)<span class="y-inline">, 2011–13</span></span></p>
+            </div>
+            <dl class="cred"><dt>Guion</dt><dd>Francis Manapul y Brian Buccellato</dd><dt>Dibujo</dt><dd>Francis Manapul</dd></dl>
+            <p class="why">Barry reimaginado desde cero, con un diseño de página que exprime la velocidad como pocos tebeos.</p>
+          </article>
+        </div>
+        <div class="lane w off"></div>
+      </div>
+    </section>
+
+    <!-- 5 · Rebirth -->
+    <section class="era">
+      <div class="era-head">
+        <span class="era-yrs">Etapa 5 (2016–2020)</span>
+        <h2>Los dos Flash a la vez</h2>
+        <p class="era-note">Wally vuelve y los dos conviven. Joshua Williamson escribe a Barry durante casi cinco años.</p>
+      </div>
+
+      <div class="row" data-lane="both" data-corta>
+        <div class="yr">2016</div>
+        <div class="lane both w-off">
+          <article class="entry band">
+            <div class="e-head">
+              <span class="chip">Barry y Wally</span>
+              <p class="iss">#1</p>
+              <h3>DC Universe: Rebirth</h3>
+              <p class="series"><span>Especial<span class="y-inline">, 2016</span></span><span class="short"><svg class="bolt" viewBox="0 0 12 16" aria-hidden="true"><path d="M7.5 0 0 9h4.5L3.5 16 12 6H7l.5-6Z"/></svg>Ruta corta</span></p>
+            </div>
+            <div class="e-body entry" style="padding:0">
+              <dl class="cred"><dt>Guion</dt><dd>Geoff Johns</dd><dt>Dibujo</dt><dd>Gary Frank, Ethan Van Sciver, Ivan Reis y Phil Jiménez</dd></dl>
+              <p class="why">Wally escapa de la Speed Force y solo Barry lo recuerda. Un único número que devuelve a Wally a la continuidad.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <div class="row" data-lane="b">
+        <div class="yr">2016</div>
+        <div class="lane b">
+          <article class="entry">
+            <div class="e-head">
+              <span class="chip">Barry</span>
+              <p class="iss">Rebirth #1, #1–8</p>
+              <h3>Lightning Strikes Twice</h3>
+              <p class="series"><span>The Flash vol. 5<span class="y-inline">, 2016</span></span></p>
+            </div>
+            <dl class="cred"><dt>Guion</dt><dd>Joshua Williamson</dd><dt>Dibujo</dt><dd>Carmine Di Giandomenico</dd></dl>
+            <p class="why">Una tormenta de Speed Force llena Central City de nuevos velocistas. Punto de entrada limpio para Barry.</p>
+          </article>
+        </div>
+        <div class="lane w"></div>
+      </div>
+
+      <div class="row" data-lane="both" data-corta>
+        <div class="yr">2018</div>
+        <div class="lane both">
+          <article class="entry band">
+            <div class="e-head">
+              <span class="chip">Barry y Wally</span>
+              <p class="iss">#45–50</p>
+              <h3>Flash War</h3>
+              <p class="series"><span>The Flash vol. 5<span class="y-inline">, 2018</span></span><span class="short"><svg class="bolt" viewBox="0 0 12 16" aria-hidden="true"><path d="M7.5 0 0 9h4.5L3.5 16 12 6H7l.5-6Z"/></svg>Ruta corta</span></p>
+            </div>
+            <div class="e-body entry" style="padding:0">
+              <dl class="cred"><dt>Guion</dt><dd>Joshua Williamson</dd><dt>Dibujo</dt><dd>Howard Porter</dd></dl>
+              <p class="why">Wally recuerda a la familia que perdió con el reinicio y choca con Barry. Maestro contra discípulo.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <div class="row" data-lane="w">
+        <div class="yr">2018–19</div>
+        <div class="lane b"></div>
+        <div class="lane w">
+          <article class="entry">
+            <div class="e-head">
+              <span class="chip">Wally</span>
+              <p class="iss">#1–9</p>
+              <h3>Heroes in Crisis</h3>
+              <p class="series"><span>Miniserie<span class="y-inline">, 2018–19</span></span></p>
+            </div>
+            <dl class="cred"><dt>Guion</dt><dd>Tom King</dd><dt>Dibujo</dt><dd>Clay Mann</dd></dl>
+            <p class="why">Polémica, pero necesaria: Wally está en el centro de la tragedia de Sanctuary y todo lo que sigue parte de aquí.</p>
+          </article>
+        </div>
+      </div>
+
+      <div class="row" data-lane="b">
+        <div class="yr">2019</div>
+        <div class="lane b">
+          <article class="entry">
+            <div class="e-head">
+              <span class="chip">Barry</span>
+              <p class="iss">#70–75</p>
+              <h3>Flash: Year One</h3>
+              <p class="series"><span>The Flash vol. 5<span class="y-inline">, 2019</span></span></p>
+            </div>
+            <dl class="cred"><dt>Guion</dt><dd>Joshua Williamson</dd><dt>Dibujo</dt><dd>Howard Porter</dd></dl>
+            <p class="why">El origen moderno de Barry. Si empiezas por él, léelo antes que nada.</p>
+          </article>
+        </div>
+        <div class="lane w"></div>
+      </div>
+
+      <div class="row" data-lane="w">
+        <div class="yr">2019–20</div>
+        <div class="lane b"></div>
+        <div class="lane w">
+          <article class="entry">
+            <div class="e-head">
+              <span class="chip">Wally</span>
+              <p class="iss">#1–6</p>
+              <h3>Flash Forward</h3>
+              <p class="series"><span>Miniserie<span class="y-inline">, 2019–20</span></span></p>
+            </div>
+            <dl class="cred"><dt>Guion</dt><dd>Scott Lobdell</dd><dt>Dibujo</dt><dd>Brett Booth</dd></dl>
+            <p class="why">La redención de Wally tras Heroes in Crisis, viajando por el multiverso.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6 · Hoy -->
+    <section class="era">
+      <div class="era-head">
+        <span class="era-yrs">Etapa 6 (2020–hoy)</span>
+        <h2>Wally recupera la serie</h2>
+        <p class="era-note">Wally vuelve a protagonizar The Flash; Barry pasa a secundario de lujo.</p>
+      </div>
+
+      <div class="row" data-lane="w">
+        <div class="yr">2020–21</div>
+        <div class="lane b"></div>
+        <div class="lane w">
+          <article class="entry">
+            <div class="e-head">
+              <span class="chip">Wally</span>
+              <p class="iss">#1–7</p>
+              <h3>Dark Nights: Death Metal</h3>
+              <p class="series"><span>Miniserie<span class="y-inline">, 2020–21</span></span></p>
+            </div>
+            <dl class="cred"><dt>Guion</dt><dd>Scott Snyder</dd><dt>Dibujo</dt><dd>Greg Capullo</dd></dl>
+            <p class="why">Wally carga con el poder del Dr. Manhattan y es clave para restaurar la historia de DC.</p>
+          </article>
+        </div>
+      </div>
+
+      <div class="row" data-lane="w">
+        <div class="yr">2021–23</div>
+        <div class="lane b"></div>
+        <div class="lane w">
+          <article class="entry">
+            <div class="e-head">
+              <span class="chip">Wally</span>
+              <p class="iss">#768–800</p>
+              <h3>Etapa Jeremy Adams</h3>
+              <p class="series"><span>The Flash vol. 5, numeración legacy<span class="y-inline">, 2021–23</span></span></p>
+            </div>
+            <dl class="cred"><dt>Guion</dt><dd>Jeremy Adams</dd><dt>Dibujo</dt><dd>Brandon Peterson, Fernando Pasarín y otros</dd></dl>
+            <p class="why">Wally otra vez al frente: aventuras de familia y velocidad que culminan en el #800.</p>
+          </article>
+        </div>
+      </div>
+
+      <div class="row" data-lane="w">
+        <div class="yr">2023–</div>
+        <div class="lane b"></div>
+        <div class="lane w">
+          <article class="entry">
+            <div class="e-head">
+              <span class="chip">Wally</span>
+              <p class="iss">#1 en adelante</p>
+              <h3>Etapa Si Spurrier</h3>
+              <p class="series"><span>The Flash vol. 6<span class="y-inline">, 2023–</span></span></p>
+            </div>
+            <dl class="cred"><dt>Guion</dt><dd>Simon Spurrier</dd><dt>Dibujo</dt><dd>Mike Deodato Jr.</dd></dl>
+            <p class="why">La etapa más rara y ambiciosa: Wally descubre qué es de verdad la Speed Force.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <footer class="notes">
+      <div>
+        <h2>Los volúmenes de The Flash</h2>
+        <dl class="vols">
+          <dt>vol. 2</dt><dd>1987–2009, la serie de Wally</dd>
+          <dt>vol. 3</dt><dd>2010–11, regreso de Barry</dd>
+          <dt>vol. 4</dt><dd>2011–16, New 52</dd>
+          <dt>vol. 5</dt><dd>2016–23, Rebirth; en 2020 salta del #88 al #750</dd>
+          <dt>vol. 6</dt><dd>2023 en adelante</dd>
+        </dl>
+      </div>
+      <div>
+        <h2>Qué queda fuera</h2>
+        <p>Edad de Oro (Jay Garrick), Plata y Bronce (Barry de 1956 a 1985 y Wally como Kid Flash). Los créditos indican guionista y dibujante principal; varios arcos tienen dibujantes invitados en algún número.</p>
+      </div>
+    </footer>
+  </main>
+</div>
+
+</body></html>

@@ -5,23 +5,26 @@ package com.dani.lector.datos
  *
  * Las guias son dos artefactos de claude.ai escritos a mano: Green Lantern a
  * partir de The Book of Oa (r/Greenlantern) y Barry y Wally sin mas fuente. Son
- * CRITERIO, no datos: nadie los ha cruzado con Comic Vine. Por eso se abren
- * fuera, en el navegador, y la app no saca de ellos ni una cifra.
+ * CRITERIO, no datos: nadie los ha cruzado con Comic Vine. Por eso se enseñan
+ * tal cual, como paginas, y la app no saca de ellas ni una cifra.
  *
- * Se enlazan en vez de meterlos dentro porque el 02/09/2026 ya salio de la app
- * un orden de lectura entero que no se usaba (docs/CONTEXTO.md, "La amputacion").
- * Un enlace cuesta una linea y, si se corrige la guia, se ve sin compilar. Si
- * esta vez se usa, entonces se mete de verdad.
+ * Van COPIADAS en el APK (`app/src/main/assets/guias/`), no enlazadas: el
+ * enlace sacaba de la app y el artefacto, que es privado, pedia la sesion de
+ * claude.ai (tanda 36). Lo que se pierde: si se corrige un artefacto, hay que
+ * volver a copiarlo (su `index.html`) y compilar. Los originales:
+ * - Green Lantern: https://claude.ai/artifact/Cyu2nwXvVF4ZkFiSWPGWwy
+ * - Barry y Wally: https://claude.ai/artifact/MhPUgXk14PryDDSnQcpP2n
  */
 object Guias {
 
-    const val GREEN_LANTERN = "https://claude.ai/artifact/Cyu2nwXvVF4ZkFiSWPGWwy"
-    const val FLASH = "https://claude.ai/artifact/MhPUgXk14PryDDSnQcpP2n"
+    /** Rutas dentro de `assets`: el visor les pone delante `file:///android_asset/`. */
+    const val GREEN_LANTERN = "guias/green-lantern.html"
+    const val FLASH = "guias/barry-y-wally.html"
 
     private val porPalabra = listOf("lantern" to GREEN_LANTERN, "flash" to FLASH)
 
     /**
-     * La direccion de la guia para la carpeta [ruta], o `null` si no hay.
+     * La guia para la carpeta [ruta], o `null` si no hay.
      *
      * Busca en la RUTA ENTERA y no solo en el nombre de la carpeta, para que
      * "Green Lantern/Blackest Night" tambien cuente.

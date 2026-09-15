@@ -1,0 +1,969 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Green Lantern, en orden</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wdth,wght@0,75..100,400..700;1,75..100,400..700&family=Michroma&display=swap">
+<style>
+  :root {
+    --ground: #F2F5F2;
+    --surface: #E6ECE7;
+    --ink: #0F1E16;
+    --muted: #56685E;
+    --rule: #CFD9D2;
+    --accent: #0B7A36;
+    --chip-gl: #D5EADB;
+    --chip-ev: #0F1E16;
+    --chip-ev-ink: #F2F5F2;
+    --red: #D7263D;
+    --orange: #EE7A12;
+    --yellow: #F2C200;
+    --green: #1E9E4A;
+    --blue: #2474D6;
+    --indigo: #4A3A9A;
+    --violet: #A93A9C;
+    --black: #0A0A0A;
+    --white: #FFFFFF;
+    --display: "Michroma", "Eurostile", "Arial Black", sans-serif;
+    --sans: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0D1511;
+      --surface: #15211B;
+      --ink: #E4EDE7;
+      --muted: #95A89D;
+      --rule: #26362D;
+      --accent: #6CCB92;
+      --chip-gl: #1C3526;
+      --chip-ev: #E4EDE7;
+      --chip-ev-ink: #0D1511;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0D1511;
+    --surface: #15211B;
+    --ink: #E4EDE7;
+    --muted: #95A89D;
+    --rule: #26362D;
+    --accent: #6CCB92;
+    --chip-gl: #1C3526;
+    --chip-ev: #E4EDE7;
+    --chip-ev-ink: #0D1511;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 1.0625rem;
+    line-height: 1.55;
+    padding-inline: clamp(1rem, 4vw, 3rem);
+    padding-block: 0 4rem;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 70rem; margin-inline: auto; }
+  h1, h2, h3, p, ol, ul, dl, dd { margin: 0; }
+  ol, ul { padding: 0; list-style: none; }
+  a { color: var(--accent); text-underline-offset: 0.15em; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+
+  /* ---------- Hero ---------- */
+  .hero { padding-block: clamp(2.5rem, 7vw, 4.5rem) 2rem; display: grid; gap: 1.5rem; }
+  h1 {
+    font-family: var(--display);
+    font-weight: 400;
+    text-transform: uppercase;
+    font-size: clamp(2rem, 5.5vw + 0.5rem, 4.75rem);
+    line-height: 1.02;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+  .lede { max-width: 42rem; font-size: 1.1875rem; line-height: 1.5; text-wrap: pretty; }
+  .lede b { font-weight: 600; }
+
+  .spectrum { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 2px; margin-top: 0.5rem; }
+  .spectrum li { display: grid; gap: 0.5rem; align-content: start; }
+  .spectrum .sw { height: 3.25rem; background: var(--s); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 14%, transparent); }
+  .spectrum li:first-child .sw { border-radius: 4px 0 0 4px; }
+  .spectrum li:last-child .sw { border-radius: 0 4px 4px 0; }
+  .spectrum .lbl { font-size: 0.8125rem; line-height: 1.3; padding-right: 0.25rem; }
+  .spectrum .lbl b { display: block; font-weight: 650; font-size: 0.875rem; }
+  .spectrum .lbl span { color: var(--muted); }
+
+  .hero-foot {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    gap: 1rem 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--rule);
+    font-size: 0.9375rem;
+  }
+  .key { display: flex; gap: 0.75rem; align-items: flex-start; }
+  .key dt { flex: none; padding-top: 0.1rem; }
+  .key dd { color: var(--muted); }
+  .key dd b { color: var(--ink); font-weight: 650; }
+  .abbr { display: grid; grid-template-columns: auto 1fr; gap: 0.15rem 0.75rem; }
+  .abbr dt { font-weight: 700; }
+  .abbr dd { color: var(--muted); }
+
+  .mode {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    font-size: 0.8125rem; font-weight: 650;
+    padding: 0.2rem 0.6rem 0.2rem 0.45rem;
+    border-radius: 999px; border: 1px solid var(--rule); white-space: nowrap;
+  }
+  .mode svg { width: 1rem; height: 1rem; stroke: currentColor; fill: none; stroke-width: 1.6; }
+  .mode.inter { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+  .mode.opt { border-style: dashed; color: var(--muted); }
+
+  /* ---------- Fases ---------- */
+  .part {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 1rem;
+    padding-block: 3.5rem 0.5rem;
+  }
+  .part h2 { font-family: var(--display); font-weight: 400; font-size: 0.9375rem; letter-spacing: 0.04em; color: var(--accent); }
+  .part p { color: var(--muted); font-size: 0.9375rem; }
+
+  .phase {
+    display: grid;
+    grid-template-columns: 11rem minmax(0, 1fr);
+    gap: 1.5rem 3rem;
+    padding-block: 3rem;
+    border-top: 1px solid var(--rule);
+  }
+  .phase-side { display: grid; gap: 0.75rem; align-content: start; position: sticky; top: 1.25rem; }
+  .ph-n { font-family: var(--display); font-size: 0.8125rem; color: var(--accent); letter-spacing: 0.04em; }
+  .ph-yrs { font-size: 0.9375rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .lights { display: flex; flex-wrap: wrap; gap: 5px; }
+  .lights i { width: 0.8rem; height: 0.8rem; border-radius: 50%; background: var(--s); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 25%, transparent); }
+  .lights-cap { font-size: 0.8125rem; color: var(--muted); }
+
+  .phase h2 { font-family: var(--display); font-weight: 400; font-size: clamp(1.375rem, 2vw + 0.75rem, 2rem); line-height: 1.15; text-wrap: balance; }
+  .ph-note { margin-top: 0.625rem; max-width: 42rem; color: var(--muted); text-wrap: pretty; }
+
+  .steps { display: grid; gap: 2.25rem; margin-top: 2rem; }
+  .step { display: grid; gap: 1rem; }
+  .step-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.875rem; }
+  .step h3 { font-size: 1.1875rem; font-weight: 700; line-height: 1.25; }
+  .step-note { color: var(--muted); max-width: 44rem; font-size: 0.9875rem; text-wrap: pretty; }
+
+  .reads { display: grid; border-left: 2px solid var(--rule); margin-left: 0.4rem; }
+  .reads > li { position: relative; padding: 0.25rem 0 1.25rem 1.5rem; display: grid; gap: 0.35rem; }
+  .reads > li:last-child { padding-bottom: 0.25rem; }
+  .reads > li::before {
+    content: ""; position: absolute; left: -6px; top: 0.7rem;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--ground); box-shadow: 0 0 0 2px var(--accent);
+  }
+  .r-title { font-weight: 650; font-size: 1.0625rem; line-height: 1.35; }
+  .r-title .iss { color: var(--accent); font-variant-numeric: tabular-nums; }
+  .r-meta { font-size: 0.9375rem; color: var(--muted); }
+  .cred { display: grid; grid-template-columns: auto 1fr; gap: 0.05rem 0.75rem; font-size: 0.9375rem; }
+  .cred dt { color: var(--muted); }
+  .cred dd { font-weight: 550; }
+
+  /* Meses: cada caja es un mes de The Book of Oa */
+  .months { display: grid; grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr)); gap: 0.5rem; }
+  .months > li {
+    display: grid; gap: 0.45rem; align-content: start;
+    padding: 0.6rem 0.7rem 0.7rem;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--surface) 55%, transparent);
+  }
+  .m { font-size: 0.8125rem; font-weight: 650; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .months ul { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+  .c {
+    display: inline-flex; align-items: baseline; gap: 0.35rem;
+    padding: 0.25rem 0.55rem; border-radius: 4px;
+    font-size: 0.9rem; font-weight: 650; font-variant-numeric: tabular-nums;
+    border: 1px solid var(--rule); background: var(--ground);
+  }
+  .c.gl { background: var(--chip-gl); border-color: transparent; }
+  .c.ev { background: var(--chip-ev); color: var(--chip-ev-ink); border-color: var(--chip-ev); }
+  .c.side { border-style: dashed; font-style: italic; font-weight: 550; }
+  .c small { font-weight: 500; font-size: 0.78rem; opacity: 0.75; }
+
+  .tbl-wrap { overflow-x: auto; }
+  table { border-collapse: collapse; font-size: 0.9375rem; min-width: 32rem; width: 100%; }
+  th, td { text-align: left; padding: 0.45rem 1rem 0.45rem 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { font-weight: 600; color: var(--muted); font-size: 0.8125rem; }
+  td:first-child { font-weight: 650; }
+  td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  /* ---------- Pie ---------- */
+  .notes {
+    padding-top: 2rem; border-top: 1px solid var(--rule);
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+    gap: 1.5rem 3rem; font-size: 0.9375rem; color: var(--muted);
+  }
+  .notes h2 { font-size: 1rem; font-weight: 700; color: var(--ink); margin-bottom: 0.4rem; }
+
+  @media (max-width: 760px) {
+    .spectrum { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem 2px; }
+    .spectrum li .sw { border-radius: 3px !important; height: 2rem; }
+    .phase { grid-template-columns: 1fr; gap: 1rem; }
+    .phase-side { position: static; grid-template-columns: auto auto 1fr; align-items: center; gap: 0.5rem 1rem; }
+    .lights-cap { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-block" viewBox="0 0 16 16"><rect x="2" y="2.5" width="12" height="4" rx="1"/><rect x="2" y="9.5" width="12" height="4" rx="1"/></symbol>
+  <symbol id="i-inter" viewBox="0 0 16 16"><path d="M2 4h4l4 8h4M2 12h4l4-8h4"/></symbol>
+</svg>
+
+<div class="wrap">
+  <header class="hero">
+    <h1>Green Lantern, en orden</h1>
+    <p class="lede">De <b>Green Lantern: Rebirth</b> (2004) a 2021 en ocho fases, siguiendo el orden mensual de <a href="https://www.reddit.com/r/Greenlantern/comments/ne1w8j/the_book_of_oa_modern_green_lantern_reading_order/">The Book of Oa</a> de r/Greenlantern. Fuera de los cruces se lee por series; en los cruces, mes a mes.</p>
+
+    <ol class="spectrum" aria-label="Espectro emocional">
+      <li style="--s: var(--black)"><div class="sw"></div><p class="lbl"><b>Negro</b><span>Muerte</span></p></li>
+      <li style="--s: var(--red)"><div class="sw"></div><p class="lbl"><b>Rojo</b><span>Ira</span></p></li>
+      <li style="--s: var(--orange)"><div class="sw"></div><p class="lbl"><b>Naranja</b><span>Avaricia</span></p></li>
+      <li style="--s: var(--yellow)"><div class="sw"></div><p class="lbl"><b>Amarillo</b><span>Miedo</span></p></li>
+      <li style="--s: var(--green)"><div class="sw"></div><p class="lbl"><b>Verde</b><span>Voluntad</span></p></li>
+      <li style="--s: var(--blue)"><div class="sw"></div><p class="lbl"><b>Azul</b><span>Esperanza</span></p></li>
+      <li style="--s: var(--indigo)"><div class="sw"></div><p class="lbl"><b>Índigo</b><span>Compasión</span></p></li>
+      <li style="--s: var(--violet)"><div class="sw"></div><p class="lbl"><b>Violeta</b><span>Amor</span></p></li>
+      <li style="--s: var(--white)"><div class="sw"></div><p class="lbl"><b>Blanco</b><span>Vida</span></p></li>
+    </ol>
+
+    <div class="hero-foot">
+      <dl class="key">
+        <dt><span class="mode"><svg><use href="#i-block"/></svg>Bloque</span></dt>
+        <dd><b>Lee cada serie de corrido</b> y luego pasa a la siguiente.</dd>
+      </dl>
+      <dl class="key">
+        <dt><span class="mode inter"><svg><use href="#i-inter"/></svg>Intercalar</span></dt>
+        <dd><b>Cada caja es un mes.</b> Lee los meses en orden; en oscuro, la serie propia del evento.</dd>
+      </dl>
+      <dl class="abbr">
+        <dt>GL</dt><dd>Green Lantern (vol. 4 hasta 2011, vol. 5 desde 2011)</dd>
+        <dt>GLC</dt><dd>Green Lantern Corps (vol. 2 hasta 2011, vol. 3 desde 2011)</dd>
+        <dt>EW</dt><dd>Green Lantern: Emerald Warriors</dd>
+        <dt>NG</dt><dd>Green Lantern: New Guardians</dd>
+        <dt>RL</dt><dd>Red Lanterns</dd>
+        <dt>BN</dt><dd>Blackest Night</dd>
+      </dl>
+    </div>
+  </header>
+
+  <main>
+    <div class="part"><h2>Parte 1</h2><p>De Rebirth a los New 52, 2004–2011</p></div>
+
+    <!-- ======== FASE 1 ======== -->
+    <section class="phase">
+      <div class="phase-side">
+        <p class="ph-n">Fase 1</p>
+        <p class="ph-yrs">2004–2007</p>
+        <div>
+          <div class="lights" role="img" aria-label="Luces en juego: verde y amarillo"><i style="--s: var(--green)"></i><i style="--s: var(--yellow)"></i></div>
+          <p class="lights-cap">Luces en juego</p>
+        </div>
+      </div>
+      <div>
+        <h2>Cimientos y expansión</h2>
+        <p class="ph-note">Hal Jordan vuelve, el Cuerpo se reconstruye y el universo cósmico se abre. Se lee por series completas.</p>
+
+        <ol class="steps">
+          <li class="step">
+            <div class="step-head"><h3>El inicio</h3><span class="mode"><svg><use href="#i-block"/></svg>Bloque</span></div>
+            <ol class="reads">
+              <li>
+                <p class="r-title">Green Lantern: Rebirth <span class="iss">#1–6</span></p>
+                <p class="r-meta">Miniserie, dic 2004 – may 2005</p>
+                <dl class="cred"><dt>Guion</dt><dd>Geoff Johns</dd><dt>Dibujo</dt><dd>Ethan Van Sciver</dd></dl>
+              </li>
+              <li>
+                <p class="r-title">Green Lantern Secret Files and Origins 2005</p>
+                <p class="r-meta">Especial, jun 2005</p>
+                <dl class="cred"><dt>Autores</dt><dd>Varios</dd></dl>
+              </li>
+            </ol>
+          </li>
+
+          <li class="step">
+            <div class="step-head"><h3>Primeros patrullajes</h3><span class="mode"><svg><use href="#i-block"/></svg>Bloque</span></div>
+            <ol class="reads">
+              <li>
+                <p class="r-title">GL vol. 4 <span class="iss">#1–6</span></p>
+                <p class="r-meta">No Fear, jul–dic 2005</p>
+                <dl class="cred"><dt>Guion</dt><dd>Geoff Johns</dd><dt>Dibujo</dt><dd>Carlos Pacheco, Ethan Van Sciver y Simone Bianchi</dd></dl>
+              </li>
+              <li>
+                <p class="r-title">Green Lantern Corps: Recharge <span class="iss">#1–5</span></p>
+                <p class="r-meta">Miniserie, nov 2005 – mar 2006</p>
+                <dl class="cred"><dt>Guion</dt><dd>Geoff Johns y Dave Gibbons</dd><dt>Dibujo</dt><dd>Patrick Gleason</dd></dl>
+              </li>
+            </ol>
+          </li>
+
+          <li class="step">
+            <div class="step-head"><h3>Expansión cósmica</h3><span class="mode"><svg><use href="#i-block"/></svg>Bloque</span></div>
+            <ol class="reads">
+              <li>
+                <p class="r-title">GL <span class="iss">#7–13</span></p>
+                <p class="r-meta">Revenge of the Green Lanterns, feb–ago 2006</p>
+                <dl class="cred"><dt>Guion</dt><dd>Geoff Johns</dd><dt>Dibujo</dt><dd>Carlos Pacheco, Ethan Van Sciver e Ivan Reis</dd></dl>
+              </li>
+              <li>
+                <p class="r-title">GLC vol. 2 <span class="iss">#1–9</span></p>
+                <p class="r-meta">To Be a Lantern y siguientes, ago 2006 – abr 2007</p>
+                <dl class="cred"><dt>Guion</dt><dd>Dave Gibbons</dd><dt>Dibujo</dt><dd>Patrick Gleason</dd></dl>
+              </li>
+              <li>
+                <p class="r-title">Ion: Guardian of the Universe <span class="iss">#1–12</span></p>
+                <p class="r-meta">Maxiserie de Kyle Rayner, jun 2006 – may 2007</p>
+                <dl class="cred"><dt>Guion</dt><dd>Ron Marz</dd><dt>Dibujo</dt><dd>Greg Tocchini y otros</dd></dl>
+              </li>
+              <li>
+                <p class="r-title">Guy Gardner: Collateral Damage <span class="iss">#1–2</span></p>
+                <p class="r-meta">Prestige, 2 números</p>
+                <dl class="cred"><dt>Guion y dibujo</dt><dd>Howard Chaykin</dd></dl>
+              </li>
+            </ol>
+          </li>
+
+          <li class="step">
+            <div class="step-head"><h3>Preparando la guerra</h3><span class="mode"><svg><use href="#i-block"/></svg>Bloque</span></div>
+            <ol class="reads">
+              <li>
+                <p class="r-title">GL <span class="iss">#14–20</span></p>
+                <p class="r-meta">Wanted: Hal Jordan (#14–17) y Mystery of the Star Sapphire (#18–20), sep 2006 – jul 2007</p>
+                <dl class="cred"><dt>Guion</dt><dd>Geoff Johns</dd><dt>Dibujo</dt><dd>Ivan Reis y Daniel Acuña</dd></dl>
+              </li>
+              <li>
+                <p class="r-title">GLC <span class="iss">#10–13</span></p>
+                <p class="r-meta">may–ago 2007</p>
+                <dl class="cred"><dt>Guion</dt><dd>Dave Gibbons</dd><dt>Dibujo</dt><dd>Patrick Gleason y otros</dd></dl>
+              </li>
+            </ol>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ======== FASE 2 ======== -->
+    <section class="phase">
+      <div class="phase-side">
+        <p class="ph-n">Fase 2</p>
+        <p class="ph-yrs">2007–2008</p>
+        <div>
+          <div class="lights" role="img" aria-label="Luces en juego: verde y amarillo"><i style="--s: var(--green)"></i><i style="--s: var(--yellow)"></i></div>
+          <p class="lights-cap">Luces en juego</p>
+        </div>
+      </div>
+      <div>
+        <h2>Sinestro Corps War</h2>
+        <p class="ph-note">El primer gran choque: el Cuerpo de Sinestro, alimentado por el miedo, contra los Green Lantern.</p>
+
+        <ol class="steps">
+          <li class="step">
+            <div class="step-head"><h3>El disparo de salida</h3><span class="mode"><svg><use href="#i-block"/></svg>Bloque</span></div>
+            <ol class="reads">
+              <li>
+                <p class="r-title">Green Lantern: Sinestro Corps Special <span class="iss">#1</span></p>
+                <p class="r-meta">Especial, ago 2007 (mismo mes que GLC #13)</p>
+                <dl class="cred"><dt>Guion</dt><dd>Geoff Johns</dd><dt>Dibujo</dt><dd>Ethan Van Sciver</dd></dl>
+              </li>
+            </ol>
+          </li>
+
+          <li class="step">
+            <div class="step-head"><h3>El conflicto y tras bambalinas</h3><span class="mode inter"><svg><use href="#i-inter"/></svg>Intercalar</span></div>
+            <p class="step-note">Los especiales <i>Tales of the Sinestro Corps</i> (en discontinua) salen en paralelo a los números finales. GL #26, de febrero de 2008, abre ya la fase 3.</p>
+            <ol class="months" aria-label="Sinestro Corps War por meses">
+              <li><p class="m">sep 2007</p><ul><li class="c gl">GL #21</li><li class="c">GLC #14</li></ul></li>
+              <li><p class="m">oct 2007</p><ul><li class="c gl">GL #22</li><li class="c">GLC #15</li></ul></li>
+              <li><p class="m">nov 2007</p><ul><li class="c gl">GL #23</li><li class="c">GLC #16</li><li class="c side">Tales: Parallax</li></ul></li>
+              <li><p class="m">dic 2007</p><ul><li class="c gl">GL #24</li><li class="c">GLC #17</li><li class="c side">Tales: Cyborg Superman</li><li class="c side">Tales: Superman-Prime</li></ul></li>
+              <li><p class="m">ene 2008</p><ul><li class="c gl">GL #25 <small>final</small></li><li class="c">GLC #18</li><li class="c side">Tales: Ion</li></ul></li>
+              <li><p class="m">feb 2008</p><ul><li class="c">GLC #19 <small>epílogo</small></li><li class="c side">GL/Sinestro Corps Secret Files #1</li></ul></li>
+            </ol>
+            <div class="tbl-wrap">
+              <table>
+                <thead><tr><th scope="col">Serie</th><th scope="col">Números</th><th scope="col">Guion</th><th scope="col">Dibujo</th></tr></thead>
+                <tbody>
+                  <tr><td>GL</td><td class="num">#21–25</td><td>Geoff Johns</td><td>Ivan Reis</td></tr>
+                  <tr><td>GLC</td><td class="num">#14–19</td><td>Dave Gibbons</td><td>Patrick Gleason y otros</td></tr>
+                  <tr><td>Tales of the Sinestro Corps y Secret Files</td><td class="num">5 especiales</td><td>Varios</td><td>Varios</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ======== FASE 3 ======== -->
+    <section class="phase">
+      <div class="phase-side">
+        <p class="ph-n">Fase 3</p>
+        <p class="ph-yrs">2008–2010</p>
+        <div>
+          <div class="lights" role="img" aria-label="Luces en juego: todo el espectro, negro y blanco"><i style="--s: var(--black)"></i><i style="--s: var(--red)"></i><i style="--s: var(--orange)"></i><i style="--s: var(--yellow)"></i><i style="--s: var(--green)"></i><i style="--s: var(--blue)"></i><i style="--s: var(--indigo)"></i><i style="--s: var(--violet)"></i><i style="--s: var(--white)"></i></div>
+          <p class="lights-cap">Luces en juego</p>
+        </div>
+      </div>
+      <div>
+        <h2>Rumbo a Blackest Night</h2>
+        <p class="ph-note">Aparece el resto del espectro emocional. Bloques hasta julio de 2009, cuando arranca el gran cruce.</p>
+
+        <ol class="steps">
+          <li class="step">
+            <div class="step-head"><h3>El origen y el Cuerpo</h3><span class="mode"><svg><use href="#i-block"/></svg>Bloque</span></div>
+            <ol class="reads">
+              <li>
+                <p class="r-title">GL <span class="iss">#26–35</span></p>
+                <p class="r-meta">Alpha Lanterns (#26–28) y Secret Origin (#29–35), feb–nov 2008</p>
+                <dl class="cred"><dt>Guion</dt><dd>Geoff Johns</dd><dt>Dibujo</dt><dd>Mike McKone (#26–28), Ivan Reis (#29–35)</dd></dl>
+              </li>
+              <li>
+                <p class="r-title">GLC <span class="iss">#20–28</span></p>
+                <p class="r-meta">Ring Quest y siguientes, mar–nov 2008. Tomasi toma la serie en el #20</p>
+                <dl class="cred"><dt>Guion</dt><dd>Peter J. Tomasi y otros</dd><dt>Dibujo</dt><dd>Patrick Gleason y otros</dd></dl>
+              </li>
+            </ol>
+          </li>
+
+          <li class="step">
+            <div class="step-head"><h3>Las nuevas luces</h3><span class="mode"><svg><use href="#i-block"/></svg>Bloque</span></div>
+            <ol class="reads">
+              <li>
+                <p class="r-title">Final Crisis: Rage of the Red Lanterns <span class="iss">#1</span></p>
+                <p class="r-meta">Especial, dic 2008</p>
+                <dl class="cred"><dt>Guion</dt><dd>Geoff Johns</dd><dt>Dibujo</dt><dd>Shane Davis</dd></dl>
+              </li>
+              <li>
+                <p class="r-title">GL <span class="iss">#36–41</span></p>
+                <p class="r-meta">Rage of the Red Lanterns (#36–38) y Agent Orange (#39–41), dic 2008 – jun 2009</p>
+                <dl class="cred"><dt>Guion</dt><dd>Geoff Johns</dd><dt>Dibujo</dt><dd>Shane Davis e Ivan Reis (#36–38), Philip Tan (#39–41)</dd></dl>
+              </li>
+              <li>
+                <p class="r-title">GLC <span class="iss">#29–35</span></p>
+                <p class="r-meta">Sins of the Star Sapphire y siguientes, dic 2008 – jun 2009</p>
+                <dl class="cred"><dt>Guion</dt><dd>Peter J. Tomasi</dd><dt>Dibujo</dt><dd>Patrick Gleason y Luke Ross</dd></dl>
+              </li>
+            </ol>
+          </li>
+
+          <li class="step">
+            <div class="step-head"><h3>El gran evento: Blackest Night</h3><span class="mode inter"><svg><use href="#i-inter"/></svg>Intercalar</span></div>
+            <p class="step-note">Cruce obligatorio. Empieza con BN #0 en julio de 2009; GL #42 cierra Agent Orange un mes después. Solo series de Linterna: el resto de tie-ins de DC queda fuera.</p>
+            <ol class="months" aria-label="Blackest Night por meses">
+              <li><p class="m">jul 2009</p><ul><li class="c ev">BN #0</li><li class="c">GLC #36</li></ul></li>
+              <li><p class="m">ago 2009</p><ul><li class="c gl">GL #42</li><li class="c">GLC #37</li></ul></li>
+              <li><p class="m">sep 2009</p><ul><li class="c ev">BN #1</li><li class="c side">Tales of the Corps #1–3</li><li class="c gl">GL #43–44</li><li class="c">GLC #38</li></ul></li>
+              <li><p class="m">oct 2009</p><ul><li class="c ev">BN #2</li><li class="c gl">GL #45</li><li class="c">GLC #39</li></ul></li>
+              <li><p class="m">nov 2009</p><ul><li class="c ev">BN #3</li><li class="c gl">GL #46</li><li class="c">GLC #40</li></ul></li>
+              <li><p class="m">dic 2009</p><ul><li class="c ev">BN #4</li><li class="c gl">GL #47</li><li class="c">GLC #41</li></ul></li>
+              <li><p class="m">ene 2010</p><ul><li class="c ev">BN #5</li><li class="c gl">GL #48</li><li class="c">GLC #42</li></ul></li>
+              <li><p class="m">feb 2010</p><ul><li class="c ev">BN #6</li><li class="c gl">GL #49</li><li class="c">GLC #43</li></ul></li>
+              <li><p class="m">mar 2010</p><ul><li class="c gl">GL #50</li><li class="c">GLC #44</li></ul></li>
+              <li><p class="m">abr 2010</p><ul><li class="c ev">BN #7</li><li class="c gl">GL #51</li><li class="c">GLC #45</li></ul></li>
+              <li><p class="m">may 2010</p><ul><li class="c ev">BN #8 <small>final</small></li><li class="c gl">GL #52</li><li class="c">GLC #46</li></ul></li>
+              <li><p class="m">jun 2010</p><ul><li class="c">GLC #47 <small>epílogo</small></li></ul></li>
+            </ol>
+            <div class="tbl-wrap">
+              <table>
+                <thead><tr><th scope="col">Serie</th><th scope="col">Números</th><th scope="col">Guion</th><th scope="col">Dibujo</th></tr></thead>
+                <tbody>
+                  <tr><td>Blackest Night</td><td class="num">#0–8</td><td>Geoff Johns</td><td>Ivan Reis</td></tr>
+                  <tr><td>GL</td><td class="num">#42</td><td>Geoff Johns</td><td>Philip Tan</td></tr>
+                  <tr><td>GL</td><td class="num">#43–52</td><td>Geoff Johns</td><td>Doug Mahnke</td></tr>
+                  <tr><td>GLC</td><td class="num">#36–47</td><td>Peter J. Tomasi</td><td>Patrick Gleason</td></tr>
+                  <tr><td>Blackest Night: Tales of the Corps</td><td class="num">#1–3</td><td>Varios</td><td>Varios</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ======== FASE 4 ======== -->
+    <section class="phase">
+      <div class="phase-side">
+        <p class="ph-n">Fase 4</p>
+        <p class="ph-yrs">2010–2011</p>
+        <div>
+          <div class="lights" role="img" aria-label="Luces en juego: todo el espectro y blanco"><i style="--s: var(--red)"></i><i style="--s: var(--orange)"></i><i style="--s: var(--yellow)"></i><i style="--s: var(--green)"></i><i style="--s: var(--blue)"></i><i style="--s: var(--indigo)"></i><i style="--s: var(--violet)"></i><i style="--s: var(--white)"></i></div>
+          <p class="lights-cap">Luces en juego</p>
+        </div>
+      </div>
+      <div>
+        <h2>La guerra final</h2>
+        <p class="ph-note">Las tensiones entre colores estallan dentro del propio Cuerpo. Termina justo antes de Flashpoint.</p>
+
+        <ol class="steps">
+          <li class="step">
+            <div class="step-head"><h3>Las consecuencias</h3><span class="mode"><svg><use href="#i-block"/></svg>Bloque</span></div>
+            <ol class="reads">
+              <li>
+                <p class="r-title">GL <span class="iss">#53–62</span></p>
+                <p class="r-meta">Brightest Day, jun 2010 – mar 2011</p>
+                <dl class="cred"><dt>Guion</dt><dd>Geoff Johns</dd><dt>Dibujo</dt><dd>Doug Mahnke</dd></dl>
+              </li>
+              <li>
+                <p class="r-title">GLC <span class="iss">#48–56</span></p>
+                <p class="r-meta">Revolt of the Alpha Lanterns y siguientes, jul 2010 – mar 2011</p>
+                <dl class="cred"><dt>Guion</dt><dd>Tony Bedard</dd><dt>Dibujo</dt><dd>Ardian Syaf (#48–52), Tyler Kirkham (#53–56)</dd></dl>
+              </li>
+              <li>
+                <p class="r-title">EW <span class="iss">#1–6</span></p>
+                <p class="r-meta">Guy Gardner al frente, oct 2010 – mar 2011</p>
+                <dl class="cred"><dt>Guion</dt><dd>Peter J. Tomasi</dd><dt>Dibujo</dt><dd>Fernando Pasarín</dd></dl>
+              </li>
+            </ol>
+          </li>
+
+          <li class="step">
+            <div class="step-head"><h3>War of the Green Lanterns</h3><span class="mode inter"><svg><use href="#i-inter"/></svg>Intercalar</span></div>
+            <p class="step-note">Último cruce obligatorio. Abril reúne el prólogo (GL #63), el preludio (EW #7) y GLC #57. Luego las tres series se turnan cada mes: GL, GLC, EW.</p>
+            <ol class="months" aria-label="War of the Green Lanterns por meses">
+              <li><p class="m">abr 2011</p><ul><li class="c gl">GL #63 <small>prólogo</small></li><li class="c">GLC #57</li><li class="c">EW #7 <small>preludio</small></li></ul></li>
+              <li><p class="m">may 2011</p><ul><li class="c gl">GL #64</li><li class="c">GLC #58</li><li class="c">EW #8</li></ul></li>
+              <li><p class="m">jun 2011</p><ul><li class="c gl">GL #65</li><li class="c">GLC #59</li><li class="c">EW #9</li></ul></li>
+              <li><p class="m">jul 2011</p><ul><li class="c gl">GL #66</li><li class="c">GLC #60</li><li class="c">EW #10</li></ul></li>
+              <li><p class="m">ago 2011</p><ul><li class="c gl">GL #67 <small>final</small></li><li class="c">GLC #61</li><li class="c">EW #11</li></ul></li>
+            </ol>
+            <div class="tbl-wrap">
+              <table>
+                <thead><tr><th scope="col">Serie</th><th scope="col">Números</th><th scope="col">Guion</th><th scope="col">Dibujo</th></tr></thead>
+                <tbody>
+                  <tr><td>GL</td><td class="num">#63–67</td><td>Geoff Johns</td><td>Doug Mahnke</td></tr>
+                  <tr><td>GLC</td><td class="num">#57–61</td><td>Tony Bedard</td><td>Tyler Kirkham</td></tr>
+                  <tr><td>EW</td><td class="num">#7–11</td><td>Peter J. Tomasi</td><td>Fernando Pasarín</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </li>
+
+          <li class="step">
+            <div class="step-head"><h3>El epílogo</h3><span class="mode inter"><svg><use href="#i-inter"/></svg>Intercalar</span></div>
+            <ol class="months" aria-label="Epílogo por meses">
+              <li><p class="m">sep 2011</p><ul><li class="c">GLC #62</li><li class="c">EW #12</li><li class="c ev">Aftermath #1</li></ul></li>
+              <li><p class="m">oct 2011</p><ul><li class="c">GLC #63 <small>último</small></li><li class="c">EW #13 <small>último</small></li><li class="c ev">Aftermath #2</li></ul></li>
+            </ol>
+            <div class="tbl-wrap">
+              <table>
+                <thead><tr><th scope="col">Serie</th><th scope="col">Números</th><th scope="col">Guion</th><th scope="col">Dibujo</th></tr></thead>
+                <tbody>
+                  <tr><td>War of the Green Lanterns: Aftermath</td><td class="num">#1–2</td><td>Tony Bedard</td><td>Miguel Sepúlveda y Tyler Kirkham (#1), Ransom Getty y Andy Smith (#2)</td></tr>
+                  <tr><td>GLC</td><td class="num">#62–63</td><td>Tony Bedard</td><td>Sin confirmar</td></tr>
+                  <tr><td>EW</td><td class="num">#12–13</td><td>Peter J. Tomasi</td><td>Sin confirmar</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <div class="part"><h2>Parte 2</h2><p>De los New 52 a 2021</p></div>
+
+    <!-- ======== FASE 5 ======== -->
+    <section class="phase">
+      <div class="phase-side">
+        <p class="ph-n">Fase 5</p>
+        <p class="ph-yrs">2011–2013</p>
+        <div>
+          <div class="lights" role="img" aria-label="Luces en juego: todo el espectro"><i style="--s: var(--red)"></i><i style="--s: var(--orange)"></i><i style="--s: var(--yellow)"></i><i style="--s: var(--green)"></i><i style="--s: var(--blue)"></i><i style="--s: var(--indigo)"></i><i style="--s: var(--violet)"></i></div>
+          <p class="lights-cap">Luces en juego</p>
+        </div>
+      </div>
+      <div>
+        <h2>New 52: el final de Johns</h2>
+        <p class="ph-note">El reinicio de DC mantiene casi intacta la continuidad de Linterna. Cuatro series nuevas (GL vol. 5, GLC vol. 3, New Guardians y Red Lanterns) hasta la despedida de Johns en GL #20.</p>
+
+        <ol class="steps">
+          <li class="step">
+            <div class="step-head"><h3>Cuatro series nuevas</h3><span class="mode"><svg><use href="#i-block"/></svg>Bloque</span></div>
+            <p class="step-note">El post las alterna mes a mes; hasta el #12 se pueden leer por separado.</p>
+            <ol class="reads">
+              <li>
+                <p class="r-title">GL vol. 5 <span class="iss">#1–12 y Annual #1</span></p>
+                <p class="r-meta">Sinestro como Green Lantern y Revenge of Black Hand, nov 2011 – oct 2012</p>
+                <dl class="cred"><dt>Guion</dt><dd>Geoff Johns</dd><dt>Dibujo</dt><dd>Doug Mahnke y otros</dd></dl>
+              </li>
+              <li>
+                <p class="r-title">GLC vol. 3 <span class="iss">#1–12</span></p>
+                <p class="r-meta">Guy Gardner y John Stewart, nov 2011 – oct 2012</p>
+                <dl class="cred"><dt>Guion</dt><dd>Peter J. Tomasi</dd><dt>Dibujo</dt><dd>Fernando Pasarín</dd></dl>
+              </li>
+              <li>
+                <p class="r-title">NG <span class="iss">#1–12</span></p>
+                <p class="r-meta">Kyle Rayner con un anillo de cada color, nov 2011 – oct 2012</p>
+                <dl class="cred"><dt>Guion</dt><dd>Tony Bedard</dd><dt>Dibujo</dt><dd>Tyler Kirkham</dd></dl>
+              </li>
+              <li>
+                <p class="r-title">RL <span class="iss">#1–12</span></p>
+                <p class="r-meta">Atrocitus y los Red Lanterns, nov 2011 – oct 2012</p>
+                <dl class="cred"><dt>Guion</dt><dd>Peter Milligan</dd><dt>Dibujo</dt><dd>Ed Benes y otros</dd></dl>
+              </li>
+            </ol>
+          </li>
+
+          <li class="step">
+            <div class="step-head"><h3>Los números cero</h3><span class="mode"><svg><use href="#i-block"/></svg>Bloque</span></div>
+            <ol class="reads">
+              <li>
+                <p class="r-title">GL, GLC, NG y RL <span class="iss">#0</span></p>
+                <p class="r-meta">nov 2012. GL #0 presenta a Simon Baz, el nuevo Green Lantern de la Tierra</p>
+                <dl class="cred"><dt>Autores</dt><dd>Los equipos habituales de cada serie</dd></dl>
+              </li>
+            </ol>
+          </li>
+
+          <li class="step">
+            <div class="step-head"><h3>Rise of the Third Army</h3><span class="mode inter"><svg><use href="#i-inter"/></svg>Intercalar</span></div>
+            <p class="step-note">Los Guardianes crean un ejército para acabar con el libre albedrío. Cierra en GLC Annual #1.</p>
+            <ol class="months" aria-label="Rise of the Third Army por meses">
+              <li><p class="m">dic 2012</p><ul><li class="c gl">GL #13</li><li class="c">GLC #13</li><li class="c">NG #13</li><li class="c">RL #13</li></ul></li>
+              <li><p class="m">ene 2013</p><ul><li class="c gl">GL #14</li><li class="c">GLC #14</li><li class="c">NG #14</li><li class="c">RL #14</li></ul></li>
+              <li><p class="m">feb 2013</p><ul><li class="c gl">GL #15</li><li class="c">GLC #15</li><li class="c">NG #15</li><li class="c">RL #15</li></ul></li>
+              <li><p class="m">mar 2013</p><ul><li class="c gl">GL #16</li><li class="c">GLC #16</li><li class="c">GLC Annual #1 <small>final</small></li><li class="c">NG #16</li><li class="c">NG Annual #1</li><li class="c">RL #16</li></ul></li>
+            </ol>
+          </li>
+
+          <li class="step">
+            <div class="step-head"><h3>Wrath of the First Lantern</h3><span class="mode inter"><svg><use href="#i-inter"/></svg>Intercalar</span></div>
+            <p class="step-note">Volthoom, el Primer Linterna, queda libre. GL #20 es la despedida de Johns tras nueve años.</p>
+            <ol class="months" aria-label="Wrath of the First Lantern por meses">
+              <li><p class="m">abr 2013</p><ul><li class="c gl">GL #17</li><li class="c">GLC #17</li><li class="c">NG #17</li><li class="c">RL #17</li></ul></li>
+              <li><p class="m">may 2013</p><ul><li class="c gl">GL #18</li><li class="c">GLC #18</li><li class="c">NG #18</li><li class="c">RL #18</li></ul></li>
+              <li><p class="m">jun 2013</p><ul><li class="c gl">GL #19</li><li class="c">GLC #19</li><li class="c">NG #19</li><li class="c">RL #19</li></ul></li>
+              <li><p class="m">jul 2013</p><ul><li class="c gl">GL #20 <small>fin de Johns</small></li><li class="c">GLC #20</li><li class="c">NG #20</li><li class="c">RL #20</li></ul></li>
+            </ol>
+            <div class="tbl-wrap">
+              <table>
+                <thead><tr><th scope="col">Serie</th><th scope="col">Números</th><th scope="col">Guion</th><th scope="col">Dibujo</th></tr></thead>
+                <tbody>
+                  <tr><td>GL</td><td class="num">#13–20</td><td>Geoff Johns</td><td>Doug Mahnke y otros</td></tr>
+                  <tr><td>GLC</td><td class="num">#13–20</td><td>Peter J. Tomasi</td><td>Fernando Pasarín y otros</td></tr>
+                  <tr><td>NG</td><td class="num">#13–20</td><td>Tony Bedard</td><td>Varios</td></tr>
+                  <tr><td>RL</td><td class="num">#13–20</td><td>Peter Milligan</td><td>Varios</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ======== FASE 6 ======== -->
+    <section class="phase">
+      <div class="phase-side">
+        <p class="ph-n">Fase 6</p>
+        <p class="ph-yrs">2013–2016</p>
+        <div>
+          <div class="lights" role="img" aria-label="Luces en juego: todo el espectro"><i style="--s: var(--red)"></i><i style="--s: var(--orange)"></i><i style="--s: var(--yellow)"></i><i style="--s: var(--green)"></i><i style="--s: var(--blue)"></i><i style="--s: var(--indigo)"></i><i style="--s: var(--violet)"></i></div>
+          <p class="lights-cap">Luces en juego</p>
+        </div>
+      </div>
+      <div>
+        <h2>La era Venditti</h2>
+        <p class="ph-note">Robert Venditti toma GL con Hal como líder del Cuerpo. Nuevos equipos en todas las series, tres cruces más y, tras Convergence, un Hal renegado.</p>
+
+        <ol class="steps">
+          <li class="step">
+            <div class="step-head"><h3>Relevo creativo</h3><span class="mode"><svg><use href="#i-block"/></svg>Bloque</span></div>
+            <ol class="reads">
+              <li>
+                <p class="r-title">GL <span class="iss">#21–23</span>, GLC <span class="iss">#21–23</span>, NG <span class="iss">#21–23</span>, RL <span class="iss">#21–23</span></p>
+                <p class="r-meta">ago–oct 2013</p>
+                <dl class="cred"><dt>GL</dt><dd>Robert Venditti y Billy Tan</dd><dt>GLC</dt><dd>Van Jensen y Robert Venditti, con Bernard Chang</dd><dt>NG</dt><dd>Justin Jordan y Brad Walker</dd><dt>RL</dt><dd>Charles Soule y Alessandro Vitti</dd></dl>
+              </li>
+              <li>
+                <p class="r-title">Larfleeze <span class="iss">#1–3</span></p>
+                <p class="r-meta">Serie del Linterna Naranja, ago–oct 2013</p>
+                <dl class="cred"><dt>Guion</dt><dd>Keith Giffen y J.M. DeMatteis</dd><dt>Dibujo</dt><dd>Scott Kolins</dd></dl>
+              </li>
+              <li>
+                <p class="r-title">GL <span class="iss">#23.1–23.4</span></p>
+                <p class="r-meta">Mes de los villanos: Relic, Mongul, Black Hand y Sinestro, nov 2013</p>
+                <dl class="cred"><dt>Autores</dt><dd>Varios</dd></dl>
+              </li>
+            </ol>
+          </li>
+
+          <li class="step">
+            <div class="step-head"><h3>Lights Out</h3><span class="mode inter"><svg><use href="#i-inter"/></svg>Intercalar</span></div>
+            <p class="step-note">Relic amenaza las reservas de luz del espectro. Empieza en GL #24 y cierra en GL Annual #2; todo sale en diciembre de 2013.</p>
+            <ol class="months" aria-label="Lights Out">
+              <li><p class="m">dic 2013</p><ul><li class="c gl">GL #24</li><li class="c">GLC #24</li><li class="c">NG #24</li><li class="c">RL #24</li><li class="c gl">GL Annual #2 <small>final</small></li><li class="c side">Larfleeze #4</li></ul></li>
+            </ol>
+          </li>
+
+          <li class="step">
+            <div class="step-head"><h3>Uprising y nuevas series</h3><span class="mode"><svg><use href="#i-block"/></svg>Bloque</span></div>
+            <p class="step-note">Excepción dentro del bloque: el cruce Uprising va de GL #31 a GLC #33. Esos seis números léelos alternando GL y GLC.</p>
+            <ol class="reads">
+              <li>
+                <p class="r-title">GL <span class="iss">#25–34</span>, GLC <span class="iss">#25–34 y Annual #2</span></p>
+                <p class="r-meta">ene–oct 2014</p>
+                <dl class="cred"><dt>GL</dt><dd>Robert Venditti y Billy Tan</dd><dt>GLC</dt><dd>Van Jensen y Bernard Chang</dd></dl>
+              </li>
+              <li>
+                <p class="r-title">NG <span class="iss">#25–34 y Annual #2</span>, RL <span class="iss">#25–34 y Annual #1</span></p>
+                <p class="r-meta">ene–oct 2014</p>
+                <dl class="cred"><dt>NG</dt><dd>Justin Jordan y Brad Walker</dd><dt>RL</dt><dd>Charles Soule y Alessandro Vitti</dd></dl>
+              </li>
+              <li>
+                <p class="r-title">Larfleeze <span class="iss">#5–12</span></p>
+                <p class="r-meta">ene–ago 2014</p>
+                <dl class="cred"><dt>Guion</dt><dd>Keith Giffen y J.M. DeMatteis</dd><dt>Dibujo</dt><dd>Scott Kolins</dd></dl>
+              </li>
+              <li>
+                <p class="r-title">Sinestro <span class="iss">#1–5</span></p>
+                <p class="r-meta">jun–oct 2014</p>
+                <dl class="cred"><dt>Guion</dt><dd>Cullen Bunn</dd><dt>Dibujo</dt><dd>Dale Eaglesham</dd></dl>
+              </li>
+              <li>
+                <p class="r-title">Especiales Futures End <span class="iss">#1</span></p>
+                <p class="r-meta">Uno por serie (GL, GLC, NG, RL y Sinestro), nov 2014. Opcionales</p>
+                <dl class="cred"><dt>Autores</dt><dd>Los equipos habituales</dd></dl>
+              </li>
+            </ol>
+          </li>
+
+          <li class="step">
+            <div class="step-head"><h3>Godhead</h3><span class="mode inter"><svg><use href="#i-inter"/></svg>Intercalar</span></div>
+            <p class="step-note">Los Nuevos Dioses de Highfather van a por los anillos. Empieza en el especial Godhead #1 y cierra en GL Annual #3.</p>
+            <ol class="months" aria-label="Godhead por meses">
+              <li><p class="m">dic 2014</p><ul><li class="c ev">GL/New Gods: Godhead #1</li><li class="c gl">GL #35</li><li class="c">GLC #35</li><li class="c">NG #35</li><li class="c">RL #35</li><li class="c">Sinestro #6</li></ul></li>
+              <li><p class="m">ene 2015</p><ul><li class="c gl">GL #36</li><li class="c">GLC #36</li><li class="c">NG #36</li><li class="c">RL #36</li></ul></li>
+              <li><p class="m">feb 2015</p><ul><li class="c gl">GL #37</li><li class="c">GLC #37</li><li class="c">NG #37</li><li class="c">RL #37</li><li class="c">Sinestro #7–8</li><li class="c gl">GL Annual #3 <small>final</small></li></ul></li>
+            </ol>
+            <div class="tbl-wrap">
+              <table>
+                <thead><tr><th scope="col">Serie</th><th scope="col">Números</th><th scope="col">Guion</th><th scope="col">Dibujo</th></tr></thead>
+                <tbody>
+                  <tr><td>GL</td><td class="num">#35–37, Annual #3</td><td>Robert Venditti</td><td>Billy Tan y otros</td></tr>
+                  <tr><td>GLC</td><td class="num">#35–37</td><td>Van Jensen</td><td>Bernard Chang</td></tr>
+                  <tr><td>NG</td><td class="num">#35–37</td><td>Justin Jordan</td><td>Brad Walker</td></tr>
+                  <tr><td>RL</td><td class="num">#35–37</td><td>Charles Soule</td><td>Alessandro Vitti</td></tr>
+                  <tr><td>Sinestro</td><td class="num">#6–8</td><td>Cullen Bunn</td><td>Dale Eaglesham y otros</td></tr>
+                  <tr><td>Godhead</td><td class="num">#1</td><td>Varios</td><td>Varios</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </li>
+
+          <li class="step">
+            <div class="step-head"><h3>Cierre de los New 52</h3><span class="mode"><svg><use href="#i-block"/></svg>Bloque</span></div>
+            <ol class="reads">
+              <li>
+                <p class="r-title">GL, GLC, NG y RL <span class="iss">#38–40</span>, Sinestro <span class="iss">#9–11</span></p>
+                <p class="r-meta">mar–may 2015. GLC, NG y RL terminan en el #40</p>
+                <dl class="cred"><dt>Autores</dt><dd>Los mismos equipos que en Godhead</dd></dl>
+              </li>
+            </ol>
+          </li>
+
+          <li class="step">
+            <div class="step-head"><h3>Convergence</h3><span class="mode opt"><svg><use href="#i-block"/></svg>Opcional</span></div>
+            <ol class="reads">
+              <li>
+                <p class="r-title">Convergence: Green Lantern Corps <span class="iss">#1–2</span></p>
+                <p class="r-meta">jun–jul 2015</p>
+                <dl class="cred"><dt>Guion</dt><dd>David Gallaher</dd><dt>Dibujo</dt><dd>Steve Ellis</dd></dl>
+              </li>
+              <li>
+                <p class="r-title">Convergence: Green Lantern/Parallax <span class="iss">#1–2</span></p>
+                <p class="r-meta">jun–jul 2015</p>
+                <dl class="cred"><dt>Guion</dt><dd>Tony Bedard</dd><dt>Dibujo</dt><dd>Ron Wagner y Bill Reinhold</dd></dl>
+              </li>
+            </ol>
+          </li>
+
+          <li class="step">
+            <div class="step-head"><h3>Hal renegado y el Cuerpo perdido</h3><span class="mode"><svg><use href="#i-block"/></svg>Bloque</span></div>
+            <ol class="reads">
+              <li>
+                <p class="r-title">GL <span class="iss">#41–52 y Annual #4</span></p>
+                <p class="r-meta">Hal, fugitivo con un guantelete, ago 2015 – jul 2016. Final del vol. 5</p>
+                <dl class="cred"><dt>Guion</dt><dd>Robert Venditti</dd><dt>Dibujo</dt><dd>Billy Tan y otros</dd></dl>
+              </li>
+              <li>
+                <p class="r-title">Green Lantern: The Lost Army <span class="iss">#1–6</span></p>
+                <p class="r-meta">ago 2015 – ene 2016</p>
+                <dl class="cred"><dt>Guion</dt><dd>Cullen Bunn</dd><dt>Dibujo</dt><dd>Jesús Saiz</dd></dl>
+              </li>
+              <li>
+                <p class="r-title">Green Lantern Corps: Edge of Oblivion <span class="iss">#1–6</span></p>
+                <p class="r-meta">Continúa The Lost Army, mar–ago 2016</p>
+                <dl class="cred"><dt>Guion</dt><dd>Tim Seeley</dd><dt>Dibujo</dt><dd>Ethan Van Sciver</dd></dl>
+              </li>
+              <li>
+                <p class="r-title">Omega Men vol. 3 <span class="iss">#1–12</span></p>
+                <p class="r-meta">Kyle Rayner en el sistema Vega, ago 2015 – jul 2016</p>
+                <dl class="cred"><dt>Guion</dt><dd>Tom King</dd><dt>Dibujo</dt><dd>Barnaby Bagenda</dd></dl>
+              </li>
+              <li>
+                <p class="r-title">Sinestro <span class="iss">#12–23</span></p>
+                <p class="r-meta">ago 2015 – jul 2016</p>
+                <dl class="cred"><dt>Guion</dt><dd>Cullen Bunn</dd><dt>Dibujo</dt><dd>Varios</dd></dl>
+              </li>
+            </ol>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ======== FASE 7 ======== -->
+    <section class="phase">
+      <div class="phase-side">
+        <p class="ph-n">Fase 7</p>
+        <p class="ph-yrs">2016–2018</p>
+        <div>
+          <div class="lights" role="img" aria-label="Luces en juego: rojo, amarillo, verde y azul"><i style="--s: var(--red)"></i><i style="--s: var(--yellow)"></i><i style="--s: var(--green)"></i><i style="--s: var(--blue)"></i></div>
+          <p class="lights-cap">Luces en juego</p>
+        </div>
+      </div>
+      <div>
+        <h2>Rebirth: dos series, dos equipos</h2>
+        <p class="ph-note">Dos cabeceras quincenales. El post las alterna mes a mes, pero cada una lleva su propia historia y se leen bien por separado.</p>
+
+        <ol class="steps">
+          <li class="step">
+            <div class="step-head"><h3>Green Lanterns</h3><span class="mode"><svg><use href="#i-block"/></svg>Bloque</span></div>
+            <ol class="reads">
+              <li>
+                <p class="r-title">Green Lanterns: Rebirth <span class="iss">#1</span> y Green Lanterns <span class="iss">#1–57 y Annual #1</span></p>
+                <p class="r-meta">Simon Baz y Jessica Cruz, ago 2016 – dic 2018</p>
+                <dl class="cred"><dt>Guion</dt><dd>Sam Humphries (#1–32 y #48–49), Tim Seeley (#33–47), Dan Jurgens (#50–57)</dd><dt>Dibujo</dt><dd>Robson Rocha, Eduardo Pansica, Ronan Cliquet y otros</dd></dl>
+              </li>
+            </ol>
+          </li>
+
+          <li class="step">
+            <div class="step-head"><h3>Hal Jordan and the Green Lantern Corps</h3><span class="mode"><svg><use href="#i-block"/></svg>Bloque</span></div>
+            <ol class="reads">
+              <li>
+                <p class="r-title">HJ and the GLC: Rebirth <span class="iss">#1</span> y serie <span class="iss">#1–50</span></p>
+                <p class="r-meta">Sinestro's Law y siguientes, sep 2016 – oct 2018</p>
+                <dl class="cred"><dt>Guion</dt><dd>Robert Venditti</dd><dt>Dibujo</dt><dd>Rafa Sandoval, Ethan Van Sciver y Jordi Tarragona</dd></dl>
+              </li>
+            </ol>
+          </li>
+
+          <li class="step">
+            <div class="step-head"><h3>Aparte</h3><span class="mode opt"><svg><use href="#i-block"/></svg>Opcional</span></div>
+            <ol class="reads">
+              <li>
+                <p class="r-title">Green Lantern: Earth One vol. 1</p>
+                <p class="r-meta">Novela gráfica fuera de continuidad, may 2018</p>
+                <dl class="cred"><dt>Guion</dt><dd>Corinna Bechko y Gabriel Hardman</dd><dt>Dibujo</dt><dd>Gabriel Hardman</dd></dl>
+              </li>
+            </ol>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ======== FASE 8 ======== -->
+    <section class="phase">
+      <div class="phase-side">
+        <p class="ph-n">Fase 8</p>
+        <p class="ph-yrs">2019–2021</p>
+        <div>
+          <div class="lights" role="img" aria-label="Luces en juego: verde"><i style="--s: var(--green)"></i></div>
+          <p class="lights-cap">Luces en juego</p>
+        </div>
+      </div>
+      <div>
+        <h2>Morrison y lo que viene</h2>
+        <p class="ph-note">Hal como policía intergaláctico con Grant Morrison, Far Sector en paralelo y el relevo de John Stewart. El post termina en julio de 2021.</p>
+
+        <ol class="steps">
+          <li class="step">
+            <div class="step-head"><h3>Morrison y Sharp</h3><span class="mode"><svg><use href="#i-block"/></svg>Bloque</span></div>
+            <ol class="reads">
+              <li>
+                <p class="r-title">The Green Lantern <span class="iss">#1–12 y Annual #1</span></p>
+                <p class="r-meta">ene–dic 2019</p>
+                <dl class="cred"><dt>Guion</dt><dd>Grant Morrison</dd><dt>Dibujo</dt><dd>Liam Sharp</dd></dl>
+              </li>
+              <li>
+                <p class="r-title">Green Lantern: Blackstars <span class="iss">#1–3</span></p>
+                <p class="r-meta">ene–mar 2020</p>
+                <dl class="cred"><dt>Guion</dt><dd>Grant Morrison</dd><dt>Dibujo</dt><dd>Xermánico</dd></dl>
+              </li>
+              <li>
+                <p class="r-title">The Green Lantern Season Two <span class="iss">#1–12</span></p>
+                <p class="r-meta">abr 2020 – may 2021</p>
+                <dl class="cred"><dt>Guion</dt><dd>Grant Morrison</dd><dt>Dibujo</dt><dd>Liam Sharp</dd></dl>
+              </li>
+            </ol>
+          </li>
+
+          <li class="step">
+            <div class="step-head"><h3>Far Sector</h3><span class="mode"><svg><use href="#i-block"/></svg>Bloque</span></div>
+            <ol class="reads">
+              <li>
+                <p class="r-title">Far Sector <span class="iss">#1–12</span></p>
+                <p class="r-meta">Sojourner Mullein investiga un asesinato en una ciudad sin emociones, 2020–2021. Premio Hugo 2022</p>
+                <dl class="cred"><dt>Guion</dt><dd>N.K. Jemisin</dd><dt>Dibujo</dt><dd>Jamal Campbell</dd></dl>
+              </li>
+            </ol>
+          </li>
+
+          <li class="step">
+            <div class="step-head"><h3>Extras</h3><span class="mode opt"><svg><use href="#i-block"/></svg>Opcional</span></div>
+            <ol class="reads">
+              <li>
+                <p class="r-title">Green Lantern: Legacy</p>
+                <p class="r-meta">Novela gráfica juvenil con Tai Pham, mar 2020</p>
+                <dl class="cred"><dt>Guion</dt><dd>Minh Lê</dd><dt>Dibujo</dt><dd>Andie Tong</dd></dl>
+              </li>
+              <li>
+                <p class="r-title">Green Lantern: Earth One vol. 2</p>
+                <p class="r-meta">Fuera de continuidad, ago 2020</p>
+                <dl class="cred"><dt>Guion</dt><dd>Corinna Bechko y Gabriel Hardman</dd><dt>Dibujo</dt><dd>Gabriel Hardman</dd></dl>
+              </li>
+              <li>
+                <p class="r-title">Green Lantern 80th Anniversary 100-Page Super Spectacular <span class="iss">#1</span></p>
+                <p class="r-meta">Antología, ago 2020</p>
+                <dl class="cred"><dt>Autores</dt><dd>Varios</dd></dl>
+              </li>
+            </ol>
+          </li>
+
+          <li class="step">
+            <div class="step-head"><h3>Future State y John Stewart</h3><span class="mode"><svg><use href="#i-block"/></svg>Bloque</span></div>
+            <ol class="reads">
+              <li>
+                <p class="r-title">Future State: Green Lantern <span class="iss">#1–2</span></p>
+                <p class="r-meta">mar–abr 2021</p>
+                <dl class="cred"><dt>Guion</dt><dd>Geoffrey Thorne y otros</dd><dt>Dibujo</dt><dd>Tom Raney y otros</dd></dl>
+              </li>
+              <li>
+                <p class="r-title">GL vol. 6 <span class="iss">#1 en adelante</span></p>
+                <p class="r-meta">John Stewart, desde jun 2021. El post llega hasta el #2</p>
+                <dl class="cred"><dt>Guion</dt><dd>Geoffrey Thorne</dd><dt>Dibujo</dt><dd>Dexter Soy</dd></dl>
+              </li>
+            </ol>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <footer class="notes">
+      <div>
+        <h2>De dónde sale el orden</h2>
+        <p>De las dos partes de <a href="https://www.reddit.com/r/Greenlantern/comments/ne1w8j/the_book_of_oa_modern_green_lantern_reading_order/">The Book of Oa</a> (<a href="https://www.reddit.com/r/Greenlantern/comments/ne1we2/the_book_of_oa_modern_green_lantern_reading_order/">parte 2</a>), en r/Greenlantern, que listan los números mes a mes. Los bloques agrupan esos meses por serie; los cruces conservan las cajas mensuales.</p>
+      </div>
+      <div>
+        <h2>Sobre los créditos</h2>
+        <p>Guionista y dibujante principal de cada bloque; muchos números tienen dibujantes de apoyo. "Varios" y "Sin confirmar" marcan créditos que no he podido verificar número a número.</p>
+      </div>
+    </footer>
+  </main>
+</div>
+
+</body></html>

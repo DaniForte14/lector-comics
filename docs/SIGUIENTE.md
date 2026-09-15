@@ -24,20 +24,21 @@ que mirar Dani (ANDROID), con "Bocadillos" encendido:
 tiene dos guias hechas como artefactos de claude.ai (Green Lantern y Barry y
 Wally) y queria consultarlas al acabar un comic. Si la ruta de la carpeta dice
 "lantern" o "flash", la tarjeta del final lleva un boton secundario **"Orden de
-lectura"** que abre la guia en el navegador. Se enlaza y no se mete en la app, y
-el porque esta en `CONTEXTO.md` (tanda 35). Lo que tiene que mirar Dani
-(ANDROID):
+lectura"** que abre la guia. Desde la **tanda 36** se abre DENTRO de la app: los
+dos HTML van en el APK (`CONTEXTO.md`, tandas 35 y 36). Lo que tiene que mirar
+Dani (ANDROID):
 
 | Que hacer | Que tiene que pasar |
 |---|---|
 | Acabar un Green Lantern (Vol4 #04, por ejemplo) | debajo de "Leer" sale "Orden de lectura" |
-| Tocarlo | se abre la guia de Green Lantern. **Si pide iniciar sesion**, es que el artefacto es privado: hay que entrar en claude.ai con tu cuenta en ese navegador |
+| Tocarlo | se abre la guia de Green Lantern DENTRO de la app, a pantalla completa |
+| Gesto de atras | se cierra la guia y vuelves a la tarjeta del final, sin salir del lector |
 | Acabar el ultimo de la carpeta | sale igual, debajo de "Volver a la biblioteca" |
 | Acabar un Flash | la guia de Barry y Wally |
 | Acabar un Daredevil | no sale el boton |
 
-Sin comprobar: si la app de Claude del movil se queda con el enlace en vez del
-navegador, y si ahi se ve bien.
+Sin comprobar: el tema (claro u oscuro) que coge el visor de la guia, y que sin
+red sus fuentes salen con la del sistema.
 
 ## Donde se paro el 14/09/2026
 

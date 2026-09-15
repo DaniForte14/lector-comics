@@ -50,7 +50,9 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.activity.compose.BackHandler
+import android.webkit.WebView
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -118,21 +120,44 @@ fun PantallaLector(vm: VistaModelo, comic: Comic?, onAtras: () -> Unit) {
         }
     }
 
-    when (val r = resultado) {
-        // null = todavia cargando. Si esto y "fallo" fueran lo mismo, la
-        // ruedecita giraria para siempre cuando un fichero no se puede abrir.
-        null -> Box(Modifier.fillMaxSize().background(Tinta), Alignment.Center) {
-            CircularProgressIndicator()
+    // La guia de lectura, ENCIMA del visor y no en su lugar: al cerrarla sigues
+    // en la tarjeta del final, con el pager donde estaba.
+    var guiaAbierta by remember { mutableStateOf<String?>(null) }
+
+    Box(Modifier.fillMaxSize()) {
+        when (val r = resultado) {
+            // null = todavia cargando. Si esto y "fallo" fueran lo mismo, la
+            // ruedecita giraria para siempre cuando un fichero no se puede abrir.
+            null -> Box(Modifier.fillMaxSize().background(Tinta), Alignment.Center) {
+                CircularProgressIndicator()
+            }
+            is Paginas.Error -> {
+                LaunchedEffect(r) { Rastro.apunta("visor: NO ABRE — ${r.motivo}") }
+                Fallo(r.motivo, onAtras)
+            }
+            is Paginas.Ok -> Visor(vm, c, r.nombres, onAtras, onGuia = { guiaAbierta = it }) { siguiente ->
+                vm.abrir(siguiente)
+                actual = siguiente
+            }
         }
-        is Paginas.Error -> {
-            LaunchedEffect(r) { Rastro.apunta("visor: NO ABRE — ${r.motivo}") }
-            Fallo(r.motivo, onAtras)
-        }
-        is Paginas.Ok -> Visor(vm, c, r.nombres, onAtras) { siguiente ->
-            vm.abrir(siguiente)
-            actual = siguiente
-        }
+        guiaAbierta?.let { PantallaGuia(it) { guiaAbierta = null } }
     }
+}
+
+/**
+ * Una guia de lectura (ver [Guias]): el HTML del artefacto, metido en el APK y
+ * abierto en un WebView. Abrirla fuera sacaba de la app y pedia la sesion de
+ * claude.ai, porque el artefacto es privado (tanda 36). Los enlaces de dentro
+ * (el post de Reddit) si salen al navegador: sin WebViewClient, es lo que hace
+ * WebView por defecto. Sin JavaScript, que las guias no llevan.
+ */
+@Composable
+private fun PantallaGuia(ruta: String, onCerrar: () -> Unit) {
+    BackHandler(onBack = onCerrar)
+    AndroidView(
+        factory = { ctx -> WebView(ctx).apply { loadUrl("file:///android_asset/$ruta") } },
+        modifier = Modifier.fillMaxSize().background(Tinta)
+    )
 }
 
 @Composable
@@ -155,6 +180,7 @@ private fun Visor(
     comic: Comic,
     paginas: List<String>,
     onAtras: () -> Unit,
+    onGuia: (String) -> Unit,
     onSiguiente: (Comic) -> Unit
 ) {
     val uri = comic.uri
@@ -444,7 +470,7 @@ private fun Visor(
                             alpha = if (kotlin.math.abs(f) < 1f) 1f else 0f
                         }
                     ) {
-                        if (i >= hojas.size) TarjetaSiguiente(vm, siguiente, guia, onSiguiente, onAtras)
+                        if (i >= hojas.size) TarjetaSiguiente(vm, siguiente, guia, onGuia, onSiguiente, onAtras)
                         else {
                             val hoja = hojas[i]
                             PaginaConZoom(
@@ -559,7 +585,7 @@ private fun Visor(
                     // en modo tira la tarjeta va al final del scroll, igual
                     item {
                         Box(Modifier.fillMaxWidth().height(420.dp)) {
-                            TarjetaSiguiente(vm, siguiente, guia, onSiguiente, onAtras)
+                            TarjetaSiguiente(vm, siguiente, guia, onGuia, onSiguiente, onAtras)
                         }
                     }
                 }
@@ -730,10 +756,10 @@ private fun TarjetaSiguiente(
     siguiente: Comic?,
     /** La guia de lectura de esta carpeta, si hay (ver [Guias]). */
     guia: String?,
+    onGuia: (String) -> Unit,
     onSiguiente: (Comic) -> Unit,
     onAtras: () -> Unit
 ) {
-    val enlaces = LocalUriHandler.current
     Column(
         Modifier.fillMaxSize().background(Tinta).padding(28.dp),
         verticalArrangement = Arrangement.Center,
@@ -764,7 +790,7 @@ private fun TarjetaSiguiente(
         // saber que viene despues.
         if (guia != null) {
             Boton("Orden de lectura", Modifier.padding(top = 12.dp), relleno = false) {
-                enlaces.openUri(guia)
+                onGuia(guia)
             }
         }
     }

@@ -1460,6 +1460,8 @@ opción aquí para consultar el artefacto"*.
   qué viene después.
 - **Solo si la carpeta tiene guía.** Un botón que no lleva a nada es peor que no
   tener botón.
-- **Se abre fuera, en el navegador.** La guía es una página escrita a mano, con
-  su propio aspecto, y la app no responde de sus cifras (`CONTEXTO.md`, tanda
-  35).
+- **Se abre DENTRO, encima del visor** (tanda 36). Abrirla fuera sacaba de la
+  app, a la de Claude. Va a pantalla completa y sin barra propia: se cierra con
+  atrás, como todo en Android, y vuelves a la tarjeta.
+- **Se enseña tal cual, con su propio aspecto.** La guía es una página escrita a
+  mano, y la app no responde de sus cifras (`CONTEXTO.md`, tandas 35 y 36).
