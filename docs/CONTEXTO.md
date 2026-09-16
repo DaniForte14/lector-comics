@@ -5370,11 +5370,14 @@ las guias montadas como las monta la app, en el navegador de la sesion
 (Chromium, el motor del WebView): marca, tacha (`line-through`, opacidad 0,4),
 guarda, sobrevive a recargar y desmarca, en las dos guias (177 marcables en GL,
 31 arcos en Barry y Wally), y las claves de una guia no pisan a la otra. CI
-verde, iOS incluido, en `826e5c7` (tandas 34 y 35) y `58cde6b` (36). **Sin
-comprobar**: en el movil. Que `localStorage` persista con la base
-`file:///android_asset/` del WebView (en el navegador se probo servido por
-http), el `Dialog` sobre el visor a pantalla completa (puede asomar la barra de
-estado) y la fila de la carpeta.
+verde, iOS incluido, en `826e5c7` (tandas 34 y 35), `58cde6b` (36) y `3961dbf`
+(37).
+
+**CONFIRMADO EN EL MOVIL por Dani (16/09/2026)**: la guia se abre dentro de la
+app desde la tarjeta del final (36) y desde la carpeta (37), "se ve bien", y
+**lo tachado sigue tachado tras cerrar la app del todo**: el `localStorage` del
+WebView persiste con la base `file:///android_asset/`. Lo que sigue sin
+comprobar: el tachado tras "borrar datos" (se pierde, y se sabe) y en iOS.
 
 ### El motor de RAR para iOS: hay via, y se aplaza (07/09/2026)
 

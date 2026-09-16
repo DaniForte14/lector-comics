@@ -40,8 +40,9 @@ Dani (ANDROID):
 | Tocar una lectura de la guia | se tacha y se oscurece; otro toque la desmarca |
 | Cerrar la guia y volver a abrirla, o cerrar la app | lo tachado sigue tachado. **Si se pierde, es el `localStorage` del WebView** |
 
-Sin comprobar: el tema (claro u oscuro) que coge el visor de la guia, y que sin
-red sus fuentes salen con la del sistema.
+**Tandas 36 y 37 confirmadas por Dani en el movil (16/09/2026)**: la guia se
+abre dentro, desde la tarjeta y desde la carpeta, y lo tachado sobrevive a
+cerrar la app. Sin comprobar: que sin red sus fuentes salen con la del sistema.
 
 ## Donde se paro el 14/09/2026
 
