@@ -44,6 +44,7 @@ Dani (ANDROID):
 | La primera vez que abres una guia tras la 39 | lo que ya tenias tachado sigue tachado (se traspasa solo a la app). **Si sale todo sin tachar, fallo el traspaso** |
 | Cerrar la guia y mirar su caratula | la barra y "hechas / total" han cambiado. Sin abrirla nunca: "SIN EMPEZAR" |
 | Lecturas entera (tanda 40) | "Marcapaginas ›" en la cabecera; cada apartado con su marca amarilla; las cifras en UN panel, tres grandes y una linea debajo. **Confirmado por Dani el 21/09, con la 39** |
+| Abajo en Lecturas (tanda 41) | "SIGUIENDO · 2" en un panel, cada serie en una linea con "nada anunciado" y la ✕; "TU BIBLIOTECA" en otro panel con "18/208" y la barra. Tocar DC sigue bajando |
 | Bajar del todo en Lecturas y en Ajustes, con un comic a medias | lo ultimo se lee entero, por encima de las dos barras flotantes |
 
 **Tandas 36 y 37 confirmadas por Dani en el movil (16/09/2026)**: la guia se

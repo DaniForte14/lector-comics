@@ -198,18 +198,24 @@ fun PantallaEstadisticas(
             // no un ajuste de la app. Y hasta ahora solo se veian de una en una
             // entrando en la carpeta de cada una, asi que no habia forma de
             // dejar de seguir algo sin ir a buscarlo.
+            //
+            // CADA LISTA EN UN PANEL, como las cifras (tanda 41): Dani eligio
+            // compactar sin mover nada de sitio. Y cada lista en UN item, no uno
+            // por fila: son cortas, y sin items por fila no hay claves que
+            // choquen entre las dos listas. Esa trampa cerro la app el
+            // 03/09/2026 (IllegalArgumentException: Key "..." was already used)
+            // con "Absolute green lantern", seguida y a la vez dentro de
+            // "DC Comics/Green lantern".
             if (seguidas.isNotEmpty()) {
-                item { Rotulo("SIGUIENDO") }
-                // CLAVE CON PREFIJO, Y NO SOLO LA RUTA. Las dos listas de esta
-                // pantalla —las que sigues y el nivel que estas mirando— van en
-                // el MISMO LazyColumn, asi que comparten espacio de claves: una
-                // serie seguida que ademas aparezca en el nivel actual repetia
-                // clave y Compose cerraba la app.
-                //   IllegalArgumentException: Key "..." was already used
-                // Paso en el movil el 03/09/2026 con "Absolute green lantern",
-                // seguida y a la vez dentro de "DC Comics/Green lantern".
-                items(seguidas, key = { "seguida:${it.ruta}" }) { f ->
-                    FilaSeguida(f) { vm.seguirSerie(f.ruta, false) }
+                item { Rotulo("SIGUIENDO · ${seguidas.size}") }
+                item {
+                    PanelLista {
+                        seguidas.forEachIndexed { i, f ->
+                            FilaSeguida(f, ultima = i == seguidas.lastIndex) {
+                                vm.seguirSerie(f.ruta, false)
+                            }
+                        }
+                    }
                 }
             }
 
@@ -217,37 +223,14 @@ fun PantallaEstadisticas(
                 Rotulo(
                     if (camino.isBlank()) "TU BIBLIOTECA" else camino.uppercase(),
                     accion = if (camino.isBlank()) null
-                             else "subir  \u2191" to { camino = padreDe(camino) }
+                             else "subir  ↑" to { camino = padreDe(camino) }
                 )
             }
-            items(nivel, key = { "nivel:${it.ruta}" }) { a ->
-                // Solo se puede bajar si hay algo debajo. Una fila pulsable que
-                // no lleva a ningun sitio se lee como que la app falla.
-                val puedeBajar = !a.hoja
-                Column(
-                    Modifier.fillMaxWidth()
-                        .then(if (puedeBajar) Modifier.clickableSimple { camino = a.ruta }
-                              else Modifier)
-                        .padding(20.dp, 10.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(a.nombre, style = Tipo.destacado, color = Hueso,
-                            maxLines = 1, overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f))
-                        Text("${a.porcentaje}%", style = Tipo.pie, color = Acento)
-                        if (puedeBajar) Text("\u203a", fontSize = 20.sp, color = Apagado,
-                            modifier = Modifier.padding(start = 8.dp))
+            if (nivel.isNotEmpty()) item {
+                PanelLista {
+                    nivel.forEachIndexed { i, a ->
+                        FilaNivel(a, ultima = i == nivel.lastIndex) { camino = a.ruta }
                     }
-                    Text("${a.leidos} de ${a.total}", style = Tipo.pie, color = Tenue,
-                        modifier = Modifier.padding(top = 2.dp))
-                    LinearProgressIndicator(
-                        progress = {
-                            if (a.total == 0) 0f else a.leidos.toFloat() / a.total
-                        },
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
-                            .height(3.dp).clip(RoundedCornerShape(2.dp)),
-                        color = Acento, trackColor = PanelAlto
-                    )
                 }
             }
             // La píldora flota sobre las tres pestañas desde que se puede
@@ -475,29 +458,77 @@ private fun FilaPrevista(p: Novedades.Prevista, hoy: LocalDate) {
  * peligro que no existe.
  */
 @Composable
-private fun FilaSeguida(f: Ficha, onDejar: () -> Unit) {
+private fun FilaSeguida(f: Ficha, ultima: Boolean, onDejar: () -> Unit) {
     val hoy = remember { Novedades.hoy() }
     val proximo = remember(f.numeros) { Novedades.proximo(f.numeros, hoy) }
+    val frase = proximo?.let { Novedades.fraseProximo(it, hoy) }
     Row(
-        Modifier.fillMaxWidth().padding(20.dp, 10.dp),
+        Modifier.fillMaxWidth().padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f)) {
+            // CON EL AÑO, aunque la maqueta de la tanda 41 lo quitaba: si sigues
+            // dos volumenes de la misma serie, sin el no se sabe cual es cual.
             Text("${f.nombre}${f.anio?.let { " ($it)" } ?: ""}",
                 style = Tipo.secundario, color = Hueso,
                 maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(
-                proximo?.let { Novedades.fraseProximo(it, hoy) }
-                    ?: "Sin nada anunciado todavía.",
+            // Lo anunciado SI va en su propia linea: es lo unico de aqui que
+            // dice algo nuevo.
+            if (frase != null) Text(frase,
                 style = Tipo.minuscula, color = Tenue,
-                modifier = Modifier.padding(top = 2.dp)
-            )
+                modifier = Modifier.padding(top = 2.dp))
         }
-        Text("\u2715", fontSize = 15.sp, color = Tenue,
+        // Sin nada anunciado, todo en una linea (tanda 41): "Sin nada anunciado
+        // todavía." repetido debajo de cada serie era lo que mas ocupaba.
+        if (frase == null) Text("nada anunciado", style = Tipo.minuscula, color = Apagado,
+            modifier = Modifier.padding(start = 8.dp))
+        Text("✕", fontSize = 15.sp, color = Tenue,
             modifier = Modifier.clickableSimple(accion = onDejar)
                 .padding(start = 14.dp, top = 4.dp, bottom = 4.dp))
     }
-    Box(Modifier.padding(start = 20.dp).fillMaxWidth().height(0.5.dp).background(Linea))
+    if (!ultima) Box(Modifier.fillMaxWidth().height(0.5.dp).background(Linea))
+}
+
+/**
+ * Una carpeta de "tu biblioteca", en el panel (tanda 41): nombre, "leidos/total"
+ * y la barra. El porcentaje se fue: la barra ya lo dice. Solo se puede bajar si
+ * hay algo debajo; una fila pulsable que no lleva a ningun sitio se lee como que
+ * la app falla.
+ */
+@Composable
+private fun FilaNivel(a: Estadisticas.Avance, ultima: Boolean, onBajar: () -> Unit) {
+    val puedeBajar = !a.hoja
+    Column(
+        Modifier.fillMaxWidth()
+            .then(if (puedeBajar) Modifier.clickableSimple(accion = onBajar) else Modifier)
+            .padding(vertical = 10.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(a.nombre, style = Tipo.destacado, color = Hueso,
+                maxLines = 1, overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f))
+            Text("${a.leidos}/${a.total}", style = Tipo.pie, color = Acento)
+            if (puedeBajar) Text("›", fontSize = 20.sp, color = Apagado,
+                modifier = Modifier.padding(start = 8.dp))
+        }
+        LinearProgressIndicator(
+            progress = { if (a.total == 0) 0f else a.leidos.toFloat() / a.total },
+            modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
+                .height(3.dp).clip(RoundedCornerShape(2.dp)),
+            color = Acento, trackColor = PanelAlto
+        )
+    }
+    if (!ultima) Box(Modifier.fillMaxWidth().height(0.5.dp).background(Linea))
+}
+
+/** El panel de SIGUIENDO y de TU BIBLIOTECA, el mismo que el de las cifras (tanda 41). */
+@Composable
+private fun PanelLista(contenido: @Composable ColumnScope.() -> Unit) {
+    Column(
+        Modifier.padding(horizontal = 16.dp).fillMaxWidth()
+            .clip(FormaTarjeta).background(Panel).padding(horizontal = 12.dp, vertical = 2.dp),
+        content = contenido
+    )
 }
 
 /** El nivel de arriba de una ruta: "DC/Batman/Vol 3" -> "DC/Batman". */

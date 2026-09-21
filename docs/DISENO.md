@@ -1524,3 +1524,9 @@ más visually pleasing?"*. De tres maquetas eligió la que ordena sin quitar.
 - **Descartadas**: las pestañas internas (Resumen · Mes · Series), que
   esconden el calendario detrás de un toque, y el panel principal con lo demás
   plegado.
+- **SIGUIENDO y TU BIBLIOTECA, en paneles como las cifras** (tanda 41), en vez
+  de filas sueltas. Una serie sin nada anunciado ocupa una línea ("nada
+  anunciado" a la derecha); con algo anunciado, la frase va debajo, porque es lo
+  único que dice algo nuevo. En la biblioteca, "leídos/total" y la barra; el
+  porcentaje sobraba. Dani prefirió esto a meter la biblioteca en las cifras o a
+  plegarlo todo.

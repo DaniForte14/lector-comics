@@ -5488,6 +5488,32 @@ el movil por Dani (21/09/2026)**: "se ve bien", igual que las caratulas de la
 39. Lo unico que salio: la linea de cifras partia "11 días leyendo" entre dos
 renglones; cada dato va ahora con espacios que no se parten (` `).
 
+### Tanda 41: SIGUIENDO y TU BIBLIOTECA, compactos (21/09/2026)
+
+Dani, con la 40 ya en el movil: lo de abajo (SIGUIENDO y TU BIBLIOTECA) "no se
+si dejarlo o donde". De tres maquetas (compactar, meter la biblioteca en las
+cifras, plegar las dos) eligio **compactar**: nada cambia de sitio.
+
+- **Cada lista en un panel** (`PanelLista`), el mismo `FormaTarjeta` + `Panel`
+  que las cifras. Y **en UN item del `LazyColumn`, no uno por fila**: son listas
+  cortas, y sin items por fila no hay claves que puedan chocar entre las dos
+  listas, que es la trampa que cerro la app el 03/09/2026 ("Key ... was already
+  used"). El comentario de la clave con prefijo se fue con los items.
+- **SIGUIENDO · N**, y cada serie en una linea: nombre (con el año: la maqueta
+  lo quitaba, pero con dos volumenes de la misma serie no se sabria cual es) y
+  "nada anunciado" a la derecha. **Si hay algo anunciado, su frase si va en su
+  propia linea**: es lo unico de ahi que dice algo nuevo. La ✕ de dejar de
+  seguir se queda.
+- **TU BIBLIOTECA**: nombre, "leidos/total" y la barra; se van el porcentaje
+  (la barra ya lo dice) y la linea "18 de 208".
+- Trampa del compilador: `Novedades.fraseProximo` devuelve `String?`. Antes lo
+  tapaba el `?: "Sin nada anunciado"`; ahora la frase se calcula una vez y
+  decide las dos cosas.
+
+**Comprobado**: `comprobar.py` PROBLEMAS: 0; `:app:assembleDebug
+:shared:testDebugUnitTest` verde. **Sin comprobar**: en el movil, y la fila
+con una serie que SI tenga algo anunciado (ahora mismo ninguna lo tiene).
+
 ### El motor de RAR para iOS: hay via, y se aplaza (07/09/2026)
 
 Dani eligio **buscar un motor de RAR nativo** en vez de dejar el CBR fuera del
