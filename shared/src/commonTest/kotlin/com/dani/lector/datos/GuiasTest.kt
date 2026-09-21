@@ -28,4 +28,15 @@ class GuiasTest {
         assertNull(Guias.de("Daredevil/Daredevil vol.6 (2019)"))
         assertNull(Guias.de(""))
     }
+
+    @Test fun `el progreso sin abrir nunca la guia es cero`() {
+        assertEquals(0f, Guias.progreso(0, 0))
+        assertEquals(0f, Guias.progreso(3, 0))
+    }
+
+    @Test fun `el progreso es la parte tachada y no pasa de uno`() {
+        assertEquals(0.5f, Guias.progreso(10, 20))
+        assertEquals(1f, Guias.progreso(20, 20))
+        assertEquals(1f, Guias.progreso(25, 20))
+    }
 }

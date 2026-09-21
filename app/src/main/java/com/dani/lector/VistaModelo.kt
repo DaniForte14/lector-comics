@@ -944,6 +944,28 @@ class VistaModelo(app: Application) : AndroidViewModel(app) {
     }
 
 
+    // ─────────────────────── GUIAS DE LECTURA ───────────────────────
+    //
+    // Lo tachado en cada guia (tanda 39). En las prefs, como las busquedas de
+    // abajo, y por lo mismo tampoco entra en la copia de seguridad. Hasta la 38
+    // vivia en el localStorage del WebView, y ahi la app no lo veia para pintar
+    // la barra de progreso de Lecturas.
+
+    /** Lo tachado, tal cual lo manda la guia (un array JSON), o null si nunca. */
+    fun guiaLeidas(ruta: String): String? = ajustes.texto("guia.leidas.$ruta")
+
+    /** Lo llama el puente del WebView, desde SU hilo: solo escribe prefs. */
+    fun guardarGuia(ruta: String, leidas: String, hechas: Int, total: Int) {
+        ajustes.ponTexto("guia.leidas.$ruta", leidas)
+        ajustes.ponEntero("guia.hechas.$ruta", hechas)
+        ajustes.ponEntero("guia.total.$ruta", total)
+    }
+
+    /** (tachadas, total). Total 0 si la guia no se ha abierto nunca. */
+    fun progresoGuia(ruta: String): Pair<Int, Int> =
+        ajustes.entero("guia.hechas.$ruta", 0) to ajustes.entero("guia.total.$ruta", 0)
+
+
     // ─────────────────────── BUSQUEDAS RECIENTES ───────────────────────
     //
     // En las prefs y no en un JSON aparte: son ocho cadenas cortas, no hace

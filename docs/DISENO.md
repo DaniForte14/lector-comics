@@ -1487,3 +1487,23 @@ oscurito"*.
 - **También desde Lecturas** (tanda 38): un enlace por guía debajo de
   "Marcapáginas", igual que él. Así están en tres sitios: al acabar un cómic, en
   la carpeta del personaje y en Lecturas.
+
+## 28. Las guías en Lecturas, como portadas (21/09/2026)
+
+Dani: *"un apartado que sea guías, con un diseño chulo, con unas tarjetas"*. Se
+le enseñaron tres maquetas y eligió mezclar dos: **carátulas grandes** y la
+**barra de progreso** de la tercera.
+
+- **Carátula y no fila de lista.** Son pocas y cada una es un héroe: una
+  tarjeta alta con su color se reconoce sin leer, como una portada en la
+  rejilla. En fila que se desliza, por si llegan más.
+- **De fondo, el emblema de cada héroe**, las imágenes que eligió Dani,
+  recortadas al centro. Lo demás de la app sigue en su amarillo.
+- **Arriba, cuánto mide** ("◉ 8 FASES", "⚡ 6 ETAPAS"); **abajo, el nombre en
+  grande y la barra**. El nombre en mayúsculas y cursiva, como los títulos de
+  sus propias guías.
+- **Texto y barra en blanco, sobre un velo negro** arriba y abajo: sin él, se
+  perdían en los rayos de Flash y en el brillo verde. En medio, el emblema a la
+  vista.
+- **"SIN EMPEZAR" en vez de una barra vacía**: sin abrirla nunca, la app no
+  sabe cuántos apartados tiene, y una barra a cero con "0 / 0" parece un fallo.

@@ -120,7 +120,7 @@ fun PantallaLector(vm: VistaModelo, comic: Comic?, onAtras: () -> Unit) {
     // La guia de lectura, ENCIMA del visor y no en su lugar: al cerrarla sigues
     // en la tarjeta del final, con el pager donde estaba.
     var guiaAbierta by remember { mutableStateOf<String?>(null) }
-    guiaAbierta?.let { PantallaGuia(it) { guiaAbierta = null } }
+    guiaAbierta?.let { PantallaGuia(vm, it) { guiaAbierta = null } }
 
     when (val r = resultado) {
         // null = todavia cargando. Si esto y "fallo" fueran lo mismo, la

@@ -5,6 +5,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -108,7 +110,7 @@ fun PantallaEstadisticas(
     // La guia de lectura abierta desde aqui, si hay (tanda 38). Es un Dialog:
     // tapa la pestaña entera sin tocar su Column.
     var guiaAbierta by remember { mutableStateOf<String?>(null) }
-    guiaAbierta?.let { PantallaGuia(it) { guiaAbierta = null } }
+    guiaAbierta?.let { PantallaGuia(vm, it) { guiaAbierta = null } }
 
     Column(Modifier.fillMaxSize().background(Tinta).navigationBarsPadding()) {
         Cabecera("Lecturas", "Qué llevas leído", onAtras)
@@ -124,12 +126,24 @@ fun PantallaEstadisticas(
                     modifier = Modifier.padding(20.dp, 4.dp, 20.dp, 8.dp)
                         .clickableSimple(accion = onMarcadores))
             }
-            // Las guias de lectura, tambien aqui y no solo en la carpeta o al
-            // acabar un comic (tanda 38): es donde se busca que toca leer.
-            items(Guias.todas) { (nombre, ruta) ->
-                Text("Orden de lectura: $nombre  ›", style = Tipo.secundario, color = Acento,
-                    modifier = Modifier.padding(20.dp, 4.dp, 20.dp, 8.dp)
-                        .clickableSimple { guiaAbierta = ruta })
+            // ── las guias de lectura, como portadas (tanda 39) ──
+            // Tambien aqui y no solo en la carpeta o al acabar un comic: es
+            // donde se busca que toca leer.
+            item {
+                Text("GUÍAS", style = Tipo.pie, color = Tenue, letterSpacing = 0.5.sp,
+                    modifier = Modifier.padding(20.dp, 14.dp, 20.dp, 8.dp))
+            }
+            item {
+                // Se relee al cerrar una guia (guiaAbierta vuelve a null), que es
+                // cuando puede haber cambiado lo tachado.
+                val progresos = remember(guiaAbierta) { Guias.todas.map { vm.progresoGuia(it.ruta) } }
+                LazyRow(contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    itemsIndexed(Guias.todas) { i, g ->
+                        val (hechas, total) = progresos[i]
+                        TarjetaGuia(g, hechas, total) { guiaAbierta = g.ruta }
+                    }
+                }
             }
             item {
                 Row(Modifier.fillMaxWidth().padding(12.dp, 8.dp)) {

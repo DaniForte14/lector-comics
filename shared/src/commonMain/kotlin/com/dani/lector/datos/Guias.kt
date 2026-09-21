@@ -21,8 +21,22 @@ object Guias {
     const val GREEN_LANTERN = "guias/green-lantern.html"
     const val FLASH = "guias/barry-y-wally.html"
 
-    /** Todas, con el nombre que se enseña, para la lista de Lecturas (tanda 38). */
-    val todas = listOf("Green Lantern" to GREEN_LANTERN, "Barry y Wally" to FLASH)
+    /** Una guia, con lo que enseña su tarjeta en Lecturas (tanda 39). */
+    data class Guia(val nombre: String, val ruta: String, val anios: String, val partes: String)
+
+    /** Todas, para las tarjetas de Lecturas. Los años y las partes, de cada guia. */
+    val todas = listOf(
+        Guia("Green Lantern", GREEN_LANTERN, "2004–2021", "8 fases"),
+        Guia("Barry y Wally", FLASH, "1985–hoy", "6 etapas"),
+    )
+
+    /**
+     * Lo que se llena de la barra de progreso, de 0 a 1. Sin total todavia —la
+     * guia no se ha abierto nunca, y el total lo cuenta ella— es 0 y no una
+     * division por cero.
+     */
+    fun progreso(hechas: Int, total: Int): Float =
+        if (total <= 0) 0f else (hechas.toFloat() / total).coerceIn(0f, 1f)
 
     private val porPalabra = listOf("lantern" to GREEN_LANTERN, "flash" to FLASH)
 

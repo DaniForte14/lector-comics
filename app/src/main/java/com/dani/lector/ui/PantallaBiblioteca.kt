@@ -92,7 +92,7 @@ fun PantallaCarpeta(
     // ruta esta vacia y no casa con ninguna.
     val guia = remember(ruta) { Guias.de(ruta) }
     var guiaAbierta by remember { mutableStateOf<String?>(null) }
-    guiaAbierta?.let { PantallaGuia(it) { guiaAbierta = null } }
+    guiaAbierta?.let { PantallaGuia(vm, it) { guiaAbierta = null } }
 
     // El buscador mira TODA la biblioteca, no solo esta carpeta: si sabes lo
     // que quieres, no tiene sentido obligarte a navegar hasta el.

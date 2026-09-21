@@ -5408,6 +5408,60 @@ los tres primeros de Green Lantern tachados abre centrado en "Green Lantern Corp
 Recharge #1–5"; con dos arcos de Barry y Wally, en "The Return of Barry Allen",
 saltandose los 6 ocultos. **Sin comprobar**: en el movil, y los 152 dp a ojo.
 
+### Tanda 39: las guias como portadas en Lecturas, con su progreso (21/09/2026)
+
+Dani probo la 38 ("funciona") y pidio un apartado de guias con "un diseño
+chulo". Se le enseñaron tres maquetas (tarjetas con franja, caratulas grandes,
+tarjetas con progreso) y eligio **las caratulas con la barra de progreso**.
+
+- **`TarjetaGuia`** (`ui/Guia.kt`): 128x190 dp, chaflan de `FormaBoton`, el
+  color de su heroe (degradado verde de linterna; oro y escarlata), el nombre
+  abajo en mayusculas y cursiva, los años, y la barra de lo tachado con
+  "hechas / total". Sin abrir nunca: "SIN EMPEZAR". En Lecturas, bajo el rotulo
+  "GUÍAS", en un `LazyRow`: sustituye a los dos enlaces de texto de la 38.
+- **LO TACHADO PASA A LA APP.** Hasta la 38 vivia en el `localStorage` del
+  WebView y la app no podia contarlo. Ahora `PantallaGuia` mete delante del
+  script `LEIDAS_APP` (lo que guarda la app) y `marcar.js` lo devuelve por un
+  puente (`addJavascriptInterface`, objeto `Lector`, un solo metodo
+  `guardar(leidas, hechas, total)`) al abrir y en cada toque. Se guarda en las
+  prefs (`guia.leidas.<ruta>`, `guia.hechas.`, `guia.total.`), como las
+  busquedas recientes.
+- **Traspaso solo**: sin `LEIDAS_APP` (la primera vez tras la 38), `marcar.js`
+  lee el `localStorage` de antes y lo manda a la app al abrir. Lo viejo no se
+  borra.
+- **"Hechas" cuenta solo lo que existe HOY en la guia**: una marca de una
+  version anterior de la guia se guarda, pero no suma.
+- El total lo cuenta la guia al abrirse (177 en Green Lantern, 31 en Barry y
+  Wally), no va escrito en la app: si se vuelve a copiar una guia con mas
+  apartados, se corrige solo.
+- `Guias.todas` pasa a ser una `data class Guia` (nombre, ruta, años, partes) y
+  `Guias.progreso` es la cuenta de la barra, con dos pruebas.
+
+**Una correccion**: al proponerlo se le dijo a Dani que pasar las marcas a la
+app las meteria en la copia de seguridad. **No**: las prefs no van en la copia
+(lo dice `VistaModelo`, en las busquedas recientes). Lo que se gana es el
+progreso, y que el dia del port las marcas tienen ya su `Preferencias` de iOS.
+
+**El puente**: `addJavascriptInterface` expone el metodo a TODO lo que cargue
+ese WebView. Solo carga lo que va en el APK; los enlaces salen al navegador.
+Si algun dia la guia navega dentro, hay que quitarlo.
+
+**La imagen de fondo, la que eligio Dani** (el emblema de Green Lantern y el de
+Flash). Pegarlas en el chat no las deja en disco: las guardo en `Descargas`
+(con nombres automaticos, `47dc5c...jpg` y `image-17900...webp`) y se copiaron a
+`res/drawable-nodpi` como `guia_green_lantern.jpg` y `guia_flash.webp`; WebP lo
+lee Android desde siempre. `ContentScale.Crop`, que deja el emblema en el
+centro, y un velo negro arriba (55%) y abajo (85%) para que el texto blanco se
+lea sobre los rayos y el brillo. El degradado de la primera version se fue.
+
+**Comprobado**: `comprobar.py` PROBLEMAS: 0; `:app:assembleDebug
+:shared:testDebugUnitTest` verde. El puente, en el navegador con un `Lector`
+falso: el traspaso manda las marcas viejas y cuenta 2 de 177 (una marca que ya
+no existe no suma); con `LEIDAS_APP` usa esas e ignora el `localStorage`; un
+toque manda 3 de 177 al momento. **Sin comprobar**: en el movil, y la tarjeta
+entera (Compose no se ve desde aqui): sobre todo si el recorte deja el emblema
+de Green Lantern entero, que es apaisada y pierde los lados.
+
 ### El motor de RAR para iOS: hay via, y se aplaza (07/09/2026)
 
 Dani eligio **buscar un motor de RAR nativo** en vez de dejar el CBR fuera del
