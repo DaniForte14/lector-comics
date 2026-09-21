@@ -5379,6 +5379,35 @@ app desde la tarjeta del final (36) y desde la carpeta (37), "se ve bien", y
 WebView persiste con la base `file:///android_asset/`. Lo que sigue sin
 comprobar: el tachado tras "borrar datos" (se pierde, y se sabe) y en iOS.
 
+### Tanda 38: la guia abre en lo siguiente, y Lecturas sin tapar (21/09/2026)
+
+Tres cosas que pidio Dani tras usar la 37:
+
+- **La guia se abre en el primer apartado sin tachar** (`marcar.js`,
+  `irAlSiguiente`): "si acabo de tachar Green Lantern Corps vol. 2 #5, que me
+  enseñe el siguiente". Es el primero sin tachar en el orden del documento, no
+  "el que va detras del ultimo tachado": si hay un hueco sin tachar por en
+  medio, es ese. **Solo si hay algo tachado**; sin nada, la guia empieza por su
+  portada. Se salta lo que la guia esconde (`offsetParent === null`: Barry y
+  Wally oculta de entrada los arcos de la "ampliada"). Vale para los tres sitios
+  desde donde se abre, no solo al acabar un comic. Se repite en `load` porque
+  las fuentes de Google llegan despues y mueven lo de debajo.
+- **Las guias, tambien en Lecturas**: un enlace por guia debajo de
+  "Marcapaginas", con el mismo estilo. `Guias.todas` da nombre y ruta.
+- **Lo ultimo de Lecturas y de Ajustes quedaba tapado.** Fuera de la
+  Biblioteca, `MainActivity` enseña la barra de "seguir leyendo" encima de la
+  pildora siempre que haya algo a medias (`paginas.currentPage != 0`), y las dos
+  pestañas dejaban 96 dp, lo de la pildora sola. Ahora 152, lo mismo que la
+  Biblioteca dentro de una carpeta, que es donde salen las dos. (Lecturas ademas
+  lleva `navigationBarsPadding`, asi que le sobra algo; mejor sobrar que tapar.)
+
+**Comprobado**: `comprobar.py` PROBLEMAS: 0; `:app:assembleDebug
+:shared:testDebugUnitTest` verde. El salto, en el navegador de la sesion con
+las guias montadas como las monta la app: sin nada tachado se queda arriba; con
+los tres primeros de Green Lantern tachados abre centrado en "Green Lantern Corps:
+Recharge #1–5"; con dos arcos de Barry y Wally, en "The Return of Barry Allen",
+saltandose los 6 ocultos. **Sin comprobar**: en el movil, y los 152 dp a ojo.
+
 ### El motor de RAR para iOS: hay via, y se aplaza (07/09/2026)
 
 Dani eligio **buscar un motor de RAR nativo** en vez de dejar el CBR fuera del

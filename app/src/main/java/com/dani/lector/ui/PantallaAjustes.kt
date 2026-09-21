@@ -342,8 +342,10 @@ fun PantallaAjustes(
                     }
                 }
 
-                // Sitio para la píldora, igual que en las otras dos pestañas.
-                Spacer(Modifier.height(96.dp))
+                // Sitio para la píldora Y la barra de "seguir leyendo", que fuera
+                // de la Biblioteca sale siempre que haya algo a medias: 152, como
+                // la Biblioteca con las dos (tanda 38). Con 96 quedaba tapado.
+                Spacer(Modifier.height(152.dp))
             }
         }
     }

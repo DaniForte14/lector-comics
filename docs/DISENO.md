@@ -1481,3 +1481,9 @@ oscurito"*.
 - **Se marca lo que se lee de una sentada**: en Green Lantern, cada bloque y
   cada número de las cajas de mes (en los cruces se lee número a número); en
   Barry y Wally, cada arco.
+- **Se abre en lo que toca** (tanda 38): centrada en el primer apartado sin
+  tachar, si ya hay algo tachado. Sin nada, por su portada, que es donde está
+  la leyenda.
+- **También desde Lecturas** (tanda 38): un enlace por guía debajo de
+  "Marcapáginas", igual que él. Así están en tres sitios: al acabar un cómic, en
+  la carpeta del personaje y en Lecturas.

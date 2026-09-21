@@ -21,6 +21,9 @@ object Guias {
     const val GREEN_LANTERN = "guias/green-lantern.html"
     const val FLASH = "guias/barry-y-wally.html"
 
+    /** Todas, con el nombre que se enseña, para la lista de Lecturas (tanda 38). */
+    val todas = listOf("Green Lantern" to GREEN_LANTERN, "Barry y Wally" to FLASH)
+
     private val porPalabra = listOf("lantern" to GREEN_LANTERN, "flash" to FLASH)
 
     /**

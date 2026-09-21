@@ -36,4 +36,22 @@
       try { localStorage.setItem(clave, JSON.stringify(leidas)); } catch (e) {}
     });
   });
+
+  // AL ABRIR, AL PRIMER APARTADO SIN TACHAR (tanda 38): lo que toca leer. Solo
+  // si ya hay algo tachado; sin nada, la guia empieza por su portada. Se salta
+  // lo que la propia guia esconde (Barry y Wally enseña de entrada solo los
+  // imprescindibles). Otra vez en `load`, porque las fuentes de Google llegan
+  // despues y mueven lo de debajo.
+  function irAlSiguiente() {
+    if (!document.querySelector('.leido')) return;
+    var todos = document.querySelectorAll(marcables);
+    for (var i = 0; i < todos.length; i++) {
+      if (!todos[i].classList.contains('leido') && todos[i].offsetParent !== null) {
+        todos[i].scrollIntoView({ block: 'center' });
+        return;
+      }
+    }
+  }
+  irAlSiguiente();
+  window.addEventListener('load', irAlSiguiente);
 })();

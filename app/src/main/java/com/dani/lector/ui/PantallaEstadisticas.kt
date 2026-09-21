@@ -105,6 +105,11 @@ fun PantallaEstadisticas(
         )
     }
 
+    // La guia de lectura abierta desde aqui, si hay (tanda 38). Es un Dialog:
+    // tapa la pestaña entera sin tocar su Column.
+    var guiaAbierta by remember { mutableStateOf<String?>(null) }
+    guiaAbierta?.let { PantallaGuia(it) { guiaAbierta = null } }
+
     Column(Modifier.fillMaxSize().background(Tinta).navigationBarsPadding()) {
         Cabecera("Lecturas", "Qué llevas leído", onAtras)
 
@@ -118,6 +123,13 @@ fun PantallaEstadisticas(
                 Text("Marcapáginas  ›", style = Tipo.secundario, color = Acento,
                     modifier = Modifier.padding(20.dp, 4.dp, 20.dp, 8.dp)
                         .clickableSimple(accion = onMarcadores))
+            }
+            // Las guias de lectura, tambien aqui y no solo en la carpeta o al
+            // acabar un comic (tanda 38): es donde se busca que toca leer.
+            items(Guias.todas) { (nombre, ruta) ->
+                Text("Orden de lectura: $nombre  ›", style = Tipo.secundario, color = Acento,
+                    modifier = Modifier.padding(20.dp, 4.dp, 20.dp, 8.dp)
+                        .clickableSimple { guiaAbierta = ruta })
             }
             item {
                 Row(Modifier.fillMaxWidth().padding(12.dp, 8.dp)) {
@@ -239,7 +251,11 @@ fun PantallaEstadisticas(
             }
             // La píldora flota sobre las tres pestañas desde que se puede
             // deslizar entre ellas, así que aquí también hay que dejarle sitio.
-            item { Spacer(Modifier.height(96.dp)) }
+            // Y encima de ella la barra de "seguir leyendo", que fuera de la
+            // Biblioteca sale siempre que haya algo a medias (MainActivity):
+            // con 96 dp, que es la píldora sola, lo último quedaba tapado
+            // (tanda 38). 152, como la Biblioteca con las dos barras.
+            item { Spacer(Modifier.height(152.dp)) }
         }
     }
 }
