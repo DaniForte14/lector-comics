@@ -268,10 +268,14 @@ expect fun hayAnimaciones(): Boolean
  * 44 dp. El resto es aire.
  *
  * La firma no cambia a proposito, para que todas las pantallas se restilen
- * solas sin tocarlas una a una.
+ * solas sin tocarlas una a una. [accion] es un enlace a la altura del titulo
+ * (Lecturas: "Marcapaginas", tanda 40); va AL FINAL y es opcional por lo mismo.
  */
 @Composable
-fun Cabecera(titulo: String, sub: String, atras: (() -> Unit)? = null, linea: Boolean = true) {
+fun Cabecera(
+    titulo: String, sub: String, atras: (() -> Unit)? = null, linea: Boolean = true,
+    accion: Pair<String, () -> Unit>? = null
+) {
     // safeDrawing en vez de statusBarsPadding: incluye el RECORTE de pantalla
     // (el agujero de la camara), que sigue ocupando sitio aunque la barra de
     // estado no se este viendo. Con statusBarsPadding, al volver del visor
@@ -294,12 +298,17 @@ fun Cabecera(titulo: String, sub: String, atras: (() -> Unit)? = null, linea: Bo
                 Text("Atrás", style = Tipo.cuerpo, color = Acento)
             }
         }
-        Column(Modifier.padding(
+        Row(Modifier.padding(
             start = 20.dp, end = 20.dp,
             top = if (atras != null) 2.dp else 12.dp, bottom = 10.dp
-        )) {
-            if (sub.isNotBlank()) Text(sub, style = Tipo.pie, color = Tenue)
-            TextoGlitch(titulo, Tipo.grande, Hueso)
+        ), verticalAlignment = Alignment.Bottom) {
+            Column(Modifier.weight(1f)) {
+                if (sub.isNotBlank()) Text(sub, style = Tipo.pie, color = Tenue)
+                TextoGlitch(titulo, Tipo.grande, Hueso)
+            }
+            if (accion != null) Text("${accion.first}  ›", style = Tipo.secundario,
+                color = Acento, modifier = Modifier.padding(bottom = 6.dp)
+                    .clickableSimple(accion = accion.second))
         }
     }
     // el separador de iOS es de medio punto, no de uno

@@ -5462,6 +5462,30 @@ toque manda 3 de 177 al momento. **Sin comprobar**: en el movil, y la tarjeta
 entera (Compose no se ve desde aqui): sobre todo si el recorte deja el emblema
 de Green Lantern entero, que es apaisada y pierde los lados.
 
+### Tanda 40: Lecturas, por bloques (21/09/2026)
+
+Dani probo la 39 en el movil: las caratulas se ven bien, el emblema de Green
+Lantern sale entero y el traspaso funciono (**4 / 177** en la caratula, lo que
+tenia tachado). Y pidio reordenar Lecturas: "como que hay muchas cosas ahora".
+De tres maquetas (por bloques, con pestañas internas, con un panel principal)
+eligio **por bloques**, la que no quita nada.
+
+- **"Marcapaginas ›" sube a la cabecera**, a la altura del titulo. `Cabecera`
+  (comun) gana un parametro `accion` AL FINAL y opcional: las demas pantallas no
+  cambian.
+- **Un `Rotulo` para todos los apartados** (GUÍAS, TUS CIFRAS, CALENDARIO,
+  PRÓXIMAMENTE, SIGUIENDO, TU BIBLIOTECA): marca amarilla de 3x11 dp, mayusculas
+  en `Tipo.pie`, el mismo aire encima. El "subir" de la biblioteca va como su
+  `accion`.
+- **Las seis cifras, en un panel**: tres en grande (leidos, paginas, racha) y
+  el resto en una linea ("293 cómics · 2/19 series completas · 11 días leyendo
+  · 1 a medias"). `Cifra` pierde su fondo propio. Se va el "Y 1 cómics a
+  medias.", que ademas no concordaba.
+
+**Comprobado**: `comprobar.py` PROBLEMAS: 0; `:app:assembleDebug
+:shared:testDebugUnitTest` verde, sin avisos en ningun `.kt`. **Sin
+comprobar**: como queda en el movil.
+
 ### El motor de RAR para iOS: hay via, y se aplaza (07/09/2026)
 
 Dani eligio **buscar un motor de RAR nativo** en vez de dejar el CBR fuera del

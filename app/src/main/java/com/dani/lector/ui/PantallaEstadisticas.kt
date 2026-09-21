@@ -113,26 +113,21 @@ fun PantallaEstadisticas(
     guiaAbierta?.let { PantallaGuia(vm, it) { guiaAbierta = null } }
 
     Column(Modifier.fillMaxSize().background(Tinta).navigationBarsPadding()) {
-        Cabecera("Lecturas", "Qué llevas leído", onAtras)
+        Cabecera("Lecturas", "Qué llevas leído", onAtras, accion = "Marcapáginas" to onMarcadores)
 
         if (r == null) {
             Box(Modifier.fillMaxSize(), Alignment.Center) { CircularProgressIndicator() }
             return@Column
         }
 
+        // POR BLOQUES (tanda 40): guias, cifras, calendario, proximamente,
+        // siguiendo y biblioteca, cada uno con su Rotulo. Dani: "hay muchas
+        // cosas ahora"; de tres maquetas eligio esta, la que no quita nada.
         LazyColumn(Modifier.weight(1f)) {
-            item {
-                Text("Marcapáginas  ›", style = Tipo.secundario, color = Acento,
-                    modifier = Modifier.padding(20.dp, 4.dp, 20.dp, 8.dp)
-                        .clickableSimple(accion = onMarcadores))
-            }
             // ── las guias de lectura, como portadas (tanda 39) ──
             // Tambien aqui y no solo en la carpeta o al acabar un comic: es
             // donde se busca que toca leer.
-            item {
-                Text("GUÍAS", style = Tipo.pie, color = Tenue, letterSpacing = 0.5.sp,
-                    modifier = Modifier.padding(20.dp, 14.dp, 20.dp, 8.dp))
-            }
+            item { Rotulo("GUÍAS") }
             item {
                 // Se relee al cerrar una guia (guiaAbierta vuelve a null), que es
                 // cuando puede haber cambiado lo tachado.
@@ -145,26 +140,33 @@ fun PantallaEstadisticas(
                     }
                 }
             }
+            // ── tus cifras: tres en grande y el resto en una linea ──
+            // Eran seis casillas iguales mas una frase suelta: todo pesaba lo
+            // mismo y no se sabia donde mirar (tanda 40).
+            item { Rotulo("TUS CIFRAS") }
             item {
-                Row(Modifier.fillMaxWidth().padding(12.dp, 8.dp)) {
-                    Cifra("${r.terminados}", "cómics leídos", Modifier.weight(1f))
-                    Cifra("${r.paginas}", "páginas", Modifier.weight(1f))
-                    Cifra("${r.racha}",
-                        if (r.racha == 1) "día seguido" else "días seguidos",
-                        Modifier.weight(1f))
+                Column(Modifier.padding(horizontal = 16.dp).fillMaxWidth()
+                    .clip(FormaTarjeta).background(Panel).padding(14.dp)) {
+                    Row {
+                        Cifra("${r.terminados}", "cómics leídos", Modifier.weight(1f))
+                        Cifra("${r.paginas}", "páginas", Modifier.weight(1f))
+                        Cifra("${r.racha}",
+                            if (r.racha == 1) "día seguido" else "días seguidos",
+                            Modifier.weight(1f))
+                    }
+                    Box(Modifier.padding(top = 12.dp).fillMaxWidth().height(0.5.dp).background(Linea))
+                    Text(
+                        listOfNotNull(
+                            "${r.comics} cómics",
+                            "${r.seriesCompletas}/${r.series} series completas",
+                            "${r.dias} " + if (r.dias == 1) "día leyendo" else "días leyendo",
+                            if (r.empezados > 0) "${r.empezados} a medias" else null
+                        ).joinToString(" · "),
+                        Modifier.padding(top = 10.dp), style = Tipo.pie, color = Tenue)
                 }
-                Row(Modifier.fillMaxWidth().padding(12.dp, 0.dp)) {
-                    Cifra("${r.comics}", "cómics", Modifier.weight(1f))
-                    Cifra("${r.seriesCompletas}/${r.series}", "series completas",
-                        Modifier.weight(1f))
-                    Cifra("${r.dias}", "días leyendo", Modifier.weight(1f))
-                }
-
-                if (r.empezados > 0) Text("Y ${r.empezados} cómics a medias.",
-                    Modifier.padding(20.dp, 14.dp, 20.dp, 0.dp),
-                    style = Tipo.pie, color = Tenue)
             }
 
+            item { Rotulo("CALENDARIO") }
             item {
                 CalendarioMes(vm, mesVisible, porDia, hoy, { mesVisible = it }) { diaAbierto = it }
             }
@@ -179,11 +181,7 @@ fun PantallaEstadisticas(
             // Va ANTES de "siguiendo" porque es lo que caduca: la lista de
             // series seguidas es la misma toda la semana y esto cambia solo.
             if (agenda.isNotEmpty()) {
-                item {
-                    Text("PRÓXIMAMENTE", style = Tipo.pie, color = Tenue,
-                        letterSpacing = 0.5.sp,
-                        modifier = Modifier.padding(20.dp, 22.dp, 20.dp, 4.dp))
-                }
+                item { Rotulo("PRÓXIMAMENTE") }
                 // SIN `key`, al reves que la lista de seguidas. Ahi la clave es
                 // la ruta de una carpeta tuya y es unica de verdad; aqui saldria
                 // de datos de Comic Vine, donde un numero repetido no es
@@ -199,10 +197,7 @@ fun PantallaEstadisticas(
             // entrando en la carpeta de cada una, asi que no habia forma de
             // dejar de seguir algo sin ir a buscarlo.
             if (seguidas.isNotEmpty()) {
-                item {
-                    Text("SIGUIENDO", style = Tipo.pie, color = Tenue, letterSpacing = 0.5.sp,
-                        modifier = Modifier.padding(20.dp, 22.dp, 20.dp, 4.dp))
-                }
+                item { Rotulo("SIGUIENDO") }
                 // CLAVE CON PREFIJO, Y NO SOLO LA RUTA. Las dos listas de esta
                 // pantalla —las que sigues y el nivel que estas mirando— van en
                 // el MISMO LazyColumn, asi que comparten espacio de claves: una
@@ -217,21 +212,11 @@ fun PantallaEstadisticas(
             }
 
             item {
-                Row(
-                    Modifier.fillMaxWidth().padding(20.dp, 22.dp, 20.dp, 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        if (camino.isBlank()) "TU BIBLIOTECA"
-                        else camino.uppercase(),
-                        style = Tipo.pie, color = Tenue, letterSpacing = 0.5.sp,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-                    if (camino.isNotBlank()) Text("subir  \u2191",
-                        style = Tipo.minuscula, color = Acento,
-                        modifier = Modifier.clickableSimple { camino = padreDe(camino) })
-                }
+                Rotulo(
+                    if (camino.isBlank()) "TU BIBLIOTECA" else camino.uppercase(),
+                    accion = if (camino.isBlank()) null
+                             else "subir  \u2191" to { camino = padreDe(camino) }
+                )
             }
             items(nivel, key = { "nivel:${it.ruta}" }) { a ->
                 // Solo se puede bajar si hay algo debajo. Una fila pulsable que
@@ -518,11 +503,29 @@ private fun padreDe(ruta: String) = ruta.trim('/').substringBeforeLast('/', "")
 
 @Composable
 private fun Cifra(valor: String, etiqueta: String, modifier: Modifier = Modifier) {
-    Column(
-        modifier.padding(4.dp).clip(FormaTarjeta).background(Panel).padding(12.dp)
-    ) {
+    // Sin fondo propio desde la tanda 40: las tres van dentro de un solo panel.
+    Column(modifier) {
         Text(valor, style = Tipo.titulo, color = Acento)
         Text(etiqueta, style = Tipo.minuscula, color = Tenue,
             modifier = Modifier.padding(top = 3.dp))
+    }
+}
+
+/**
+ * El rotulo de cada apartado de Lecturas (tanda 40): una marca amarilla y el
+ * nombre en mayusculas, todos con el mismo aire encima. Antes cada uno llevaba
+ * su propio relleno y la pantalla se leia como una sola lista larga; asi se ve
+ * donde empieza cada bloque. [accion], a la derecha (el "subir" de la
+ * biblioteca).
+ */
+@Composable
+private fun Rotulo(texto: String, accion: Pair<String, () -> Unit>? = null) {
+    Row(Modifier.fillMaxWidth().padding(20.dp, 26.dp, 20.dp, 10.dp),
+        verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.width(3.dp).height(11.dp).background(Acento))
+        Text(texto, Modifier.weight(1f).padding(start = 8.dp), style = Tipo.pie, color = Tenue,
+            letterSpacing = 0.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        if (accion != null) Text(accion.first, style = Tipo.minuscula, color = Acento,
+            modifier = Modifier.clickableSimple(accion = accion.second))
     }
 }

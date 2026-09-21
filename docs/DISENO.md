@@ -1507,3 +1507,20 @@ le enseñaron tres maquetas y eligió mezclar dos: **carátulas grandes** y la
   vista.
 - **"SIN EMPEZAR" en vez de una barra vacía**: sin abrirla nunca, la app no
   sabe cuántos apartados tiene, y una barra a cero con "0 / 0" parece un fallo.
+
+## 29. Lecturas, por bloques (21/09/2026)
+
+Dani: *"como que hay muchas cosas ahora, ¿se podría reorganizar para que sea
+más visually pleasing?"*. De tres maquetas eligió la que ordena sin quitar.
+
+- **Cada apartado con su rótulo**: una marca amarilla y el nombre en
+  mayúsculas, con el mismo aire encima. Es lo que deja ver dónde empieza cada
+  bloque; antes era una sola lista larga con rellenos distintos.
+- **Tres cifras en grande, el resto en una línea.** Seis casillas iguales
+  pesaban lo mismo y no se sabía dónde mirar. Las grandes son las que cambian
+  cuando lees: cómics leídos, páginas y racha.
+- **Marcapáginas, en la cabecera**, a la altura del título: es un acceso, no un
+  apartado.
+- **Descartadas**: las pestañas internas (Resumen · Mes · Series), que
+  esconden el calendario detrás de un toque, y el panel principal con lo demás
+  plegado.
