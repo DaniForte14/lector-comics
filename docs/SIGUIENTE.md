@@ -43,7 +43,7 @@ Dani (ANDROID):
 | Lecturas, debajo de "Marcapaginas" (tanda 39) | rotulo "GUÍAS" y dos caratulas con el emblema de cada uno de fondo y el texto legible encima. Tocar una abre su guia. **Si al emblema de Green Lantern le faltan los lados, es el recorte** |
 | La primera vez que abres una guia tras la 39 | lo que ya tenias tachado sigue tachado (se traspasa solo a la app). **Si sale todo sin tachar, fallo el traspaso** |
 | Cerrar la guia y mirar su caratula | la barra y "hechas / total" han cambiado. Sin abrirla nunca: "SIN EMPEZAR" |
-| Lecturas entera (tanda 40) | "Marcapaginas ›" en la cabecera; cada apartado con su marca amarilla; las cifras en UN panel, tres grandes y una linea debajo |
+| Lecturas entera (tanda 40) | "Marcapaginas ›" en la cabecera; cada apartado con su marca amarilla; las cifras en UN panel, tres grandes y una linea debajo. **Confirmado por Dani el 21/09, con la 39** |
 | Bajar del todo en Lecturas y en Ajustes, con un comic a medias | lo ultimo se lee entero, por encima de las dos barras flotantes |
 
 **Tandas 36 y 37 confirmadas por Dani en el movil (16/09/2026)**: la guia se

@@ -5483,8 +5483,10 @@ eligio **por bloques**, la que no quita nada.
   medias.", que ademas no concordaba.
 
 **Comprobado**: `comprobar.py` PROBLEMAS: 0; `:app:assembleDebug
-:shared:testDebugUnitTest` verde, sin avisos en ningun `.kt`. **Sin
-comprobar**: como queda en el movil.
+:shared:testDebugUnitTest` verde, sin avisos en ningun `.kt`. **Confirmado en
+el movil por Dani (21/09/2026)**: "se ve bien", igual que las caratulas de la
+39. Lo unico que salio: la linea de cifras partia "11 días leyendo" entre dos
+renglones; cada dato va ahora con espacios que no se parten (` `).
 
 ### El motor de RAR para iOS: hay via, y se aplaza (07/09/2026)
 

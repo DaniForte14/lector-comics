@@ -161,7 +161,9 @@ fun PantallaEstadisticas(
                             "${r.seriesCompletas}/${r.series} series completas",
                             "${r.dias} " + if (r.dias == 1) "día leyendo" else "días leyendo",
                             if (r.empezados > 0) "${r.empezados} a medias" else null
-                        ).joinToString(" · "),
+                        // Cada dato con espacios que no se parten: sin esto el
+                        // movil partia "11 · días leyendo" en dos lineas.
+                        ).joinToString(" · ") { it.replace(' ', ' ') },
                         Modifier.padding(top = 10.dp), style = Tipo.pie, color = Tenue)
                 }
             }
